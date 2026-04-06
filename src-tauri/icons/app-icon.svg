@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="JSRF Bingus Trainer icon">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9858" />
+      <stop offset="100%" stop-color="#53d3b5" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="44" fill="#10181f" />
+  <rect x="18" y="18" width="220" height="220" rx="34" fill="url(#bg)" opacity="0.18" />
+  <path
+    d="M58 78h140v24H58zm18 40h104v24H76zm-18 40h76v24H58zm94 0h46v24h-46z"
+    fill="#f7f4ef"
+  />
+  <circle cx="188" cy="64" r="18" fill="#ff9858" />
+</svg>
