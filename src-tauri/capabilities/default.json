@@ -4,7 +4,6 @@
   "windows": ["main", "drill-popout"],
   "permissions": [
     "core:default",
-    "core:webview:allow-create-webview-window",
     "core:window:allow-set-always-on-top",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",

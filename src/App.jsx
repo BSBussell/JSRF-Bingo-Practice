@@ -65,7 +65,8 @@ function PracticeModeView({
   settings,
   totalTimer,
   splitTimer,
-  popoutControl
+  popoutControl,
+  popoutError
 }) {
   if (drillSession.currentSession) {
     return (
@@ -80,6 +81,7 @@ function PracticeModeView({
           />
         </div>
         {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
+        {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
         <HistoryPanel history={drillSession.history} />
         <StatsPanel stats={drillSession.stats} />
       </div>
@@ -152,6 +154,7 @@ export default function App() {
   const hasActiveSession = Boolean(drillSession.currentSession);
   const isSessionMode = activeMode === "drills" || activeMode === "learn";
   const [capturingAction, setCapturingAction] = useState(null);
+  const [popoutError, setPopoutError] = useState(null);
   const [hasWindowFocus, setHasWindowFocus] = useState(
     typeof document === "undefined" ? true : document.hasFocus()
   );
@@ -181,7 +184,7 @@ export default function App() {
   }, [activeMode, capturingAction]);
 
   useEffect(() => {
-    if (!isTauriRuntime()) {
+    if (!isTauriRuntime() || popoutView) {
       return;
     }
 
@@ -214,8 +217,10 @@ export default function App() {
   });
 
   function handlePopoutClick() {
+    setPopoutError(null);
     openDrillPopoutWindow(settings.popoutAlwaysOnTop).catch((error) => {
       console.warn("Failed to open drill pop-out window", error);
+      setPopoutError(error instanceof Error ? error.message : String(error));
     });
   }
 
@@ -277,6 +282,7 @@ export default function App() {
             totalTimer={totalTimer}
             splitTimer={splitTimer}
             popoutControl={popoutButton}
+            popoutError={popoutError}
           />
         ) : activeMode === "settings" ? (
           <SettingsModeView

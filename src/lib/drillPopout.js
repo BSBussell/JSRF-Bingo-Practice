@@ -4,10 +4,9 @@ export const DRILL_POPOUT_LABEL = "drill-popout";
 export const DRILL_POPOUT_VIEW = "drill-popout";
 
 function buildDrillPopoutUrl() {
-  const currentUrl = new URL(window.location.href);
-  currentUrl.searchParams.set("view", DRILL_POPOUT_VIEW);
-  return currentUrl.toString();
+  return new URL("/popout.html", window.location.href).toString();
 }
+
 function openBrowserDrillPopout(url) {
   const popupWindow = window.open(
     url,
@@ -24,14 +23,21 @@ export async function openDrillPopoutWindow(alwaysOnTop = false) {
     return null;
   }
 
-  const popoutUrl = buildDrillPopoutUrl();
-
   if (isTauriRuntime()) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    await invoke("open_drill_popout", { url: popoutUrl, alwaysOnTop });
-    return DRILL_POPOUT_LABEL;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("open_drill_popout", { alwaysOnTop });
+      return DRILL_POPOUT_LABEL;
+    } catch (error) {
+      throw new Error(
+        `Unable to open desktop popout via rust command: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
+  const popoutUrl = buildDrillPopoutUrl();
   return openBrowserDrillPopout(popoutUrl);
 }
 
@@ -49,5 +55,6 @@ export function isDrillPopoutView() {
     return false;
   }
 
-  return new URLSearchParams(window.location.search).get("view") === DRILL_POPOUT_VIEW;
+  const currentUrl = new URL(window.location.href);
+  return currentUrl.pathname.endsWith("/popout.html") || currentUrl.pathname.endsWith("popout.html");
 }

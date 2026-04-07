@@ -2,28 +2,37 @@
 // The native layer owns desktop-only window behavior: booting the same frontend
 // in dev/prod, opening the drill popout, and keeping that popout's native
 // window state in sync with the frontend's settings.
-use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const LOCALHOST_HOST: &str = "127.0.0.1";
 const LOCALHOST_PORT: u16 = 1430;
 const DRILL_POPOUT_LABEL: &str = "drill-popout";
 
 #[tauri::command]
-fn open_drill_popout(app: AppHandle, url: String, always_on_top: bool) -> Result<(), String> {
+async fn open_drill_popout(app: AppHandle, always_on_top: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(DRILL_POPOUT_LABEL) {
-        // Reuse the existing popout so the frontend keeps one stable view of
-        // session state instead of spawning an accidental flock of them.
-        window
-            .set_always_on_top(always_on_top)
-            .map_err(|error| error.to_string())?;
-        window.show().map_err(|error| error.to_string())?;
-        window.set_focus().map_err(|error| error.to_string())?;
-        return Ok(());
+        // Recreate the popout from a known-good URL to avoid getting stuck
+        // with a stale blank webview from a previous failed boot.
+        window.destroy().map_err(|error| error.to_string())?;
     }
 
-    let popout_url = url
-        .parse::<Url>()
+    #[cfg(debug_assertions)]
+    let mut popout_url = app
+        .config()
+        .build
+        .dev_url
+        .clone()
+        .ok_or_else(|| "devUrl must be configured for tauri dev".to_string())?;
+
+    #[cfg(not(debug_assertions))]
+    let mut popout_url: tauri::Url = format!("http://{LOCALHOST_HOST}:{LOCALHOST_PORT}/index.html")
+        .parse::<tauri::Url>()
         .map_err(|error| error.to_string())?;
+
+    popout_url.set_path("/popout.html");
+    popout_url.set_query(None);
+    popout_url.set_fragment(None);
+
     let popout_window = WebviewWindowBuilder::new(
         &app,
         DRILL_POPOUT_LABEL,
@@ -39,6 +48,7 @@ fn open_drill_popout(app: AppHandle, url: String, always_on_top: bool) -> Result
     popout_window
         .set_always_on_top(always_on_top)
         .map_err(|error| error.to_string())?;
+    popout_window.show().map_err(|error| error.to_string())?;
     popout_window
         .set_focus()
         .map_err(|error| error.to_string())?;

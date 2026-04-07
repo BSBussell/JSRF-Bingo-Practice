@@ -1176,6 +1176,13 @@ button {
     justify-content: center;
 }
 
+.drill-popout-error {
+    margin: -0.25rem auto 0;
+    max-width: 42rem;
+    color: #ffd39b;
+    text-align: center;
+}
+
 .drill-popout-button {
     min-width: 8rem;
 }

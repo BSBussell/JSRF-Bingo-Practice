@@ -88,20 +88,32 @@ export function PopoutViewport({ children }) {
       frameRef.current = requestAnimationFrame(measure);
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      queueMeasure();
-    });
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        queueMeasure();
+      });
 
-    resizeObserver.observe(viewport);
-    resizeObserver.observe(content);
+      resizeObserver.observe(viewport);
+      resizeObserver.observe(content);
+    } else {
+      // Older webviews can miss ResizeObserver; fall back to window resize so
+      // the popout still renders instead of crashing to a blank view.
+      window.addEventListener("resize", queueMeasure);
+    }
+
     queueMeasure();
 
-    document.fonts?.ready.then(() => {
-      queueMeasure();
-    });
+    const fontsReady = document.fonts?.ready;
+    if (fontsReady && typeof fontsReady.then === "function") {
+      fontsReady.then(() => {
+        queueMeasure();
+      });
+    }
 
     return () => {
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", queueMeasure);
 
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
