@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 const DPR_LIMIT = 2;
+const MOTION_EPSILON = 0.0001;
 
 function resolveNumber(value, fallback) {
   if (!Number.isFinite(value)) {
@@ -76,13 +77,17 @@ function createParticle(width, height, appearance, motion, density, now, entry =
   const sizeVariance = 0.72 + Math.random() * 0.55;
   const direction = motion.direction;
   const verticalSpeed = 0.08 + motion.speed * 0.34;
+  const hasVerticalMotion = motion.speed > MOTION_EPSILON;
+  const hasDriftMotion = motion.drift > MOTION_EPSILON;
   const fadeInDurationMs = 900 + Math.random() * 1500;
   const initialAgeMs = entry === "initial"
     ? fadeInDurationMs * (0.2 + Math.random() * 0.8)
     : 0;
   let velocityY = 0;
 
-  if (direction === "up") {
+  if (!hasVerticalMotion) {
+    velocityY = 0;
+  } else if (direction === "up") {
     velocityY = -(verticalSpeed * (0.75 + Math.random() * 0.9) * (0.65 + depth * 0.35));
   } else if (direction === "down") {
     velocityY = verticalSpeed * (0.75 + Math.random() * 0.9) * (0.65 + depth * 0.35);
@@ -95,7 +100,7 @@ function createParticle(width, height, appearance, motion, density, now, entry =
       (0.65 + depth * 0.35);
   }
 
-  const driftBase = 0.2 + motion.drift * 0.28;
+  const driftBase = hasDriftMotion ? 0.2 + motion.drift * 0.28 : 0;
   const swayAmplitude = motion.swayAmplitude * (3 + Math.random() * 11) * (0.55 + depth * 0.45);
   const swayFrequency = (0.4 + Math.random() * 0.95) * motion.swayFrequency;
 

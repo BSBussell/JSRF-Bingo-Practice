@@ -180,9 +180,9 @@ export const PRESET_THEME_DEFINITIONS = [
         hazeColorB: "#1d295f"
       },
       appearance: {
-        glow: 1.4,
-        size: 1.12,
-        flicker: 1.35,
+        glow: 0.61,
+        size: 1.22,
+        flicker: 3.00,
         opacity: 0.58
       },
       motion: {
