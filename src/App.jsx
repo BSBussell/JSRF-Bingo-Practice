@@ -27,7 +27,7 @@ import {
   normalizeAppState
 } from "./lib/storage.js";
 import { resolveTheme } from "./lib/theme/index.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function CurrentDrillPanel({
   activeMode,
@@ -61,6 +61,22 @@ function CurrentDrillPanel({
   );
 }
 
+function StartCountdownPanel({ countdownLabel }) {
+  return (
+    <section className="panel drill-panel start-countdown-panel">
+      <div className="drill-panel-header vertical">
+        <p className="eyebrow">Get Ready</p>
+        <h1>Drill Start</h1>
+      </div>
+      <div className="start-countdown-stage" role="status" aria-live="assertive">
+        <strong key={countdownLabel} className="start-countdown-number">
+          {countdownLabel}
+        </strong>
+      </div>
+    </section>
+  );
+}
+
 function PracticeModeView({
   activeMode,
   drillSession,
@@ -70,17 +86,21 @@ function PracticeModeView({
   popoutControl,
   popoutError
 }) {
-  if (drillSession.currentSession) {
+  if (drillSession.currentSession || drillSession.isStartCountdownActive) {
     return (
       <div className="content-stack">
         <div className={`practice-drill-slot ${activeMode === "learn" ? "learn-session-layout" : ""}`}>
-          <CurrentDrillPanel
-            activeMode={activeMode}
-            drillSession={drillSession}
-            settings={settings}
-            totalTimer={totalTimer}
-            splitTimer={splitTimer}
-          />
+          {drillSession.currentSession ? (
+            <CurrentDrillPanel
+              activeMode={activeMode}
+              drillSession={drillSession}
+              settings={settings}
+              totalTimer={totalTimer}
+              splitTimer={splitTimer}
+            />
+          ) : (
+            <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
+          )}
         </div>
         {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
         {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
@@ -173,6 +193,7 @@ export default function App() {
   const [hasWindowFocus, setHasWindowFocus] = useState(
     typeof document === "undefined" ? true : document.hasFocus()
   );
+  const previousCountdownActiveRef = useRef(drillSession.isStartCountdownActive);
 
   useEffect(() => {
     function handleFocus() {
@@ -197,6 +218,21 @@ export default function App() {
       setCapturingAction(null);
     }
   }, [activeMode, capturingAction]);
+
+  useEffect(() => {
+    const wasActive = previousCountdownActiveRef.current;
+    const isActive = drillSession.isStartCountdownActive;
+    previousCountdownActiveRef.current = isActive;
+
+    if (popoutView || wasActive || !isActive) {
+      return;
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }, [drillSession.isStartCountdownActive, popoutView]);
 
   useEffect(() => {
     if (!isTauriRuntime() || popoutView) {
@@ -239,11 +275,12 @@ export default function App() {
     });
   }
 
-  const popoutButton = !popoutView && drillSession.currentSession ? (
+  const popoutButton =
+    !popoutView && (drillSession.currentSession || drillSession.isStartCountdownActive) ? (
     <button className="secondary-button drill-popout-button" type="button" onClick={handlePopoutClick}>
       Pop Out
     </button>
-  ) : null;
+    ) : null;
 
   if (popoutView) {
     return (
@@ -257,6 +294,8 @@ export default function App() {
               totalTimer={totalTimer}
               splitTimer={splitTimer}
             />
+          ) : drillSession.isStartCountdownActive ? (
+            <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
           ) : (
             <section className="panel drill-panel popout-empty-panel">
               <div className="drill-panel-header vertical">

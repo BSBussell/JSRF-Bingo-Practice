@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { objectivesById } from "../data/objectives.js";
 import {
@@ -18,6 +18,9 @@ import {
   recordCompletionStats
 } from "../lib/stats/stats.js";
 
+const START_COUNTDOWN_SEQUENCE = ["3", "2", "1", "GO!"];
+const START_COUNTDOWN_STEP_MS = 1000;
+
 function buildSessionId() {
   return `session_${Date.now()}`;
 }
@@ -36,6 +39,8 @@ function resolveCurrentObjective(currentSession) {
 
 export function useDrillSession(appState, setAppState) {
   const [completionSummary, setCompletionSummary] = useState(null);
+  const [startCountdownStepIndex, setStartCountdownStepIndex] = useState(null);
+  const startCountdownTimeoutRef = useRef(null);
   const currentSession = appState.currentSession;
   const currentObjective = resolveCurrentObjective(currentSession);
   const history = appState.history;
@@ -58,9 +63,26 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
-  function startSession(sessionLaunch) {
-    setCompletionSummary(null);
+  function clearStartCountdownTimeout() {
+    if (startCountdownTimeoutRef.current !== null) {
+      window.clearTimeout(startCountdownTimeoutRef.current);
+      startCountdownTimeoutRef.current = null;
+    }
+  }
 
+  function cancelStartCountdown() {
+    clearStartCountdownTimeout();
+    setStartCountdownStepIndex(null);
+  }
+
+  useEffect(
+    () => () => {
+      clearStartCountdownTimeout();
+    },
+    []
+  );
+
+  function launchSessionNow(sessionLaunch) {
     updateState((previousValue) => {
       const sessionSpec = sessionLaunch?.sessionSpec;
       const exportSeed = sessionLaunch?.exportSeed ?? "";
@@ -104,6 +126,46 @@ export function useDrillSession(appState, setAppState) {
         })
       };
     });
+  }
+
+  function scheduleStartCountdownStep(sessionLaunch, nextStepIndex) {
+    clearStartCountdownTimeout();
+    startCountdownTimeoutRef.current = window.setTimeout(() => {
+      if (nextStepIndex >= START_COUNTDOWN_SEQUENCE.length) {
+        cancelStartCountdown();
+        launchSessionNow(sessionLaunch);
+        return;
+      }
+
+      setStartCountdownStepIndex(nextStepIndex);
+      scheduleStartCountdownStep(sessionLaunch, nextStepIndex + 1);
+    }, START_COUNTDOWN_STEP_MS);
+  }
+
+  function startSession(sessionLaunch) {
+    setCompletionSummary(null);
+    if (startCountdownStepIndex !== null || startCountdownTimeoutRef.current !== null) {
+      return;
+    }
+
+    const sessionSpec = sessionLaunch?.sessionSpec;
+    const exportSeed = sessionLaunch?.exportSeed ?? "";
+    if (!sessionSpec?.objectiveIds?.length || !objectivesById[sessionSpec.objectiveIds[0]]) {
+      cancelStartCountdown();
+      updateState((previousValue) => ({
+        ...previousValue,
+        currentSession: null
+      }));
+      return;
+    }
+
+    const pendingLaunchState = {
+      sessionSpec,
+      exportSeed
+    };
+
+    setStartCountdownStepIndex(0);
+    scheduleStartCountdownStep(pendingLaunchState, 1);
   }
 
   function markEnteredLevel() {
@@ -202,6 +264,7 @@ export function useDrillSession(appState, setAppState) {
 
   function endSession() {
     setCompletionSummary(null);
+    cancelStartCountdown();
     updateState((previousValue) => ({
       ...previousValue,
       currentSession: null
@@ -322,18 +385,22 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToModeSelect() {
+    cancelStartCountdown();
     setSelectedMode(null);
   }
 
   function goToDrills() {
+    cancelStartCountdown();
     setSelectedMode("drills");
   }
 
   function goToLearn() {
+    cancelStartCountdown();
     setSelectedMode("learn");
   }
 
   function goToSettings() {
+    cancelStartCountdown();
     setSelectedMode("settings");
   }
 
@@ -377,6 +444,7 @@ export function useDrillSession(appState, setAppState) {
 
   function resetAllData() {
     setCompletionSummary(null);
+    cancelStartCountdown();
     setAppState(createDefaultAppState());
   }
 
@@ -424,6 +492,10 @@ export function useDrillSession(appState, setAppState) {
   }
 
   const phaseActionLabel = getPhaseActionLabel(currentSession?.phase);
+  const startCountdownLabel =
+    typeof startCountdownStepIndex === "number"
+      ? START_COUNTDOWN_SEQUENCE[startCountdownStepIndex]
+      : null;
 
   return {
     currentSession,
@@ -435,6 +507,8 @@ export function useDrillSession(appState, setAppState) {
     settings: appState.settings,
     startingArea: appState.settings.startingArea,
     selectedMode: appState.selectedMode,
+    startCountdownLabel,
+    isStartCountdownActive: startCountdownLabel !== null,
     startSession,
     markEnteredLevel,
     unlockTape,
