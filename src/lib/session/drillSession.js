@@ -241,3 +241,39 @@ export function getPhaseActionLabel(phase) {
 
   return "Complete";
 }
+
+export function skipSessionSplit({
+  session,
+  objective,
+  now
+}) {
+  if (!session || !objective) {
+    return session;
+  }
+
+  if (session.phase === "travel") {
+    const needsTape = objectiveNeedsTape(objective, session.unlockedTapeAreas);
+
+    return {
+      ...session,
+      enteredLevelAt: null,
+      tapeStartedAt: needsTape ? now : null,
+      tapeUnlockedAt: null,
+      challengeStartedAt: needsTape ? null : now,
+      phase: needsTape ? "tape" : "challenge",
+      phaseStartedAt: now
+    };
+  }
+
+  if (session.phase === "tape") {
+    return {
+      ...session,
+      tapeUnlockedAt: null,
+      challengeStartedAt: now,
+      phase: "challenge",
+      phaseStartedAt: now
+    };
+  }
+
+  return session;
+}

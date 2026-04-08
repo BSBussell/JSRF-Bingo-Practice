@@ -54,6 +54,7 @@ function CurrentDrillPanel({
       totalTimer={totalTimer}
       splitTimer={splitTimer}
       onPhaseAction={drillSession.performPhaseAction}
+      onSkipSplit={drillSession.skipCurrentSplit}
       onTogglePause={drillSession.togglePause}
       onSkip={drillSession.skipObjective}
       onEndSession={drillSession.endSession}

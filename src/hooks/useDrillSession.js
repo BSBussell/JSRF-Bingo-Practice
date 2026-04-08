@@ -7,6 +7,7 @@ import {
   getPhaseActionLabel,
   getPhasePausedKey,
   objectiveNeedsTape,
+  skipSessionSplit,
   resolveSeededSessionTransition
 } from "../lib/session/drillSession.js";
 import { normalizeHotkeyBinding } from "../lib/hotkeys.js";
@@ -279,6 +280,41 @@ export function useDrillSession(appState, setAppState) {
     resolveObjective("skip");
   }
 
+  function skipCurrentSplit() {
+    if (!currentSession) {
+      return;
+    }
+
+    if (currentSession.phase === "challenge") {
+      skipObjective();
+      return;
+    }
+
+    updateState((previousValue) => {
+      const session = previousValue.currentSession;
+      if (!session) {
+        return previousValue;
+      }
+
+      const objective = resolveCurrentObjective(session);
+      if (!objective) {
+        return {
+          ...previousValue,
+          currentSession: null
+        };
+      }
+
+      return {
+        ...previousValue,
+        currentSession: skipSessionSplit({
+          session,
+          objective,
+          now: Date.now()
+        })
+      };
+    });
+  }
+
   function resolveObjective(result) {
     let nextCompletionSummary = null;
 
@@ -516,6 +552,7 @@ export function useDrillSession(appState, setAppState) {
     phaseActionLabel,
     performPhaseAction,
     completeObjective,
+    skipCurrentSplit,
     skipObjective,
     endSession,
     dismissCompletionSummary,

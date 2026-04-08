@@ -9,6 +9,7 @@ export function DrillCard({
   splitTimer,
   phaseActionLabel,
   onPhaseAction,
+  onSkipSplit,
   onTogglePause,
   onSkip,
   onEndSession
@@ -134,8 +135,11 @@ export function DrillCard({
         <button className="primary-button" type="button" onClick={onPhaseAction}>
           {phaseActionLabel}
         </button>
+        <button className="secondary-button" type="button" onClick={onSkipSplit}>
+          Skip Split
+        </button>
         <button className="secondary-button" type="button" onClick={onSkip}>
-          Skip
+          Skip Objective
         </button>
         <button className="secondary-button" type="button" onClick={onTogglePause}>
           {phaseInfo?.isPaused ? "Resume" : "Pause"}
