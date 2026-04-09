@@ -19,7 +19,7 @@ export function DrillCard({
   if (!objective) {
     return (
       <section className="panel">
-        <h1>No objective available</h1>
+        <h1>No square available</h1>
         <p>The current session has exhausted the available drill pool.</p>
         <button className="secondary-button" type="button" onClick={onEndSession}>
           End Drill Session
@@ -139,7 +139,7 @@ export function DrillCard({
             {phaseActionLabel}
           </button>
           <button className="secondary-button" type="button" onClick={onSkip}>
-            Skip Objective
+            Skip Square
           </button>
           <button className="secondary-button" type="button" onClick={onTogglePause}>
             {phaseInfo?.isPaused ? "Resume" : "Pause"}

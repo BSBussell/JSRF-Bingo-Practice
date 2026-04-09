@@ -13,6 +13,8 @@ export const MOVEMENT_VARIANCE_MAX = 2;
 export const VARIANCE_STEP = 1;
 export const NUMBER_OF_OBJECTIVES_MIN = 1;
 export const NUMBER_OF_OBJECTIVES_MAX = 123;
+export const ROUTE_VISIBLE_COUNT_MIN = 2;
+export const ROUTE_VISIBLE_COUNT_MAX = 10;
 
 export const VARIANCE_LABELS = {
     [-3]: "None",
@@ -49,6 +51,7 @@ export const DRILL_MOVEMENT_FIELDS = [
 
 export const DEFAULT_DRILL_SETTINGS = {
     numberOfObjectives: 25,
+    routeVisibleCount: 4,
     excludedAreas: [],
     graffitiVariance: -2,
     unlockVariance: -1,
@@ -71,6 +74,17 @@ function clampNumberOfObjectives(value, maxValue = NUMBER_OF_OBJECTIVES_MAX) {
     return Math.max(
         NUMBER_OF_OBJECTIVES_MIN,
         Math.min(maxValue, Math.round(value)),
+    );
+}
+
+function clampRouteVisibleCount(value) {
+    if (!Number.isFinite(value)) {
+        return DEFAULT_DRILL_SETTINGS.routeVisibleCount;
+    }
+
+    return Math.max(
+        ROUTE_VISIBLE_COUNT_MIN,
+        Math.min(ROUTE_VISIBLE_COUNT_MAX, Math.round(value)),
     );
 }
 
@@ -169,6 +183,12 @@ export function normalizeDrillSettings(value) {
         : [];
 
     const normalizedSettings = {
+        routeVisibleCount: clampRouteVisibleCount(
+            fallbackNumber(
+                value.routeVisibleCount,
+                DEFAULT_DRILL_SETTINGS.routeVisibleCount,
+            ),
+        ),
         excludedAreas,
         graffitiVariance: clampCategoryVariance(
             fallbackNumber(

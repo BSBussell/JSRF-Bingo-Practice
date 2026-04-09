@@ -6,7 +6,13 @@ import {
   DEFAULT_DRILL_SETTINGS,
   normalizeDrillSettings
 } from "./drill/drillSettings.js";
-import { encodeSessionSeed, normalizeSessionConfig } from "./seed/sessionSeed.js";
+import { encodeSessionSeed } from "./seed/sessionSeed.js";
+import { normalizeSessionConfig } from "./session/sessionConfig.js";
+import {
+  PRACTICE_SESSION_TYPE,
+  ROUTE_SESSION_TYPE,
+  normalizeSessionType
+} from "./session/sessionTypes.js";
 import {
   DEFAULT_THEME_ID,
   createDefaultCustomTheme,
@@ -131,19 +137,13 @@ function normalizeCurrentSession(currentSession, settings) {
     return null;
   }
 
+  const sessionType = normalizeSessionType(
+    currentSession.sessionType ?? currentSession.sessionSpec?.sessionType
+  );
   const objectiveIds = Array.isArray(currentSession.objectiveIds)
     ? currentSession.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
     : [];
-  const currentObjectiveIndex = Number.isInteger(currentSession.currentObjectiveIndex)
-    ? currentSession.currentObjectiveIndex
-    : 0;
-
-  if (
-    !currentSession.currentArea ||
-    objectiveIds.length === 0 ||
-    currentObjectiveIndex < 0 ||
-    currentObjectiveIndex >= objectiveIds.length
-  ) {
+  if (objectiveIds.length === 0) {
     return null;
   }
 
@@ -153,12 +153,61 @@ function normalizeCurrentSession(currentSession, settings) {
     typeof currentSession.sessionSpec.rngSeed === "string"
       ? {
           version: currentSession.sessionSpec.version ?? 1,
+          sessionType: normalizeSessionType(currentSession.sessionSpec.sessionType),
           rngSeed: currentSession.sessionSpec.rngSeed,
           config: normalizeSessionConfig(currentSession.sessionSpec.config),
           objectiveIds: objectiveIds.slice()
         }
       : null;
   if (!sessionSpec) {
+    return null;
+  }
+
+  if (sessionType === ROUTE_SESSION_TYPE) {
+    const visibleCount = sessionSpec.config.routeVisibleCount;
+    const visibleObjectiveIds = Array.isArray(currentSession.visibleObjectiveIds)
+      ? Array.from({ length: visibleCount }, (_, index) => {
+          const objectiveId = currentSession.visibleObjectiveIds[index];
+          return typeof objectiveId === "string" ? objectiveId : null;
+        })
+      : Array.from({ length: visibleCount }, (_, index) => objectiveIds[index] ?? null);
+    const nonNullVisibleCount = visibleObjectiveIds.filter(Boolean).length;
+    const nextRevealFloor = Math.min(visibleCount, objectiveIds.length);
+    const nextRevealIndex = Number.isInteger(currentSession.nextRevealIndex)
+      ? Math.max(nextRevealFloor, Math.min(objectiveIds.length, currentSession.nextRevealIndex))
+      : nextRevealFloor;
+    const derivedCompletedCount = Math.max(0, nextRevealIndex - nonNullVisibleCount);
+
+    return {
+      ...currentSession,
+      sessionType,
+      objectiveIds,
+      sessionSpec,
+      exportSeed:
+        typeof currentSession.exportSeed === "string" && currentSession.exportSeed
+          ? currentSession.exportSeed
+          : encodeSessionSeed(sessionSpec),
+      visibleObjectiveIds,
+      nextRevealIndex,
+      completedCount: Number.isInteger(currentSession.completedCount)
+        ? Math.max(0, Math.min(objectiveIds.length, currentSession.completedCount))
+        : derivedCompletedCount,
+      sessionStartedAt: currentSession.sessionStartedAt ?? Date.now(),
+      sessionTotalPausedMs: currentSession.sessionTotalPausedMs ?? 0,
+      pausedAt: currentSession.pausedAt ?? null,
+      totalPausedMs: currentSession.totalPausedMs ?? 0
+    };
+  }
+
+  const currentObjectiveIndex = Number.isInteger(currentSession.currentObjectiveIndex)
+    ? currentSession.currentObjectiveIndex
+    : 0;
+
+  if (
+    !currentSession.currentArea ||
+    currentObjectiveIndex < 0 ||
+    currentObjectiveIndex >= objectiveIds.length
+  ) {
     return null;
   }
 
@@ -179,6 +228,7 @@ function normalizeCurrentSession(currentSession, settings) {
 
   return {
     ...currentSession,
+    sessionType,
     currentObjectiveId: objectiveIds[currentObjectiveIndex],
     currentObjectiveIndex,
     objectiveIds,
@@ -219,9 +269,17 @@ function normalizeHistoryEntry(entry) {
     return entry;
   }
 
+  const sessionType = normalizeSessionType(entry.sessionType);
+
   return {
     ...entry,
-    type: normalizeObjectiveType(entry.type)
+    sessionType,
+    type: sessionType === ROUTE_SESSION_TYPE ? entry.type ?? null : normalizeObjectiveType(entry.type),
+    visibleCount: Number.isInteger(entry.visibleCount) ? Math.max(0, entry.visibleCount) : null,
+    objectiveCount:
+      Number.isInteger(entry.objectiveCount) ? Math.max(0, entry.objectiveCount) : null,
+    squaresCleared:
+      Number.isInteger(entry.squaresCleared) ? Math.max(0, entry.squaresCleared) : null
   };
 }
 
@@ -267,6 +325,7 @@ function normalizePendingCompletion(pendingCompletion) {
 
   const sessionSpec = {
     version: sessionSpecInput.version ?? 1,
+    sessionType: normalizeSessionType(sessionSpecInput.sessionType),
     rngSeed: sessionSpecInput.rngSeed,
     config: normalizeSessionConfig(sessionSpecInput.config),
     objectiveIds: objectiveIds.slice()
@@ -287,10 +346,17 @@ function normalizePendingCompletion(pendingCompletion) {
   return {
     sessionId:
       typeof pendingCompletion.sessionId === "string" ? pendingCompletion.sessionId : "",
+    sessionType: normalizeSessionType(
+      pendingCompletion.sessionType ?? sessionSpecInput.sessionType
+    ),
     finishedAt,
     objectiveCount,
     squaresCleared,
     totalDurationMs,
+    visibleCount:
+      Number.isInteger(pendingCompletion.visibleCount) && pendingCompletion.visibleCount >= 0
+        ? pendingCompletion.visibleCount
+        : sessionSpec.config.routeVisibleCount,
     exportSeed:
       typeof pendingCompletion.exportSeed === "string" && pendingCompletion.exportSeed
         ? pendingCompletion.exportSeed
@@ -338,6 +404,7 @@ function normalizeStartCountdown(startCountdown) {
       typeof startCountdown.exportSeed === "string" ? startCountdown.exportSeed : "",
     sessionSpec: {
       version: sessionSpecInput.version ?? 1,
+      sessionType: normalizeSessionType(sessionSpecInput.sessionType),
       rngSeed: sessionSpecInput.rngSeed,
       config: normalizeSessionConfig(sessionSpecInput.config),
       objectiveIds: objectiveIds.slice()
@@ -380,10 +447,12 @@ export function normalizeAppState(value) {
   const selectedMode =
     rawSelectedMode === "settings"
       ? "settings"
-      : rawSelectedMode === "practice" ||
+      : rawSelectedMode === ROUTE_SESSION_TYPE
+        ? ROUTE_SESSION_TYPE
+      : rawSelectedMode === PRACTICE_SESSION_TYPE ||
           rawSelectedMode === "drills" ||
           rawSelectedMode === "learn"
-        ? "practice"
+        ? PRACTICE_SESSION_TYPE
         : null;
   const settings = normalizeSettings(value.settings, rawSelectedMode);
 
@@ -414,6 +483,11 @@ export function normalizeAppState(value) {
         value.aggregateStats?.graffitiByArea &&
         typeof value.aggregateStats.graffitiByArea === "object"
           ? value.aggregateStats.graffitiByArea
+          : {},
+      routeByVisibleCount:
+        value.aggregateStats?.routeByVisibleCount &&
+        typeof value.aggregateStats.routeByVisibleCount === "object"
+          ? value.aggregateStats.routeByVisibleCount
           : {}
     }
   };

@@ -89,6 +89,70 @@ test("normalizeAppState preserves a valid pendingCompletion payload", () => {
   assert.deepEqual(state.pendingCompletion.sessionSpec.objectiveIds, sessionSpec.objectiveIds);
 });
 
+test("normalizeAppState preserves route mode payloads", () => {
+  const { sessionSpec, exportSeed } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 3,
+      routeVisibleCount: 2
+    }),
+    "89abcdef01234567fedcba9876543210",
+    "route"
+  );
+  const state = normalizeAppState({
+    selectedMode: "route",
+    currentSession: {
+      id: "route_session",
+      sessionType: "route",
+      objectiveIds: sessionSpec.objectiveIds,
+      sessionSpec,
+      exportSeed,
+      visibleObjectiveIds: [sessionSpec.objectiveIds[0], sessionSpec.objectiveIds[1]],
+      nextRevealIndex: 2,
+      completedCount: 0,
+      sessionStartedAt: 123,
+      sessionTotalPausedMs: 50
+    },
+    pendingCompletion: {
+      sessionId: "route_complete",
+      sessionType: "route",
+      finishedAt: 4500,
+      objectiveCount: 3,
+      squaresCleared: 3,
+      totalDurationMs: 3900,
+      visibleCount: 2,
+      exportSeed,
+      sessionSpec
+    },
+    aggregateStats: {
+      routeByVisibleCount: {
+        2: {
+          attempts: 1,
+          completions: 1,
+          totalDurationMs: 3900,
+          bestMs: 3900
+        }
+      }
+    }
+  });
+
+  assert.equal(state.selectedMode, "route");
+  assert.equal(state.currentSession.sessionType, "route");
+  assert.deepEqual(state.currentSession.visibleObjectiveIds, [
+    sessionSpec.objectiveIds[0],
+    sessionSpec.objectiveIds[1]
+  ]);
+  assert.equal(state.pendingCompletion.sessionType, "route");
+  assert.equal(state.pendingCompletion.visibleCount, 2);
+  assert.deepEqual(state.aggregateStats.routeByVisibleCount, {
+    2: {
+      attempts: 1,
+      completions: 1,
+      totalDurationMs: 3900,
+      bestMs: 3900
+    }
+  });
+});
+
 test("normalizeAppState computes missing pendingCompletion export seed from sessionSpec", () => {
   const { sessionSpec } = buildSessionSpecFromConfig(
     buildSessionConfig("Garage", {

@@ -1,16 +1,27 @@
 import { useEffect, useState } from "react";
 
 import { objectivesById } from "../data/objectives.js";
+import { normalizeHotkeyBinding } from "../lib/hotkeys.js";
+import {
+  buildRouteHistoryEntry,
+  buildRouteSessionState,
+  completeRouteSlot as resolveRouteSlotCompletion,
+  resolveRouteVisibleSlots
+} from "../lib/session/routeSession.js";
+import {
+  PRACTICE_SESSION_TYPE,
+  ROUTE_SESSION_TYPE,
+  normalizeSessionType
+} from "../lib/session/sessionTypes.js";
 import {
   buildSeededSessionState,
   buildSessionPhaseViewModel,
   getPhaseActionLabel,
   getPhasePausedKey,
   objectiveNeedsTape,
-  skipSessionSplit,
-  resolveSeededSessionTransition
+  resolveSeededSessionTransition,
+  skipSessionSplit
 } from "../lib/session/drillSession.js";
-import { normalizeHotkeyBinding } from "../lib/hotkeys.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
   buildStatsViewModel,
@@ -32,7 +43,7 @@ function buildCountdownId() {
 }
 
 function resolveCurrentObjective(currentSession) {
-  if (!currentSession?.objectiveIds?.length) {
+  if (!currentSession?.objectiveIds?.length || currentSession.sessionType === ROUTE_SESSION_TYPE) {
     return null;
   }
 
@@ -69,20 +80,37 @@ function resolveStartCountdownLabel(startCountdown, now) {
   return START_COUNTDOWN_SEQUENCE[stepIndex] ?? null;
 }
 
+function resolveSelectedMode(previousValue, requestedMode) {
+  const activeSessionType = normalizeSessionType(
+    previousValue.currentSession?.sessionType ?? previousValue.startCountdown?.sessionSpec?.sessionType
+  );
+
+  return previousValue.currentSession || previousValue.startCountdown
+    ? activeSessionType
+    : requestedMode;
+}
+
 export function useDrillSession(appState, setAppState) {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const currentSession = appState.currentSession;
   const startCountdown = appState.startCountdown;
   const pendingCompletion = appState.pendingCompletion;
   const currentObjective = resolveCurrentObjective(currentSession);
+  const routeSlots = resolveRouteVisibleSlots(
+    currentSession,
+    (objectiveId) => objectivesById[objectiveId]
+  );
   const history = appState.history;
   const stats = buildStatsViewModel(appState.aggregateStats, appState.history);
-  const phaseInfo = buildSessionPhaseViewModel({
-    currentSession,
-    currentObjective,
-    aggregateStats: appState.aggregateStats,
-    bestTimesByObjective: appState.bestTimesByObjective
-  });
+  const phaseInfo =
+    currentSession?.sessionType === ROUTE_SESSION_TYPE
+      ? null
+      : buildSessionPhaseViewModel({
+          currentSession,
+          currentObjective,
+          aggregateStats: appState.aggregateStats,
+          bestTimesByObjective: appState.bestTimesByObjective
+        });
 
   function updateState(updater) {
     setAppState((previousValue) => normalizeAppState(updater(previousValue)));
@@ -167,27 +195,36 @@ export function useDrillSession(appState, setAppState) {
             drillSettings: sessionSpec.config
           };
           const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown);
+          const sessionType = normalizeSessionType(sessionSpec.sessionType);
 
           return {
             ...previousValue,
-            selectedMode: "practice",
+            selectedMode: sessionType,
             settings: nextSettings,
             pendingCompletion: null,
             startCountdown: null,
-            currentSession: {
-              ...buildSeededSessionState({
-                sessionId: pendingStartCountdown.sessionId,
-                now: launchedAt,
-                currentArea: sessionSpec.config.startingArea,
-                objective: firstObjective,
-                currentObjectiveIndex: 0,
-                sessionSpec,
-                exportSeed
-              }),
-              ui: {
-                learnPanelVisible
-              }
-            }
+            currentSession:
+              sessionType === ROUTE_SESSION_TYPE
+                ? buildRouteSessionState({
+                    sessionId: pendingStartCountdown.sessionId,
+                    now: launchedAt,
+                    sessionSpec,
+                    exportSeed
+                  })
+                : {
+                    ...buildSeededSessionState({
+                      sessionId: pendingStartCountdown.sessionId,
+                      now: launchedAt,
+                      currentArea: sessionSpec.config.startingArea,
+                      objective: firstObjective,
+                      currentObjectiveIndex: 0,
+                      sessionSpec,
+                      exportSeed
+                    }),
+                    ui: {
+                      learnPanelVisible
+                    }
+                  }
           };
         });
       }, Math.max(0, resolveStartCountdownDeadline(startCountdown) - Date.now()));
@@ -217,10 +254,11 @@ export function useDrillSession(appState, setAppState) {
 
     const countdownId = buildCountdownId();
     const startedAt = Date.now();
+    const sessionType = normalizeSessionType(sessionSpec.sessionType);
 
     updateState((previousValue) => ({
       ...previousValue,
-      selectedMode: "practice",
+      selectedMode: sessionType,
       currentSession: null,
       pendingCompletion: null,
       startCountdown: {
@@ -229,6 +267,7 @@ export function useDrillSession(appState, setAppState) {
         startedAt,
         sessionSpec: {
           ...sessionSpec,
+          sessionType,
           config: {
             ...sessionSpec.config
           },
@@ -242,7 +281,7 @@ export function useDrillSession(appState, setAppState) {
   function markEnteredLevel() {
     updateState((previousValue) => {
       const session = previousValue.currentSession;
-      if (!session || session.phase !== "travel") {
+      if (!session || session.sessionType === ROUTE_SESSION_TYPE || session.phase !== "travel") {
         return previousValue;
       }
 
@@ -271,7 +310,7 @@ export function useDrillSession(appState, setAppState) {
   function unlockTape() {
     updateState((previousValue) => {
       const session = previousValue.currentSession;
-      if (!session || session.phase !== "tape") {
+      if (!session || session.sessionType === ROUTE_SESSION_TYPE || session.phase !== "tape") {
         return previousValue;
       }
 
@@ -318,6 +357,19 @@ export function useDrillSession(appState, setAppState) {
 
       const resumedAt = Date.now();
       const pauseDurationMs = Math.max(0, resumedAt - session.pausedAt);
+
+      if (session.sessionType === ROUTE_SESSION_TYPE) {
+        return {
+          ...previousValue,
+          currentSession: {
+            ...session,
+            pausedAt: null,
+            totalPausedMs: (session.totalPausedMs ?? 0) + pauseDurationMs,
+            sessionTotalPausedMs: (session.sessionTotalPausedMs ?? 0) + pauseDurationMs
+          }
+        };
+      }
+
       const phaseKey = getPhasePausedKey(session.phase);
 
       return {
@@ -346,11 +398,73 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function skipObjective() {
+    if (currentSession?.sessionType === ROUTE_SESSION_TYPE) {
+      return;
+    }
+
     resolveObjective("skip");
   }
 
+  function completeRouteSlot(slotIndex) {
+    updateState((previousValue) => {
+      const session = previousValue.currentSession;
+      if (!session || session.sessionType !== ROUTE_SESSION_TYPE) {
+        return previousValue;
+      }
+
+      if (session.pausedAt) {
+        return previousValue;
+      }
+
+      const endedAt = Date.now();
+      const routeResolution = resolveRouteSlotCompletion({
+        session,
+        slotIndex,
+        endedAt
+      });
+
+      if (routeResolution.completedObjectiveId === null) {
+        return previousValue;
+      }
+
+      if (routeResolution.nextSession) {
+        return {
+          ...previousValue,
+          currentSession: routeResolution.nextSession
+        };
+      }
+
+      const routeResult = routeResolution.completionResult;
+      if (!routeResult) {
+        return previousValue;
+      }
+
+      const historyEntry = buildRouteHistoryEntry(routeResult);
+      const nextHistory = [...previousValue.history, historyEntry];
+      const sessionSpec = {
+        ...session.sessionSpec,
+        config: {
+          ...session.sessionSpec.config
+        },
+        objectiveIds: session.sessionSpec.objectiveIds.slice()
+      };
+
+      return {
+        ...previousValue,
+        history: nextHistory,
+        aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
+        pendingCompletion: {
+          ...routeResult,
+          exportSeed: session.exportSeed ?? routeResult.exportSeed ?? "",
+          sessionSpec
+        },
+        currentSession: null
+      };
+    });
+  }
+
   function skipCurrentSplit() {
-    if (!currentSession) {
+    if (!currentSession || currentSession.sessionType === ROUTE_SESSION_TYPE) {
       return;
     }
 
@@ -387,7 +501,7 @@ export function useDrillSession(appState, setAppState) {
   function resolveObjective(result) {
     updateState((previousValue) => {
       const session = previousValue.currentSession;
-      if (!session) {
+      if (!session || session.sessionType === ROUTE_SESSION_TYPE) {
         return previousValue;
       }
 
@@ -420,6 +534,7 @@ export function useDrillSession(appState, setAppState) {
           ? Math.max(0, endedAt - challengeStartedAt - session.challengePausedMs)
           : null;
       const historyEntry = {
+        sessionType: PRACTICE_SESSION_TYPE,
         sessionId: session.id,
         objectiveId: objective.id,
         label: objective.label,
@@ -473,6 +588,7 @@ export function useDrillSession(appState, setAppState) {
           aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
           pendingCompletion: {
             ...nextTransition.completionSummary,
+            sessionType: PRACTICE_SESSION_TYPE,
             exportSeed: session.exportSeed ?? nextTransition.completionSummary.exportSeed ?? "",
             squaresCleared,
             sessionSpec
@@ -522,8 +638,16 @@ export function useDrillSession(appState, setAppState) {
   function goToPractice() {
     updateState((previousValue) => ({
       ...previousValue,
-      selectedMode: "practice",
-      startCountdown: null
+      selectedMode: resolveSelectedMode(previousValue, PRACTICE_SESSION_TYPE),
+      startCountdown: previousValue.startCountdown
+    }));
+  }
+
+  function goToRoute() {
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: resolveSelectedMode(previousValue, ROUTE_SESSION_TYPE),
+      startCountdown: previousValue.startCountdown
     }));
   }
 
@@ -538,7 +662,7 @@ export function useDrillSession(appState, setAppState) {
   function toggleLearnPanelVisibility() {
     updateState((previousValue) => {
       const session = previousValue.currentSession;
-      if (!session) {
+      if (!session || session.sessionType === ROUTE_SESSION_TYPE) {
         return previousValue;
       }
 
@@ -623,7 +747,7 @@ export function useDrillSession(appState, setAppState) {
   function clearPendingCompletion() {
     updateState((previousValue) => ({
       ...previousValue,
-      selectedMode: "practice",
+      selectedMode: normalizeSessionType(previousValue.pendingCompletion?.sessionType),
       pendingCompletion: null
     }));
   }
@@ -675,7 +799,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function performPhaseAction() {
-    if (!currentSession) {
+    if (!currentSession || currentSession.sessionType === ROUTE_SESSION_TYPE) {
       return;
     }
 
@@ -692,12 +816,16 @@ export function useDrillSession(appState, setAppState) {
     completeObjective();
   }
 
-  const phaseActionLabel = getPhaseActionLabel(currentSession?.phase);
+  const phaseActionLabel =
+    currentSession?.sessionType === ROUTE_SESSION_TYPE
+      ? null
+      : getPhaseActionLabel(currentSession?.phase);
   const startCountdownLabel = resolveStartCountdownLabel(startCountdown, countdownNow);
 
   return {
     currentSession,
     currentObjective,
+    routeSlots,
     history,
     stats,
     phaseInfo,
@@ -714,6 +842,7 @@ export function useDrillSession(appState, setAppState) {
     phaseActionLabel,
     performPhaseAction,
     completeObjective,
+    completeRouteSlot,
     skipCurrentSplit,
     skipObjective,
     endSession,
@@ -722,6 +851,7 @@ export function useDrillSession(appState, setAppState) {
     copyPendingCompletionSeed,
     goToModeSelect,
     goToPractice,
+    goToRoute,
     goToSettings,
     toggleLearnPanelVisibility,
     updateSettings,

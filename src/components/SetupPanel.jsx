@@ -10,23 +10,30 @@ import {
   MOVEMENT_VARIANCE_MAX,
   MOVEMENT_VARIANCE_MIN,
   MOVEMENT_LABELS,
-  NUMBER_OF_OBJECTIVES_MAX,
   NUMBER_OF_OBJECTIVES_MIN,
-  getAvailableObjectiveCount,
+  ROUTE_VISIBLE_COUNT_MAX,
+  ROUTE_VISIBLE_COUNT_MIN,
   VARIANCE_LABELS,
   VARIANCE_STEP,
   isAreaExcluded,
   isDistrictExcluded,
-  normalizeDrillSettings,
   setDistrictExclusion,
   toggleAreaExclusion
 } from "../lib/drill/drillSettings.js";
 import {
-  buildSessionConfig,
   buildSessionSpecFromConfig,
   createRandomSeed,
   resolveSeedInput
 } from "../lib/seed/sessionSeed.js";
+import {
+  buildSessionConfig,
+  getSessionObjectiveMax,
+  normalizeDrillSettingsForSessionType
+} from "../lib/session/sessionConfig.js";
+import {
+  PRACTICE_SESSION_TYPE,
+  ROUTE_SESSION_TYPE
+} from "../lib/session/sessionTypes.js";
 
 function VarianceSlider({
   label,
@@ -78,11 +85,13 @@ export function SetupPanel({
   defaultArea,
   defaultDrillSettings,
   onStartSession,
-  isLearnPanelDefaultVisible = false
+  isLearnPanelDefaultVisible = false,
+  sessionType = PRACTICE_SESSION_TYPE
 }) {
+  const isRouteMode = sessionType === ROUTE_SESSION_TYPE;
   const [startingArea, setStartingArea] = useState(defaultArea);
   const [drillSettings, setDrillSettings] = useState(() =>
-    normalizeDrillSettings(defaultDrillSettings)
+    normalizeDrillSettingsForSessionType(defaultDrillSettings, sessionType)
   );
   const [seedInput, setSeedInput] = useState("");
   const [manualSeedState, setManualSeedState] = useState(null);
@@ -95,19 +104,33 @@ export function SetupPanel({
   }, [defaultArea]);
 
   useEffect(() => {
-    setDrillSettings(normalizeDrillSettings(defaultDrillSettings));
-  }, [defaultDrillSettings]);
+    setDrillSettings(normalizeDrillSettingsForSessionType(defaultDrillSettings, sessionType));
+  }, [defaultDrillSettings, sessionType]);
 
-  const resolvedSeedState = useMemo(() => resolveSeedInput(seedInput), [seedInput]);
+  const resolvedSeedState = useMemo(
+    () => resolveSeedInput(seedInput, sessionType),
+    [seedInput, sessionType]
+  );
   const resolvedSeedMode = resolvedSeedState.mode;
   const resolvedExportSeed = resolvedSeedState.exportSeed;
   const controlsLocked = resolvedSeedMode !== "manual";
   const resolvedConfig = resolvedSeedState.sessionSpec?.config ?? null;
   const effectiveStartingArea = resolvedConfig?.startingArea ?? startingArea;
   const effectiveDrillSettings = resolvedConfig ?? drillSettings;
-  const effectiveObjectiveMax = Math.max(
-    NUMBER_OF_OBJECTIVES_MIN,
-    Math.min(NUMBER_OF_OBJECTIVES_MAX, getAvailableObjectiveCount(effectiveDrillSettings))
+  const effectiveObjectiveMax = getSessionObjectiveMax(effectiveDrillSettings);
+  const effectiveObjectiveMin = isRouteMode
+    ? Math.min(
+        effectiveObjectiveMax,
+        Math.max(NUMBER_OF_OBJECTIVES_MIN, effectiveDrillSettings.routeVisibleCount)
+      )
+    : NUMBER_OF_OBJECTIVES_MIN;
+  const effectiveRouteVisibleMax = Math.max(
+    ROUTE_VISIBLE_COUNT_MIN,
+    Math.min(
+      ROUTE_VISIBLE_COUNT_MAX,
+      effectiveDrillSettings.numberOfObjectives,
+      effectiveObjectiveMax
+    )
   );
   const manualConfig = buildSessionConfig(startingArea, drillSettings);
   const manualConfigSignature = JSON.stringify(manualConfig);
@@ -136,20 +159,26 @@ export function SetupPanel({
   function updateDrillSetting(key, value) {
     clearManualDerivedState();
     setDrillSettings((previousValue) =>
-      normalizeDrillSettings({
-        ...previousValue,
-        [key]: value
-      })
+      normalizeDrillSettingsForSessionType(
+        {
+          ...previousValue,
+          [key]: value
+        },
+        sessionType
+      )
     );
   }
 
   function handleAreaToggle(area) {
     clearManualDerivedState();
     setDrillSettings((previousValue) =>
-      normalizeDrillSettings({
-        ...previousValue,
-        excludedAreas: toggleAreaExclusion(previousValue.excludedAreas, area)
-      })
+      normalizeDrillSettingsForSessionType(
+        {
+          ...previousValue,
+          excludedAreas: toggleAreaExclusion(previousValue.excludedAreas, area)
+        },
+        sessionType
+      )
     );
   }
 
@@ -158,14 +187,17 @@ export function SetupPanel({
     setDrillSettings((previousValue) => {
       const nextExcluded = !isDistrictExcluded(previousValue, district);
 
-      return normalizeDrillSettings({
-        ...previousValue,
-        excludedAreas: setDistrictExclusion(
-          previousValue.excludedAreas,
-          district,
-          nextExcluded
-        )
-      });
+      return normalizeDrillSettingsForSessionType(
+        {
+          ...previousValue,
+          excludedAreas: setDistrictExclusion(
+            previousValue.excludedAreas,
+            district,
+            nextExcluded
+          )
+        },
+        sessionType
+      );
     });
   }
 
@@ -182,7 +214,7 @@ export function SetupPanel({
   function createManualSeed() {
     try {
       const nextSeedState = {
-        ...buildSessionSpecFromConfig(manualConfig, createRandomSeed()),
+        ...buildSessionSpecFromConfig(manualConfig, createRandomSeed(), sessionType),
         configSignature: manualConfigSignature
       };
 
@@ -247,19 +279,21 @@ export function SetupPanel({
       : manualSeedState?.configSignature === manualConfigSignature
         ? manualSeedState.exportSeed
         : "";
+  const modeEyebrow = isRouteMode ? "Route Mode" : "Practice Mode";
+  const sessionTitle = isRouteMode ? "Start a route session" : "Start a practice session";
+  const sessionNote = isRouteMode
+    ? "Pick a starting area, choose how many squares stay visible, or resolve a seed before the route begins."
+    : `Pick a starting area or resolve a seed before the session starts. Route guide videos default to ${isLearnPanelDefaultVisible ? "visible" : "hidden"} and can be toggled mid-session.`;
+  const submitLabel = isRouteMode ? "Start Route Session" : "Start Practice Session";
 
   return (
     <section className="panel setup-panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Practice Mode</p>
-          <h1>Start a practice session</h1>
+          <p className="eyebrow">{modeEyebrow}</p>
+          <h1>{sessionTitle}</h1>
         </div>
-        <p className="panel-note">
-          Pick a starting area or resolve a seed before the session starts.
-          Route guide videos default to {isLearnPanelDefaultVisible ? "visible" : "hidden"} and can
-          be toggled mid-session.
-        </p>
+        <p className="panel-note">{sessionNote}</p>
       </div>
 
       <form className="setup-form setup-form-extended" onSubmit={handleSubmit}>
@@ -320,10 +354,10 @@ export function SetupPanel({
 
           <div className="setup-grid setup-grid-single-column">
             <label className="field">
-              <span>Number of objectives</span>
+              <span>Number of squares</span>
               <input
                 type="number"
-                min={NUMBER_OF_OBJECTIVES_MIN}
+                min={effectiveObjectiveMin}
                 max={effectiveObjectiveMax}
                 value={effectiveDrillSettings.numberOfObjectives}
                 disabled={controlsLocked}
@@ -332,9 +366,28 @@ export function SetupPanel({
                 }
               />
               <span className="field-hint">
-                The session ends after this many objectives (capped by current available pool: {effectiveObjectiveMax}).
+                The session ends after this many squares (capped by current available pool: {effectiveObjectiveMax}).
+                {isRouteMode ? " Route Mode keeps this at or above visible squares." : ""}
               </span>
             </label>
+            {isRouteMode ? (
+              <label className="field">
+                <span>Visible squares</span>
+                <input
+                  type="number"
+                  min={ROUTE_VISIBLE_COUNT_MIN}
+                  max={effectiveRouteVisibleMax}
+                  value={effectiveDrillSettings.routeVisibleCount}
+                  disabled={controlsLocked}
+                  onChange={(event) =>
+                    updateDrillSetting("routeVisibleCount", Number(event.target.value))
+                  }
+                />
+                <span className="field-hint">
+                  Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-0`.
+                </span>
+              </label>
+            ) : null}
           </div>
         </div>
 
@@ -462,7 +515,7 @@ export function SetupPanel({
 
         <div className="setup-submit-row">
           <button className="primary-button setup-submit-button" type="submit">
-            Start Practice Session
+            {submitLabel}
           </button>
           <button className="secondary-button" type="button" onClick={handleCopySeed}>
             Copy Seed to Clipboard

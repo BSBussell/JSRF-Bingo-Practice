@@ -15,7 +15,8 @@ export function useSessionHotkeys({
   onSplit,
   onSkip,
   onPause,
-  onEnd
+  onEnd,
+  onRouteSlot
 }) {
   useEffect(() => {
     if (!enabled || !currentSession) {
@@ -38,6 +39,27 @@ export function useSessionHotkeys({
         return;
       }
 
+      if (
+        currentSession?.sessionType === "route" &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey
+      ) {
+        const routeSlotIndex =
+          event.code === "Digit0"
+            ? 9
+            : /^Digit[1-9]$/.test(event.code)
+              ? Number(event.code.slice(5)) - 1
+              : null;
+
+        if (routeSlotIndex !== null) {
+          event.preventDefault();
+          onRouteSlot?.(routeSlotIndex);
+          return;
+        }
+      }
+
       const matchedAction = Object.entries(hotkeys).find(([, binding]) =>
         eventMatchesHotkeyBinding(binding, event)
       )?.[0];
@@ -58,5 +80,5 @@ export function useSessionHotkeys({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [enabled, currentSession, hotkeys, onEnd, onPause, onSkip, onSplit]);
+  }, [enabled, currentSession, hotkeys, onEnd, onPause, onRouteSlot, onSkip, onSplit]);
 }

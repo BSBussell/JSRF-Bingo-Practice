@@ -7,7 +7,7 @@ export const HOTKEY_ACTIONS = [
   {
     key: "skip",
     label: "Skip",
-    description: "Skips the current square and rolls the next objective."
+    description: "Skips the current square and rolls the next square."
   },
   {
     key: "pause",

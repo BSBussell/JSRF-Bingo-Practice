@@ -4,6 +4,7 @@ import test from "node:test";
 import { rebuildPerformanceState } from "./stats/stats.js";
 
 function buildEntry({
+  sessionType = "practice",
   objectiveId,
   label,
   area = "Garage",
@@ -12,9 +13,13 @@ function buildEntry({
   challengeDurationMs,
   totalDurationMs,
   tapeDurationMs = null,
-  endedAt
+  endedAt,
+  visibleCount = null,
+  objectiveCount = null,
+  squaresCleared = null
 }) {
   return {
+    sessionType,
     objectiveId,
     label,
     area,
@@ -24,7 +29,10 @@ function buildEntry({
     challengeDurationMs,
     totalDurationMs,
     tapeDurationMs,
-    endedAt
+    endedAt,
+    visibleCount,
+    objectiveCount,
+    squaresCleared
   };
 }
 
@@ -108,6 +116,50 @@ test("rebuildPerformanceState recomputes PBs and area stats from remaining histo
         totalDurationMs: 7000,
         bestMs: 7000
       }
+    },
+    routeByVisibleCount: {}
+  });
+});
+
+test("rebuildPerformanceState tracks route runs separately from practice PBs", () => {
+  const history = [
+    buildEntry({
+      sessionType: "route",
+      objectiveId: null,
+      label: "Route x4",
+      totalDurationMs: 9000,
+      endedAt: 100,
+      visibleCount: 4,
+      objectiveCount: 12,
+      squaresCleared: 12
+    }),
+    buildEntry({
+      objectiveId: "garage_square",
+      label: "Garage Square",
+      challengeDurationMs: 3000,
+      totalDurationMs: 4100,
+      endedAt: 200
+    })
+  ];
+
+  const rebuilt = rebuildPerformanceState(history);
+
+  assert.deepEqual(rebuilt.bestTimesByObjective, {
+    garage_square: {
+      durationMs: 3000,
+      totalDurationMs: 4100,
+      label: "Garage Square",
+      area: "Garage",
+      type: "score",
+      updatedAt: 200
+    }
+  });
+  assert.deepEqual(rebuilt.aggregateStats.routeByVisibleCount, {
+    4: {
+      attempts: 1,
+      completions: 1,
+      totalDurationMs: 9000,
+      bestMs: 9000
     }
   });
 });

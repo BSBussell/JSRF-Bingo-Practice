@@ -48,6 +48,7 @@ export function CompletionPanel({
   }
 
   const objectiveCount = completionSummary.objectiveCount ?? 0;
+  const isRouteCompletion = completionSummary.sessionType === "route";
   const sessionHistory = Array.isArray(history)
     ? history.filter((entry) => entry?.sessionId === completionSummary.sessionId)
     : [];
@@ -59,13 +60,16 @@ export function CompletionPanel({
     return count;
   }, 0);
   const squaresClearedRaw =
-    sessionHistory.length > 0
+    isRouteCompletion
+      ? Number.isInteger(completionSummary.squaresCleared)
+        ? completionSummary.squaresCleared
+        : 0
+      : sessionHistory.length > 0
       ? inferredSquaresCleared
       : Number.isInteger(completionSummary.squaresCleared)
         ? completionSummary.squaresCleared
         : 0;
   const squaresCleared = Math.min(objectiveCount, Math.max(0, squaresClearedRaw));
-  const objectiveLabel = objectiveCount === 1 ? "objective" : "objectives";
   const particleSize = clampNumber(backdrop?.appearance?.size, 0.2, 2.5, 1.15);
   const particleGlow = clampNumber(backdrop?.appearance?.glow, 0, 5, 1.15);
   const particleFlicker = clampNumber(backdrop?.appearance?.flicker, 0, 3, 1);
@@ -106,7 +110,7 @@ export function CompletionPanel({
 
       <div className="panel-heading compact completion-heading">
         <div>
-          <p className="eyebrow">Drill Complete</p>
+          <p className="eyebrow">{isRouteCompletion ? "Route Complete" : "Drill Complete"}</p>
           <h2>You did it!</h2>
         </div>
       </div>
@@ -121,12 +125,14 @@ export function CompletionPanel({
           <span>Squares Cleared</span>
           <strong>
             {squaresCleared}
-            <small> / {objectiveCount}</small>
+            {isRouteCompletion ? null : <small> / {objectiveCount}</small>}
           </strong>
           <p className="completion-stat-note">Completed squares in this run.</p>
-          <div className="completion-objective-meter" aria-hidden="true">
-            <span style={{ "--completion-objective-progress": `${Math.max(0, Math.min(1, objectiveCount > 0 ? squaresCleared / objectiveCount : 0))}` }} />
-          </div>
+          {isRouteCompletion ? null : (
+            <div className="completion-objective-meter" aria-hidden="true">
+              <span style={{ "--completion-objective-progress": `${Math.max(0, Math.min(1, objectiveCount > 0 ? squaresCleared / objectiveCount : 0))}` }} />
+            </div>
+          )}
         </article>
       </div>
 

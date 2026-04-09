@@ -6,6 +6,37 @@ function formatResult(result) {
   return result[0].toUpperCase() + result.slice(1);
 }
 
+function renderHistoryMeta(entry) {
+  if (entry.sessionType === "route") {
+    return (
+      <>
+        <span className={`result-chip result-${entry.result}`}>
+          {formatResult(entry.result)}
+        </span>
+        <span>{entry.visibleCount} visible</span>
+        <span>{entry.squaresCleared ?? 0} / {entry.objectiveCount ?? 0} cleared</span>
+        <span>
+          Route {typeof entry.totalDurationMs === "number" ? formatDuration(entry.totalDurationMs) : "n/a"}
+        </span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <span className={`result-chip result-${entry.result}`}>
+        {formatResult(entry.result)}
+      </span>
+      <span>
+        Square {typeof entry.challengeDurationMs === "number" ? formatDuration(entry.challengeDurationMs) : "n/a"}
+      </span>
+      <span>
+        Total {typeof entry.totalDurationMs === "number" ? formatDuration(entry.totalDurationMs) : "n/a"}
+      </span>
+    </>
+  );
+}
+
 export function HistoryPanel({ history, onDeleteEntry }) {
   const recentHistory = history.slice(-8).reverse();
 
@@ -28,23 +59,15 @@ export function HistoryPanel({ history, onDeleteEntry }) {
             return (
               <article key={`${entry.sessionId}-${entry.endedAt}`} className="history-item">
                 <div className="history-copy">
-                  <strong>{entry.label}</strong>
+                  <strong>{entry.sessionType === "route" ? entry.label ?? "Route Run" : entry.label}</strong>
                   <p>
-                    {getAreaLabel(entry.area)} / {formatObjectiveTypeLabel(entry.type)}
+                    {entry.sessionType === "route"
+                      ? `Route mode / ${entry.objectiveCount ?? 0} squares`
+                      : `${getAreaLabel(entry.area)} / ${formatObjectiveTypeLabel(entry.type)}`}
                   </p>
                 </div>
                 <div className="history-actions">
-                  <div className="history-meta">
-                    <span className={`result-chip result-${entry.result}`}>
-                      {formatResult(entry.result)}
-                    </span>
-                    <span>
-                      Square {typeof entry.challengeDurationMs === "number" ? formatDuration(entry.challengeDurationMs) : "n/a"}
-                    </span>
-                    <span>
-                      Total {typeof entry.totalDurationMs === "number" ? formatDuration(entry.totalDurationMs) : "n/a"}
-                    </span>
-                  </div>
+                  <div className="history-meta">{renderHistoryMeta(entry)}</div>
                   <button
                     className="ghost-button danger-button history-delete-button"
                     type="button"

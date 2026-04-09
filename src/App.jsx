@@ -6,6 +6,7 @@ import { HistoryPanel } from "./components/HistoryPanel.jsx";
 import { LearnPanel } from "./components/LearnPanel.jsx";
 import { ModeSelect } from "./components/ModeSelect.jsx";
 import { PopoutViewport } from "./components/PopoutViewport.jsx";
+import { RouteCard } from "./components/RouteCard.jsx";
 import { SettingsPanel } from "./components/SettingsPanel.jsx";
 import { SetupPanel } from "./components/SetupPanel.jsx";
 import { StatsPanel } from "./components/StatsPanel.jsx";
@@ -22,6 +23,10 @@ import {
   syncDrillPopoutAlwaysOnTop
 } from "./lib/drill/drillPopout.js";
 import { getPhasePausedDuration } from "./lib/session/drillSession.js";
+import {
+  PRACTICE_SESSION_TYPE,
+  ROUTE_SESSION_TYPE
+} from "./lib/session/sessionTypes.js";
 import { isTauriRuntime } from "./lib/runtime.js";
 import {
   APP_STORAGE_KEY,
@@ -39,6 +44,21 @@ function CurrentDrillPanel({
   onToggleLearnPanel
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
+  const currentSessionType = drillSession.currentSession?.sessionType ?? PRACTICE_SESSION_TYPE;
+
+  if (currentSessionType === ROUTE_SESSION_TYPE) {
+    return (
+      <RouteCard
+        routeSlots={drillSession.routeSlots}
+        visibleCount={drillSession.currentSession?.sessionSpec?.config?.routeVisibleCount ?? 0}
+        totalTimer={totalTimer}
+        isPaused={Boolean(drillSession.currentSession?.pausedAt)}
+        onCompleteSlot={drillSession.completeRouteSlot}
+        onTogglePause={drillSession.togglePause}
+        onEndSession={drillSession.endSession}
+      />
+    );
+  }
 
   return (
     <DrillCard
@@ -84,6 +104,69 @@ function StartCountdownPanel({ countdownLabel }) {
   );
 }
 
+function ModeShell({ drillSession, popoutControl, popoutError, children }) {
+  return (
+    <div className="content-stack">
+      {children}
+      {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
+      {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
+      <HistoryPanel
+        history={drillSession.history}
+        onDeleteEntry={drillSession.deleteHistoryEntry}
+      />
+      <StatsPanel stats={drillSession.stats} />
+    </div>
+  );
+}
+
+function DrillStage({ learnPanelVisible = false, children }) {
+  return (
+    <div className={`practice-drill-slot ${learnPanelVisible ? "learn-session-layout" : ""}`}>
+      {children}
+    </div>
+  );
+}
+
+function ActiveSessionStage({
+  drillSession,
+  settings,
+  totalTimer,
+  splitTimer,
+  learnPanelVisible = false,
+  onToggleLearnPanel
+}) {
+  return (
+    <DrillStage learnPanelVisible={learnPanelVisible}>
+      {drillSession.currentSession ? (
+        <CurrentDrillPanel
+          drillSession={drillSession}
+          settings={settings}
+          totalTimer={totalTimer}
+          splitTimer={splitTimer}
+          onToggleLearnPanel={onToggleLearnPanel}
+        />
+      ) : (
+        <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
+      )}
+    </DrillStage>
+  );
+}
+
+function CompletionStage({ drillSession, backdrop }) {
+  return (
+    <DrillStage>
+      <CompletionPanel
+        completionSummary={drillSession.pendingCompletion}
+        onNewExercise={drillSession.clearPendingCompletion}
+        onRunBack={drillSession.replayPendingCompletion}
+        onCopySeed={drillSession.copyPendingCompletionSeed}
+        backdrop={backdrop}
+        history={drillSession.history}
+      />
+    </DrillStage>
+  );
+}
+
 function PracticeModeView({
   drillSession,
   settings,
@@ -95,72 +178,114 @@ function PracticeModeView({
   onToggleLearnPanel
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
+  const isPracticeSession = drillSession.currentSession?.sessionType !== ROUTE_SESSION_TYPE;
 
-  if (drillSession.currentSession || drillSession.isStartCountdownActive) {
+  if ((drillSession.currentSession && isPracticeSession) || drillSession.isStartCountdownActive) {
     return (
-      <div className="content-stack">
-        <div className={`practice-drill-slot ${learnPanelVisible ? "learn-session-layout" : ""}`}>
-          {drillSession.currentSession ? (
-            <CurrentDrillPanel
-              drillSession={drillSession}
-              settings={settings}
-              totalTimer={totalTimer}
-              splitTimer={splitTimer}
-              onToggleLearnPanel={onToggleLearnPanel}
-            />
-          ) : (
-            <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
-          )}
-        </div>
-        {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
-        {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
-        <HistoryPanel
-          history={drillSession.history}
-          onDeleteEntry={drillSession.deleteHistoryEntry}
+      <ModeShell
+        drillSession={drillSession}
+        popoutControl={popoutControl}
+        popoutError={popoutError}
+      >
+        <ActiveSessionStage
+          drillSession={drillSession}
+          settings={settings}
+          totalTimer={totalTimer}
+          splitTimer={splitTimer}
+          learnPanelVisible={learnPanelVisible}
+          onToggleLearnPanel={onToggleLearnPanel}
         />
-        <StatsPanel stats={drillSession.stats} />
-      </div>
+      </ModeShell>
     );
   }
 
-  if (drillSession.pendingCompletion) {
+  if (
+    drillSession.pendingCompletion &&
+    drillSession.pendingCompletion.sessionType !== ROUTE_SESSION_TYPE
+  ) {
     return (
-      <div className="content-stack">
-        <div className="practice-drill-slot">
-          <CompletionPanel
-            completionSummary={drillSession.pendingCompletion}
-            onNewExercise={drillSession.clearPendingCompletion}
-            onRunBack={drillSession.replayPendingCompletion}
-            onCopySeed={drillSession.copyPendingCompletionSeed}
-            backdrop={backdrop}
-            history={drillSession.history}
-          />
-        </div>
-        {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
-        {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
-        <HistoryPanel
-          history={drillSession.history}
-          onDeleteEntry={drillSession.deleteHistoryEntry}
-        />
-        <StatsPanel stats={drillSession.stats} />
-      </div>
+      <ModeShell
+        drillSession={drillSession}
+        popoutControl={popoutControl}
+        popoutError={popoutError}
+      >
+        <CompletionStage drillSession={drillSession} backdrop={backdrop} />
+      </ModeShell>
     );
   }
 
   return (
-    <div className="content-stack">
+    <ModeShell
+      drillSession={drillSession}
+      popoutControl={popoutControl}
+      popoutError={popoutError}
+    >
       <SetupPanel
         defaultArea={drillSession.startingArea}
         defaultDrillSettings={settings.drillSettings}
         onStartSession={drillSession.startSession}
         isLearnPanelDefaultVisible={settings.learnPanelDefaultVisible}
+        sessionType={PRACTICE_SESSION_TYPE}
       />
-      <HistoryPanel
-        history={drillSession.history}
-        onDeleteEntry={drillSession.deleteHistoryEntry}
+    </ModeShell>
+  );
+}
+
+function RouteModeView({
+  drillSession,
+  settings,
+  backdrop,
+  totalTimer,
+  splitTimer,
+  popoutControl,
+  popoutError
+}) {
+  if (
+    (drillSession.currentSession && drillSession.currentSession.sessionType === ROUTE_SESSION_TYPE) ||
+    (drillSession.isStartCountdownActive &&
+      drillSession.selectedMode === ROUTE_SESSION_TYPE)
+  ) {
+    return (
+      <ModeShell
+        drillSession={drillSession}
+        popoutControl={popoutControl}
+        popoutError={popoutError}
+      >
+        <ActiveSessionStage
+          drillSession={drillSession}
+          settings={settings}
+          totalTimer={totalTimer}
+          splitTimer={splitTimer}
+        />
+      </ModeShell>
+    );
+  }
+
+  if (drillSession.pendingCompletion?.sessionType === ROUTE_SESSION_TYPE) {
+    return (
+      <ModeShell
+        drillSession={drillSession}
+        popoutControl={popoutControl}
+        popoutError={popoutError}
+      >
+        <CompletionStage drillSession={drillSession} backdrop={backdrop} />
+      </ModeShell>
+    );
+  }
+
+  return (
+    <ModeShell
+      drillSession={drillSession}
+      popoutControl={popoutControl}
+      popoutError={popoutError}
+    >
+      <SetupPanel
+        defaultArea={drillSession.startingArea}
+        defaultDrillSettings={settings.drillSettings}
+        onStartSession={drillSession.startSession}
+        sessionType={ROUTE_SESSION_TYPE}
       />
-      <StatsPanel stats={drillSession.stats} />
-    </div>
+    </ModeShell>
   );
 }
 
@@ -218,7 +343,8 @@ export default function App() {
   const desktopRuntime = isTauriRuntime();
   const useDesktopGlobalHotkeys = desktopRuntime;
   const hasActiveSession = Boolean(drillSession.currentSession);
-  const isSessionMode = activeMode === "practice";
+  const isSessionMode =
+    activeMode === PRACTICE_SESSION_TYPE || activeMode === ROUTE_SESSION_TYPE;
   const [capturingAction, setCapturingAction] = useState(null);
   const [popoutError, setPopoutError] = useState(null);
   const [hasWindowFocus, setHasWindowFocus] = useState(
@@ -324,7 +450,8 @@ export default function App() {
     onSplit: drillSession.performPhaseAction,
     onSkip: drillSession.skipObjective,
     onPause: drillSession.togglePause,
-    onEnd: drillSession.endSession
+    onEnd: drillSession.endSession,
+    onRouteSlot: drillSession.completeRouteSlot
   });
   useDesktopGlobalShortcuts({
     enabled:
@@ -408,11 +535,13 @@ export default function App() {
         releaseActionLoading={headerReleaseActionLoading}
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
+        onSelectRoute={drillSession.goToRoute}
         onSelectSettings={drillSession.goToSettings}
+        currentSessionType={drillSession.currentSession?.sessionType ?? null}
       />
 
       <main ref={appMainRef} className="app-main">
-        {activeMode === "practice" ? (
+        {activeMode === PRACTICE_SESSION_TYPE ? (
           <PracticeModeView
             drillSession={drillSession}
             settings={settings}
@@ -422,6 +551,16 @@ export default function App() {
             popoutControl={popoutButton}
             popoutError={popoutError}
             onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
+          />
+        ) : activeMode === ROUTE_SESSION_TYPE ? (
+          <RouteModeView
+            drillSession={drillSession}
+            settings={settings}
+            backdrop={activeTheme.backdrop}
+            totalTimer={totalTimer}
+            splitTimer={splitTimer}
+            popoutControl={popoutButton}
+            popoutError={popoutError}
           />
         ) : activeMode === "settings" ? (
           <SettingsModeView
@@ -434,7 +573,9 @@ export default function App() {
           <ModeSelect
             hasActiveSession={Boolean(drillSession.currentSession)}
             onSelectPractice={drillSession.goToPractice}
+            onSelectRoute={drillSession.goToRoute}
             onSelectSettings={drillSession.goToSettings}
+            currentSessionType={drillSession.currentSession?.sessionType ?? null}
           />
         )}
       </main>

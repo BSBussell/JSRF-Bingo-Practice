@@ -7,16 +7,30 @@ import {
   DEFAULT_DRILL_SETTINGS,
   MOVEMENT_VARIANCE_MAX,
   MOVEMENT_VARIANCE_MIN,
-  normalizeDrillSettings
+  ROUTE_VISIBLE_COUNT_MAX,
+  ROUTE_VISIBLE_COUNT_MIN,
+  getAvailableObjectiveCount
 } from "../drill/drillSettings.js";
+import {
+  buildSessionConfig,
+  normalizeSessionConfig,
+  normalizeSessionConfigForType
+} from "../session/sessionConfig.js";
 import { OBJECTIVE_FRESHNESS_WINDOW } from "../session/drillSessionConstants.js";
+import {
+  PRACTICE_SESSION_TYPE,
+  ROUTE_SESSION_TYPE,
+  normalizeSessionType
+} from "../session/sessionTypes.js";
 
-export const SESSION_SEED_PREFIX = "BNGSD2.";
+export { buildSessionConfig, normalizeSessionConfig } from "../session/sessionConfig.js";
+
+export const SESSION_SEED_PREFIX = "BNGSD3.";
 export const LEGACY_SESSION_SEED_V2_PREFIX = "JSRFD2.";
 export const LEGACY_SESSION_SEED_PREFIX = "JSRFD1.";
-export const SESSION_SEED_VERSION = 2;
-export const PHRASE_OBJECTIVE_MIN = 5;
-export const PHRASE_OBJECTIVE_MAX = 40;
+export const LEGACY_COMPACT_SESSION_SEED_PREFIX = "BNGSD2.";
+export const SESSION_SEED_VERSION = 3;
+export const PHRASE_OBJECTIVE_MIN = 1;
 export const CORRUPTED_FORMAL_SEED_WARNING =
   "This looks like a formal seed, but parts of it appear corrupted. We'll read it as-is, but double-check the source if this wasn't expected.";
 
@@ -24,8 +38,10 @@ const OBJECTIVE_INDEX_BY_ID = Object.fromEntries(
   allObjectives.map((objective, index) => [objective.id, index])
 );
 const SEED_RNG_BYTES = 16;
-const PACKED_CONFIG_BYTES = 6;
-const PACKED_CONFIG_BITS = 44;
+const PACKED_CONFIG_BYTES = 7;
+const PACKED_CONFIG_BITS = 49;
+const LEGACY_PACKED_CONFIG_BYTES = 6;
+const LEGACY_PACKED_CONFIG_BITS = 44;
 const MAX_SERIALIZED_OBJECTIVE_COUNT = 255;
 const MAX_SERIALIZED_OBJECTIVE_INDEX = 255;
 
@@ -183,16 +199,22 @@ function shuffleWithRng(items, rng) {
   return nextItems;
 }
 
-function createSessionSeedPayload({ rngSeed, config, objectiveIds }) {
+function createSessionSeedPayload({
+  rngSeed,
+  config,
+  objectiveIds,
+  sessionType = PRACTICE_SESSION_TYPE
+}) {
   return {
     version: SESSION_SEED_VERSION,
+    sessionType: normalizeSessionType(sessionType),
     rngSeed,
     config: normalizeSessionConfig(config),
     objectiveIds: objectiveIds.slice()
   };
 }
 
-function packConfig(configInput) {
+function packConfig(configInput, sessionType) {
   const config = normalizeSessionConfig(configInput);
   if (config.numberOfObjectives > MAX_SERIALIZED_OBJECTIVE_COUNT) {
     throw new Error(
@@ -216,7 +238,9 @@ function packConfig(configInput) {
     { bits: 3, value: config.notebookVariance - CATEGORY_VARIANCE_MIN },
     { bits: 3, value: config.levelShift - MOVEMENT_VARIANCE_MIN },
     { bits: 3, value: config.districtShift - MOVEMENT_VARIANCE_MIN },
-    { bits: 1, value: config.trueRandom ? 1 : 0 }
+    { bits: 1, value: config.trueRandom ? 1 : 0 },
+    { bits: 1, value: normalizeSessionType(sessionType) === ROUTE_SESSION_TYPE ? 1 : 0 },
+    { bits: 4, value: config.routeVisibleCount - 1 }
   ];
   const totalBits = fields.reduce((sum, field) => sum + field.bits, 0);
   const paddingBits = PACKED_CONFIG_BYTES * 8 - totalBits;
@@ -246,7 +270,9 @@ function unpackConfig(bytes) {
     { key: "notebookVariance", bits: 3 },
     { key: "levelShift", bits: 3 },
     { key: "districtShift", bits: 3 },
-    { key: "trueRandom", bits: 1 }
+    { key: "trueRandom", bits: 1 },
+    { key: "sessionType", bits: 1 },
+    { key: "routeVisibleCount", bits: 4 }
   ];
   const decodedFields = {};
   let remainingBits = PACKED_CONFIG_BITS;
@@ -266,18 +292,77 @@ function unpackConfig(bytes) {
     (_, index) => (decodedFields.excludedMask & (1 << index)) !== 0
   );
 
-  return normalizeSessionConfig({
-    startingArea: areaOrder[decodedFields.startingAreaIndex],
-    numberOfObjectives: decodedFields.numberOfObjectives,
-    excludedAreas,
-    graffitiVariance: decodedFields.graffitiVariance + CATEGORY_VARIANCE_MIN,
-    unlockVariance: decodedFields.unlockVariance + CATEGORY_VARIANCE_MIN,
-    defaultVariance: decodedFields.defaultVariance + CATEGORY_VARIANCE_MIN,
-    notebookVariance: decodedFields.notebookVariance + CATEGORY_VARIANCE_MIN,
-    levelShift: decodedFields.levelShift + MOVEMENT_VARIANCE_MIN,
-    districtShift: decodedFields.districtShift + MOVEMENT_VARIANCE_MIN,
-    trueRandom: Boolean(decodedFields.trueRandom)
-  });
+  return {
+    sessionType: decodedFields.sessionType === 1 ? ROUTE_SESSION_TYPE : PRACTICE_SESSION_TYPE,
+    config: normalizeSessionConfig({
+      startingArea: areaOrder[decodedFields.startingAreaIndex],
+      numberOfObjectives: decodedFields.numberOfObjectives,
+      excludedAreas,
+      graffitiVariance: decodedFields.graffitiVariance + CATEGORY_VARIANCE_MIN,
+      unlockVariance: decodedFields.unlockVariance + CATEGORY_VARIANCE_MIN,
+      defaultVariance: decodedFields.defaultVariance + CATEGORY_VARIANCE_MIN,
+      notebookVariance: decodedFields.notebookVariance + CATEGORY_VARIANCE_MIN,
+      levelShift: decodedFields.levelShift + MOVEMENT_VARIANCE_MIN,
+      districtShift: decodedFields.districtShift + MOVEMENT_VARIANCE_MIN,
+      trueRandom: Boolean(decodedFields.trueRandom),
+      routeVisibleCount: decodedFields.routeVisibleCount + 1
+    })
+  };
+}
+
+function unpackLegacyConfig(bytes) {
+  if (bytes.length !== LEGACY_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload config block is malformed.");
+  }
+
+  const paddingBits = LEGACY_PACKED_CONFIG_BYTES * 8 - LEGACY_PACKED_CONFIG_BITS;
+  const packedValue = bytesToBigInt(bytes) >> BigInt(paddingBits);
+  const fields = [
+    { key: "startingAreaIndex", bits: 4 },
+    { key: "numberOfObjectives", bits: 8 },
+    { key: "excludedMask", bits: objectiveAreaOrder.length },
+    { key: "graffitiVariance", bits: 3 },
+    { key: "unlockVariance", bits: 3 },
+    { key: "defaultVariance", bits: 3 },
+    { key: "notebookVariance", bits: 3 },
+    { key: "levelShift", bits: 3 },
+    { key: "districtShift", bits: 3 },
+    { key: "trueRandom", bits: 1 }
+  ];
+  const decodedFields = {};
+  let remainingBits = LEGACY_PACKED_CONFIG_BITS;
+
+  for (const field of fields) {
+    remainingBits -= field.bits;
+    decodedFields[field.key] = Number(
+      (packedValue >> BigInt(remainingBits)) & ((1n << BigInt(field.bits)) - 1n)
+    );
+  }
+
+  if (!areaOrder[decodedFields.startingAreaIndex]) {
+    throw new Error("Seed payload starting area is invalid.");
+  }
+
+  const excludedAreas = objectiveAreaOrder.filter(
+    (_, index) => (decodedFields.excludedMask & (1 << index)) !== 0
+  );
+
+  return {
+    sessionType: PRACTICE_SESSION_TYPE,
+    config: normalizeSessionConfig({
+      startingArea: areaOrder[decodedFields.startingAreaIndex],
+      numberOfObjectives: decodedFields.numberOfObjectives,
+      excludedAreas,
+      graffitiVariance: decodedFields.graffitiVariance + CATEGORY_VARIANCE_MIN,
+      unlockVariance: decodedFields.unlockVariance + CATEGORY_VARIANCE_MIN,
+      defaultVariance: decodedFields.defaultVariance + CATEGORY_VARIANCE_MIN,
+      notebookVariance: decodedFields.notebookVariance + CATEGORY_VARIANCE_MIN,
+      levelShift: decodedFields.levelShift + MOVEMENT_VARIANCE_MIN,
+      districtShift: decodedFields.districtShift + MOVEMENT_VARIANCE_MIN,
+      trueRandom: Boolean(decodedFields.trueRandom),
+      routeVisibleCount: DEFAULT_DRILL_SETTINGS.routeVisibleCount
+    })
+  };
 }
 
 function encodeCompactSessionSeedPayload(sessionSpecInput) {
@@ -293,7 +378,7 @@ function encodeCompactSessionSeedPayload(sessionSpecInput) {
   }
 
   const rngBytes = hexToBytes(sessionSpec.rngSeed);
-  const configBytes = packConfig(sessionSpec.config);
+  const configBytes = packConfig(sessionSpec.config, sessionSpec.sessionType);
   const objectiveIndexBytes = Uint8Array.from(
     sessionSpec.objectiveIds.map((objectiveId) => {
       const objectiveIndex = OBJECTIVE_INDEX_BY_ID[objectiveId];
@@ -322,7 +407,7 @@ function decodeCompactSessionSeed(value) {
 
   const rngBytes = payloadBytes.slice(0, SEED_RNG_BYTES);
   const configBytes = payloadBytes.slice(SEED_RNG_BYTES, SEED_RNG_BYTES + PACKED_CONFIG_BYTES);
-  const config = unpackConfig(configBytes);
+  const { config, sessionType } = unpackConfig(configBytes);
   if (config.numberOfObjectives > MAX_SERIALIZED_OBJECTIVE_COUNT) {
     throw new Error(
       `Seed payload objective count exceeds ${MAX_SERIALIZED_OBJECTIVE_COUNT}: ${config.numberOfObjectives}`
@@ -356,7 +441,52 @@ function decodeCompactSessionSeed(value) {
   return createSessionSeedPayload({
     rngSeed: bytesToHex(rngBytes),
     config,
-    objectiveIds
+    objectiveIds,
+    sessionType
+  });
+}
+
+function decodeLegacyCompactSessionSeed(value, prefixLength) {
+  const payloadBytes = base64UrlDecode(value.slice(prefixLength));
+  if (payloadBytes.length < SEED_RNG_BYTES + LEGACY_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload could not be decoded.");
+  }
+
+  const rngBytes = payloadBytes.slice(0, SEED_RNG_BYTES);
+  const configBytes = payloadBytes.slice(
+    SEED_RNG_BYTES,
+    SEED_RNG_BYTES + LEGACY_PACKED_CONFIG_BYTES
+  );
+  const { config, sessionType } = unpackLegacyConfig(configBytes);
+  const expectedLength = SEED_RNG_BYTES + LEGACY_PACKED_CONFIG_BYTES + config.numberOfObjectives;
+
+  if (payloadBytes.length !== expectedLength) {
+    throw new Error("Seed payload objective list does not match the stored objective count.");
+  }
+
+  const objectiveIds = Array.from(
+    payloadBytes.slice(SEED_RNG_BYTES + LEGACY_PACKED_CONFIG_BYTES),
+    (objectiveIndex) => {
+      if (objectiveIndex > MAX_SERIALIZED_OBJECTIVE_INDEX) {
+        throw new Error(
+          `Seed payload objective index exceeds ${MAX_SERIALIZED_OBJECTIVE_INDEX}: ${objectiveIndex}`
+        );
+      }
+
+      const objectiveId = allObjectives[objectiveIndex]?.id ?? null;
+      if (!objectiveId) {
+        throw new Error(`Seed payload contains an invalid objective index: ${objectiveIndex}`);
+      }
+
+      return objectiveId;
+    }
+  );
+
+  return createSessionSeedPayload({
+    rngSeed: bytesToHex(rngBytes),
+    config,
+    objectiveIds,
+    sessionType
   });
 }
 
@@ -397,29 +527,38 @@ function decodeLegacySessionSeed(value) {
   return createSessionSeedPayload({
     rngSeed,
     config,
-    objectiveIds
+    objectiveIds,
+    sessionType: PRACTICE_SESSION_TYPE
   });
 }
 
-function derivePhraseConfig(seed) {
+function derivePhraseConfig(seed, sessionType = PRACTICE_SESSION_TYPE) {
   const rng = createSeededRng(deriveChildSeed(seed, "config"));
   const excludedAreas = shuffleWithRng(objectiveAreaOrder, rng).slice(
     0,
     randomInteger(rng, 0, Math.min(4, Math.max(0, objectiveAreaOrder.length - 1)))
   );
-
-  return normalizeSessionConfig({
-    startingArea: areaOrder[randomInteger(rng, 0, areaOrder.length - 1)],
-    numberOfObjectives: randomInteger(rng, PHRASE_OBJECTIVE_MIN, PHRASE_OBJECTIVE_MAX),
+  const baseConfig = normalizeSessionConfig({
     excludedAreas,
     graffitiVariance: randomInteger(rng, CATEGORY_VARIANCE_MIN, CATEGORY_VARIANCE_MAX),
     unlockVariance: randomInteger(rng, CATEGORY_VARIANCE_MIN, CATEGORY_VARIANCE_MAX),
     defaultVariance: randomInteger(rng, CATEGORY_VARIANCE_MIN, CATEGORY_VARIANCE_MAX),
     notebookVariance: randomInteger(rng, CATEGORY_VARIANCE_MIN, CATEGORY_VARIANCE_MAX),
-    levelShift: randomInteger(rng, MOVEMENT_VARIANCE_MIN, MOVEMENT_VARIANCE_MAX),
-    districtShift: randomInteger(rng, MOVEMENT_VARIANCE_MIN, MOVEMENT_VARIANCE_MAX),
     trueRandom: false
   });
+  const phraseObjectiveMax = Math.max(
+    PHRASE_OBJECTIVE_MIN,
+    getAvailableObjectiveCount(baseConfig)
+  );
+
+  return normalizeSessionConfigForType({
+    startingArea: areaOrder[randomInteger(rng, 0, areaOrder.length - 1)],
+    ...baseConfig,
+    numberOfObjectives: randomInteger(rng, PHRASE_OBJECTIVE_MIN, phraseObjectiveMax),
+    levelShift: randomInteger(rng, MOVEMENT_VARIANCE_MIN, MOVEMENT_VARIANCE_MAX),
+    districtShift: randomInteger(rng, MOVEMENT_VARIANCE_MIN, MOVEMENT_VARIANCE_MAX),
+    routeVisibleCount: randomInteger(rng, ROUTE_VISIBLE_COUNT_MIN, ROUTE_VISIBLE_COUNT_MAX)
+  }, sessionType);
 }
 
 function repairPhraseConfig(config) {
@@ -434,33 +573,6 @@ function createSafePhraseConfig() {
     startingArea: "Garage",
     ...DEFAULT_DRILL_SETTINGS
   });
-}
-
-export function buildSessionConfig(startingArea, drillSettings) {
-  return normalizeSessionConfig({
-    startingArea,
-    ...normalizeDrillSettings(drillSettings)
-  });
-}
-
-export function normalizeSessionConfig(value) {
-  const normalizedDrillSettings = normalizeDrillSettings(value);
-
-  return {
-    startingArea:
-      typeof value?.startingArea === "string" && areaOrder.includes(value.startingArea)
-        ? value.startingArea
-        : "Garage",
-    numberOfObjectives: normalizedDrillSettings.numberOfObjectives,
-    excludedAreas: normalizedDrillSettings.excludedAreas,
-    graffitiVariance: normalizedDrillSettings.graffitiVariance,
-    unlockVariance: normalizedDrillSettings.unlockVariance,
-    defaultVariance: normalizedDrillSettings.defaultVariance,
-    notebookVariance: normalizedDrillSettings.notebookVariance,
-    levelShift: normalizedDrillSettings.levelShift,
-    districtShift: normalizedDrillSettings.districtShift,
-    trueRandom: normalizedDrillSettings.trueRandom
-  };
 }
 
 export function normalizeSeedPhrase(value) {
@@ -553,13 +665,18 @@ export function generateDrillSequence(configInput, rngSeed) {
   return objectiveIds;
 }
 
-export function buildSessionSpecFromConfig(configInput, rngSeed) {
-  const config = normalizeSessionConfig(configInput);
+export function buildSessionSpecFromConfig(
+  configInput,
+  rngSeed,
+  sessionType = PRACTICE_SESSION_TYPE
+) {
+  const config = normalizeSessionConfigForType(configInput, sessionType);
   const objectiveIds = generateDrillSequence(config, rngSeed);
   const sessionSpec = createSessionSeedPayload({
     rngSeed,
     config,
-    objectiveIds
+    objectiveIds,
+    sessionType
   });
 
   return {
@@ -568,25 +685,25 @@ export function buildSessionSpecFromConfig(configInput, rngSeed) {
   };
 }
 
-export function buildSessionSpecFromPhrase(seedPhrase) {
+export function buildSessionSpecFromPhrase(seedPhrase, sessionType = PRACTICE_SESSION_TYPE) {
   const normalizedPhrase = normalizeSeedPhrase(seedPhrase);
   const rngSeed = hashSeedPhrase(normalizedPhrase);
-  const phraseConfig = derivePhraseConfig(rngSeed);
+  const phraseConfig = derivePhraseConfig(rngSeed, sessionType);
 
   try {
     return {
-      ...buildSessionSpecFromConfig(phraseConfig, rngSeed),
+      ...buildSessionSpecFromConfig(phraseConfig, rngSeed, sessionType),
       normalizedPhrase
     };
   } catch {
     try {
       return {
-        ...buildSessionSpecFromConfig(repairPhraseConfig(phraseConfig), rngSeed),
+        ...buildSessionSpecFromConfig(repairPhraseConfig(phraseConfig), rngSeed, sessionType),
         normalizedPhrase
       };
     } catch {
       return {
-        ...buildSessionSpecFromConfig(createSafePhraseConfig(), rngSeed),
+        ...buildSessionSpecFromConfig(createSafePhraseConfig(), rngSeed, sessionType),
         normalizedPhrase
       };
     }
@@ -606,9 +723,14 @@ export function decodeSessionSeed(value) {
     return decodeCompactSessionSeed(value);
   }
 
+  if (value.startsWith(LEGACY_COMPACT_SESSION_SEED_PREFIX)) {
+    return decodeLegacyCompactSessionSeed(value, LEGACY_COMPACT_SESSION_SEED_PREFIX.length);
+  }
+
   if (value.startsWith(LEGACY_SESSION_SEED_V2_PREFIX)) {
-    return decodeCompactSessionSeed(
-      `${SESSION_SEED_PREFIX}${value.slice(LEGACY_SESSION_SEED_V2_PREFIX.length)}`
+    return decodeLegacyCompactSessionSeed(
+      value,
+      LEGACY_SESSION_SEED_V2_PREFIX.length
     );
   }
 
@@ -626,6 +748,7 @@ function looksLikeFormalSeed(value) {
 
   return (
     value.startsWith(SESSION_SEED_PREFIX) ||
+    value.startsWith(LEGACY_COMPACT_SESSION_SEED_PREFIX) ||
     value.startsWith(LEGACY_SESSION_SEED_V2_PREFIX) ||
     value.startsWith(LEGACY_SESSION_SEED_PREFIX) ||
     /^BNGS/i.test(value) ||
@@ -633,7 +756,7 @@ function looksLikeFormalSeed(value) {
   );
 }
 
-export function resolveSeedInput(seedInput) {
+export function resolveSeedInput(seedInput, sessionType = PRACTICE_SESSION_TYPE) {
   const rawSeedInput = typeof seedInput === "string" ? seedInput : "";
   const exportedCandidate = rawSeedInput.trim();
   const formalSeedCandidate = looksLikeFormalSeed(exportedCandidate);
@@ -664,7 +787,7 @@ export function resolveSeedInput(seedInput) {
     };
   }
 
-  const { sessionSpec, exportSeed } = buildSessionSpecFromPhrase(rawSeedInput);
+  const { sessionSpec, exportSeed } = buildSessionSpecFromPhrase(rawSeedInput, sessionType);
   return {
     mode: "phrase",
     sessionSpec,

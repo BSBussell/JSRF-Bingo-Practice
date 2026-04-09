@@ -22,7 +22,8 @@ export function createEmptyAggregateStats() {
   return {
     squareByArea: {},
     tapeByArea: {},
-    graffitiByArea: {}
+    graffitiByArea: {},
+    routeByVisibleCount: {}
   };
 }
 
@@ -31,8 +32,23 @@ export function recordCompletionStats(aggregateStats, entry) {
   const nextStats = {
     squareByArea: aggregateStats.squareByArea ?? {},
     tapeByArea: aggregateStats.tapeByArea ?? {},
-    graffitiByArea: aggregateStats.graffitiByArea ?? {}
+    graffitiByArea: aggregateStats.graffitiByArea ?? {},
+    routeByVisibleCount: aggregateStats.routeByVisibleCount ?? {}
   };
+
+  if (
+    entry.sessionType === "route" &&
+    entry.result === "complete" &&
+    typeof entry.totalDurationMs === "number" &&
+    Number.isInteger(entry.visibleCount)
+  ) {
+    nextStats.routeByVisibleCount = updateBucket(
+      nextStats.routeByVisibleCount,
+      String(entry.visibleCount),
+      entry.totalDurationMs
+    );
+    return nextStats;
+  }
 
   if (
     entry.result === "complete" &&
@@ -63,6 +79,10 @@ export function recordCompletionStats(aggregateStats, entry) {
 
 export function recordBestTime(bestTimesByObjective, entry) {
   const scoreDurationMs = entry.challengeDurationMs ?? entry.durationMs;
+
+  if (entry.sessionType === "route") {
+    return bestTimesByObjective;
+  }
 
   if (entry.result !== "complete" || typeof scoreDurationMs !== "number") {
     return bestTimesByObjective;
@@ -120,6 +140,9 @@ export function buildStatsViewModel(aggregateStats, history) {
   return {
     squareByArea: averageRows(aggregateStats.squareByArea ?? {}),
     tapeByArea: averageRows(aggregateStats.tapeByArea ?? {}),
-    graffitiByArea: averageRows(aggregateStats.graffitiByArea ?? {})
+    graffitiByArea: averageRows(aggregateStats.graffitiByArea ?? {}),
+    routeByVisibleCount: averageRows(aggregateStats.routeByVisibleCount ?? {}).sort(
+      (left, right) => Number(left.key) - Number(right.key)
+    )
   };
 }

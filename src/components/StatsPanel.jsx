@@ -12,7 +12,26 @@ function renderAreaRows(rows, emptyLabel) {
         <div key={row.key} className="stats-clean-row">
           <strong>{getAreaLabel(row.key)}</strong>
           <span>{row.completions} samples</span>
-          <span>{row.averageMs ? formatDuration(row.averageMs) : "No avg"}</span>
+          <span>{row.averageMs !== null ? formatDuration(row.averageMs) : "No avg"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function renderRouteRows(rows, emptyLabel) {
+  if (rows.length === 0) {
+    return <p className="empty-state">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="stats-clean-table">
+      {rows.map((row) => (
+        <div key={row.key} className="stats-clean-row">
+          <strong>{row.key} visible</strong>
+          <span>{row.completions} runs</span>
+          <span>{row.averageMs !== null ? formatDuration(row.averageMs) : "No avg"}</span>
+          <span>{row.bestMs !== null ? `Best ${formatDuration(row.bestMs)}` : "No best"}</span>
         </div>
       ))}
     </div>
@@ -51,6 +70,17 @@ export function StatsPanel({ stats }) {
         </div>
 
         {renderAreaRows(stats.graffitiByArea, "No completed graffiti square splits yet.")}
+      </article>
+
+      <article className="panel">
+        <div className="panel-heading compact">
+          <div>
+            <p className="eyebrow">Routes</p>
+            <h2>AVG Route Time</h2>
+          </div>
+        </div>
+
+        {renderRouteRows(stats.routeByVisibleCount, "No completed route runs yet.")}
       </article>
     </section>
   );
