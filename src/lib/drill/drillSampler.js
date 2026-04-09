@@ -1,18 +1,24 @@
-import { areaMeta } from "../data/areaMeta.js";
-import { allObjectives } from "../data/objectives.js";
+import { areaMeta } from "../../data/areaMeta.js";
+import { allObjectives } from "../../data/objectives.js";
 import { generateNextDrill } from "./drillGenerator.js";
 import { getObjectiveCategory } from "./drillCategories.js";
-import { objectiveRequiresTape } from "./drillSession.js";
-import { OBJECTIVE_FRESHNESS_WINDOW } from "./drillSessionConstants.js";
+import { objectiveRequiresTape } from "../session/drillSession.js";
+import { OBJECTIVE_FRESHNESS_WINDOW } from "../session/drillSessionConstants.js";
 import { normalizeDrillSettings } from "./drillSettings.js";
+import { createSeededRng } from "../seed/sessionSeed.js";
 
+
+// This is mainly so i can look at how the different dials
+// are actually impacting things.
 export function sampleDrillGeneration({
   samples = 1000,
   startingArea = "Garage",
   drillSettings = {},
-  result = "complete"
+  result = "complete",
+  rngSeed = "drill-sampler"
 } = {}) {
   const normalizedDrillSettings = normalizeDrillSettings(drillSettings);
+  const rng = createSeededRng(rngSeed);
   let history = [];
   let usedObjectiveIds = [];
   let currentArea = startingArea;
@@ -46,7 +52,8 @@ export function sampleDrillGeneration({
       usedObjectiveIds,
       history,
       sessionId,
-      drillSettings: normalizedDrillSettings
+      drillSettings: normalizedDrillSettings,
+      rng
     });
 
     if (!objective) {
@@ -66,7 +73,8 @@ export function sampleDrillGeneration({
         usedObjectiveIds,
         history,
         sessionId,
-        drillSettings: normalizedDrillSettings
+        drillSettings: normalizedDrillSettings,
+        rng
       });
     }
 

@@ -2,7 +2,7 @@
 // first pick movement, then pick category within that movement bucket.
 // That keeps the tuning knobs legible and prevents one giant weight from
 // accidentally flattening the travel cadence Bee actually cares about.
-import { areaMeta } from "../data/areaMeta.js";
+import { areaMeta } from "../../data/areaMeta.js";
 import { DRILL_CATEGORY_BY_KEY, DRILL_CATEGORY_KEYS, getObjectiveCategory } from "./drillCategories.js";
 import {
   DEFAULT_DRILL_SETTINGS,
@@ -381,10 +381,14 @@ export function generateNextDrill(objectives, context) {
   };
 
   const weightedObjectivesByCategory = buildWeightedObjectivesByCategory(objectives, nextContext);
-  const allWeightedEntries = Object.values(weightedObjectivesByCategory).flat();
+  const allWeightedEntries = DRILL_CATEGORY_KEYS.flatMap(
+    (category) => weightedObjectivesByCategory[category] ?? []
+  );
 
   if (nextContext.drillSettings.trueRandom) {
-    return weightedPick(allWeightedEntries, (entry) => entry.weight)?.objective ?? null;
+    return (
+      weightedPick(allWeightedEntries, (entry) => entry.weight, nextContext.rng)?.objective ?? null
+    );
   }
 
   // Picking movement before category is the whole trick: it keeps "stay here"
@@ -397,7 +401,8 @@ export function generateNextDrill(objectives, context) {
   const movementScores = buildMovementClassScores(movementBuckets, nextContext);
   const selectedMovement = weightedPick(
     MOVEMENT_CLASSES,
-    (movementClass) => movementScores[movementClass] ?? 0
+    (movementClass) => movementScores[movementClass] ?? 0,
+    nextContext.rng
   );
 
   if (!selectedMovement) {
@@ -408,7 +413,8 @@ export function generateNextDrill(objectives, context) {
   const movementCategories = buildWeightedEntryCategories(selectedMovementEntries);
   const selectedCategory = weightedPick(
     DRILL_CATEGORY_KEYS,
-    (category) => buildCategoryScore(category, movementCategories[category] ?? [], nextContext)
+    (category) => buildCategoryScore(category, movementCategories[category] ?? [], nextContext),
+    nextContext.rng
   );
 
   if (!selectedCategory) {
@@ -417,6 +423,7 @@ export function generateNextDrill(objectives, context) {
 
   return weightedPick(
     movementCategories[selectedCategory] ?? [],
-    (entry) => entry.weight
+    (entry) => entry.weight,
+    nextContext.rng
   )?.objective ?? null;
 }

@@ -1,4 +1,4 @@
-export function weightedPick(items, getWeight) {
+export function weightedPick(items, getWeight, rng) {
   const weighted = items
     .map((item) => ({ item, weight: Math.max(0, getWeight(item)) }))
     .filter((entry) => entry.weight > 0);
@@ -8,7 +8,7 @@ export function weightedPick(items, getWeight) {
   }
 
   const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
-  let roll = Math.random() * totalWeight;
+  let roll = rng() * totalWeight;
 
   for (const entry of weighted) {
     roll -= entry.weight;

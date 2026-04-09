@@ -1,4 +1,4 @@
-import { isTauriRuntime } from "./runtime.js";
+import { isTauriRuntime } from "../runtime.js";
 
 export const DRILL_POPOUT_LABEL = "drill-popout";
 export const DRILL_POPOUT_VIEW = "drill-popout";

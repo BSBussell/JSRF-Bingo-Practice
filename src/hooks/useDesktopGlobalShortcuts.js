@@ -4,7 +4,7 @@
 // are both allowed to suspend native capture.
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { isDrillPopoutView } from "../lib/drillPopout.js";
+import { isDrillPopoutView } from "../lib/drill/drillPopout.js";
 import {
   formatHotkeyBinding,
   formatHotkeyKey,

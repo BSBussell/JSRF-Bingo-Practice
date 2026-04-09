@@ -1,10 +1,18 @@
+import { areaOrder } from "../data/areaMeta.js";
 import { createHotkeyBinding, normalizeHotkeyBinding } from "./hotkeys.js";
-import { OBJECTIVE_FRESHNESS_WINDOW } from "./drillSessionConstants.js";
 import { normalizeObjectiveType } from "./objectiveTypes.js";
+import { createEmptyAggregateStats } from "./stats/stats.js";
 import {
   DEFAULT_DRILL_SETTINGS,
   normalizeDrillSettings
-} from "./drillSettings.js";
+} from "./drill/drillSettings.js";
+import { encodeSessionSeed, normalizeSessionConfig } from "./seed/sessionSeed.js";
+import {
+  DEFAULT_THEME_ID,
+  createDefaultCustomTheme,
+  normalizeCustomTheme,
+  normalizeThemeId
+} from "./theme/index.js";
 
 export const APP_STORAGE_KEY = "jsrf-bingo-trainer";
 const LEGACY_DEFAULT_HOTKEYS = {
@@ -25,7 +33,9 @@ export const DEFAULT_SETTINGS = {
   hotkeys: DEFAULT_HOTKEYS,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
-  popoutAlwaysOnTop: false
+  popoutAlwaysOnTop: false,
+  themeId: DEFAULT_THEME_ID,
+  customTheme: createDefaultCustomTheme()
 };
 
 function hotkeyBindingsMatch(left, right) {
@@ -75,13 +85,14 @@ function normalizeSettings(value) {
       drillSettings: normalizeDrillSettings(DEFAULT_DRILL_SETTINGS),
       hotkeys: {
         ...DEFAULT_HOTKEYS
-      }
+      },
+      customTheme: createDefaultCustomTheme()
     };
   }
 
   return {
     startingArea:
-      typeof value.startingArea === "string" && value.startingArea
+      typeof value.startingArea === "string" && areaOrder.includes(value.startingArea)
         ? value.startingArea
         : DEFAULT_SETTINGS.startingArea,
     drillSettings: normalizeDrillSettings(value.drillSettings),
@@ -97,7 +108,9 @@ function normalizeSettings(value) {
     popoutAlwaysOnTop:
       typeof value.popoutAlwaysOnTop === "boolean"
         ? value.popoutAlwaysOnTop
-        : DEFAULT_SETTINGS.popoutAlwaysOnTop
+        : DEFAULT_SETTINGS.popoutAlwaysOnTop,
+    themeId: normalizeThemeId(value.themeId),
+    customTheme: normalizeCustomTheme(value.customTheme)
   };
 }
 
@@ -106,7 +119,34 @@ function normalizeCurrentSession(currentSession) {
     return null;
   }
 
-  if (!currentSession.currentObjectiveId || !currentSession.currentArea) {
+  const objectiveIds = Array.isArray(currentSession.objectiveIds)
+    ? currentSession.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    : [];
+  const currentObjectiveIndex = Number.isInteger(currentSession.currentObjectiveIndex)
+    ? currentSession.currentObjectiveIndex
+    : 0;
+
+  if (
+    !currentSession.currentArea ||
+    objectiveIds.length === 0 ||
+    currentObjectiveIndex < 0 ||
+    currentObjectiveIndex >= objectiveIds.length
+  ) {
+    return null;
+  }
+
+  const sessionSpec =
+    currentSession.sessionSpec &&
+    typeof currentSession.sessionSpec === "object" &&
+    typeof currentSession.sessionSpec.rngSeed === "string"
+      ? {
+          version: currentSession.sessionSpec.version ?? 1,
+          rngSeed: currentSession.sessionSpec.rngSeed,
+          config: normalizeSessionConfig(currentSession.sessionSpec.config),
+          objectiveIds: objectiveIds.slice()
+        }
+      : null;
+  if (!sessionSpec) {
     return null;
   }
 
@@ -120,22 +160,29 @@ function normalizeCurrentSession(currentSession) {
 
   return {
     ...currentSession,
-    drillSettings: normalizeDrillSettings(currentSession.drillSettings),
+    currentObjectiveId: objectiveIds[currentObjectiveIndex],
+    currentObjectiveIndex,
+    objectiveIds,
+    sessionSpec,
+    exportSeed:
+      typeof currentSession.exportSeed === "string" && currentSession.exportSeed
+        ? currentSession.exportSeed
+        : encodeSessionSeed(sessionSpec),
+    drillSettings: normalizeDrillSettings(currentSession.drillSettings ?? sessionSpec.config),
     objectiveStartedAt,
     phaseStartedAt,
     phase,
     challengeStartedAt:
       currentSession.challengeStartedAt ??
       (phase === "challenge" ? phaseStartedAt : null),
-    usedObjectiveIds: Array.isArray(currentSession.usedObjectiveIds)
-      ? currentSession.usedObjectiveIds.slice(-OBJECTIVE_FRESHNESS_WINDOW)
-      : [],
     enteredLevelAt: currentSession.enteredLevelAt ?? null,
     tapeStartedAt: currentSession.tapeStartedAt ?? null,
     tapeUnlockedAt: currentSession.tapeUnlockedAt ?? null,
     unlockedTapeAreas: Array.isArray(currentSession.unlockedTapeAreas)
       ? currentSession.unlockedTapeAreas
       : [],
+    sessionStartedAt: currentSession.sessionStartedAt ?? objectiveStartedAt,
+    sessionTotalPausedMs: currentSession.sessionTotalPausedMs ?? 0,
     pausedAt: currentSession.pausedAt ?? null,
     totalPausedMs: currentSession.totalPausedMs ?? 0,
     travelPausedMs: currentSession.travelPausedMs ?? 0,
@@ -181,16 +228,13 @@ export function createDefaultAppState() {
       drillSettings: normalizeDrillSettings(DEFAULT_DRILL_SETTINGS),
       hotkeys: {
         ...DEFAULT_HOTKEYS
-      }
+      },
+      customTheme: createDefaultCustomTheme()
     },
     currentSession: null,
     history: [],
     bestTimesByObjective: {},
-    aggregateStats: {
-      squareByArea: {},
-      tapeByArea: {},
-      graffitiByArea: {}
-    }
+    aggregateStats: createEmptyAggregateStats()
   };
 }
 

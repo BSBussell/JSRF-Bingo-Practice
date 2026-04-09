@@ -5,7 +5,7 @@ JSRF Bingo Trainer is a Vite + React frontend with a simple Tauri desktop shell.
 ## What is included
 
 - A drill mode that give you objectives while tracking game state.
-- Weighted drill generation that enables custom practice routines
+- Weighted drill generation that enables custom practice routines and seeded drills.
 - A learn mode that shows video demonstrations of each objective.    
 - Local persistence for settings, active session restore, history, best times, and aggregate stats
 
@@ -71,3 +71,4 @@ All persistence currently lives in `localStorage` under the `jsrf-bingo-trainer`
 - Session history
 - Best times per objective
 - Aggregate completion stats by area and by type
+

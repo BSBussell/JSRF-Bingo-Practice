@@ -1,4 +1,4 @@
-import { normalizeObjectiveType } from "./objectiveTypes.js";
+import { normalizeObjectiveType } from "../objectiveTypes.js";
 
 export const DRILL_CATEGORIES = [
   {

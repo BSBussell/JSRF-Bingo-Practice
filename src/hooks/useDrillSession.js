@@ -1,34 +1,41 @@
-import { allObjectives, objectivesById } from "../data/objectives.js";
-import { normalizeDrillSettings } from "../lib/drillSettings.js";
-import { generateNextDrill } from "../lib/drillGenerator.js";
+import { useState } from "react";
+
+import { objectivesById } from "../data/objectives.js";
 import {
-  buildObjectiveSessionState,
+  buildSeededSessionState,
   buildSessionPhaseViewModel,
   getPhaseActionLabel,
   getPhasePausedKey,
-  objectiveNeedsTape
-} from "../lib/drillSession.js";
+  objectiveNeedsTape,
+  resolveSeededSessionTransition
+} from "../lib/session/drillSession.js";
 import { normalizeHotkeyBinding } from "../lib/hotkeys.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
   buildStatsViewModel,
+  rebuildPerformanceState,
   recordBestTime,
   recordCompletionStats
-} from "../lib/stats.js";
+} from "../lib/stats/stats.js";
 
 function buildSessionId() {
   return `session_${Date.now()}`;
 }
 
 function resolveCurrentObjective(currentSession) {
-  if (!currentSession?.currentObjectiveId) {
+  if (!currentSession?.objectiveIds?.length) {
     return null;
   }
 
-  return objectivesById[currentSession.currentObjectiveId] ?? null;
+  const objectiveId =
+    currentSession.currentObjectiveId ??
+    currentSession.objectiveIds[currentSession.currentObjectiveIndex ?? 0];
+
+  return objectivesById[objectiveId] ?? null;
 }
 
 export function useDrillSession(appState, setAppState) {
+  const [completionSummary, setCompletionSummary] = useState(null);
   const currentSession = appState.currentSession;
   const currentObjective = resolveCurrentObjective(currentSession);
   const history = appState.history;
@@ -51,55 +58,49 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
-  function startSession(startingArea, drillSettingsInput) {
-    updateState((previousValue) => {
-      const sessionId = buildSessionId();
-      const now = Date.now();
-      const selectedMode = previousValue.selectedMode ?? "drills";
-      const drillSettings = normalizeDrillSettings(
-        drillSettingsInput ?? previousValue.settings.drillSettings
-      );
-      const objective = generateNextDrill(allObjectives, {
-        currentArea: startingArea,
-        requiredArea:
-          startingArea === "Garage" || drillSettings.excludedAreas.includes(startingArea)
-            ? null
-            : startingArea,
-        usedObjectiveIds: [],
-        history: [],
-        sessionId,
-        drillSettings
-      });
-      const nextState = {
-        ...previousValue,
-        selectedMode,
-        settings: {
-          ...previousValue.settings,
-          startingArea,
-          drillSettings
-        }
-      };
+  function startSession(sessionLaunch) {
+    setCompletionSummary(null);
 
-      if (!objective) {
+    updateState((previousValue) => {
+      const sessionSpec = sessionLaunch?.sessionSpec;
+      const exportSeed = sessionLaunch?.exportSeed ?? "";
+
+      if (!sessionSpec?.objectiveIds?.length) {
         return {
-          ...nextState,
+          ...previousValue,
           currentSession: null
         };
       }
 
+      const firstObjective = objectivesById[sessionSpec.objectiveIds[0]];
+      if (!firstObjective) {
+        return {
+          ...previousValue,
+          currentSession: null
+        };
+      }
+
+      const sessionId = buildSessionId();
+      const now = Date.now();
+      const selectedMode = previousValue.selectedMode ?? "drills";
+      const nextSettings = {
+        ...previousValue.settings,
+        startingArea: sessionSpec.config.startingArea,
+        drillSettings: sessionSpec.config
+      };
+
       return {
-        ...nextState,
-        currentSession: buildObjectiveSessionState({
-          session: {
-            id: sessionId,
-            startedAt: now,
-            unlockedTapeAreas: []
-          },
-          currentArea: startingArea,
-          objective,
+        ...previousValue,
+        selectedMode,
+        settings: nextSettings,
+        currentSession: buildSeededSessionState({
+          sessionId,
           now,
-          usedObjectiveIds: [objective.id],
-          drillSettings
+          currentArea: sessionSpec.config.startingArea,
+          objective: firstObjective,
+          currentObjectiveIndex: 0,
+          sessionSpec,
+          exportSeed
         })
       };
     });
@@ -112,7 +113,7 @@ export function useDrillSession(appState, setAppState) {
         return previousValue;
       }
 
-      const objective = objectivesById[session.currentObjectiveId];
+      const objective = resolveCurrentObjective(session);
       if (!objective) {
         return previousValue;
       }
@@ -141,7 +142,7 @@ export function useDrillSession(appState, setAppState) {
         return previousValue;
       }
 
-      const objective = objectivesById[session.currentObjectiveId];
+      const objective = resolveCurrentObjective(session);
       if (!objective) {
         return previousValue;
       }
@@ -192,6 +193,7 @@ export function useDrillSession(appState, setAppState) {
           ...session,
           pausedAt: null,
           totalPausedMs: session.totalPausedMs + pauseDurationMs,
+          sessionTotalPausedMs: session.sessionTotalPausedMs + pauseDurationMs,
           [phaseKey]: session[phaseKey] + pauseDurationMs
         }
       };
@@ -199,6 +201,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function endSession() {
+    setCompletionSummary(null);
     updateState((previousValue) => ({
       ...previousValue,
       currentSession: null
@@ -214,13 +217,15 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function resolveObjective(result) {
+    let nextCompletionSummary = null;
+
     updateState((previousValue) => {
       const session = previousValue.currentSession;
       if (!session) {
         return previousValue;
       }
 
-      const objective = objectivesById[session.currentObjectiveId];
+      const objective = resolveCurrentObjective(session);
       if (!objective) {
         return {
           ...previousValue,
@@ -271,38 +276,49 @@ export function useDrillSession(appState, setAppState) {
         endedAt
       };
       const nextHistory = [...previousValue.history, historyEntry];
-      const nextArea =
-        result === "skip"
-          ? session.currentArea
-          : objective.area ?? session.currentArea;
-      const nextObjective = generateNextDrill(allObjectives, {
-        currentArea: nextArea,
-        usedObjectiveIds: session.usedObjectiveIds,
-        history: nextHistory,
-        sessionId: session.id,
-        drillSettings: session.drillSettings ?? previousValue.settings.drillSettings
+      const nextTransition = resolveSeededSessionTransition({
+        session,
+        currentObjective: objective,
+        result,
+        endedAt,
+        objectiveLookup: (objectiveId) => objectivesById[objectiveId]
       });
+
+      if (!nextTransition.nextObjective) {
+        nextCompletionSummary = nextTransition.completionSummary;
+
+        return {
+          ...previousValue,
+          history: nextHistory,
+          bestTimesByObjective: recordBestTime(previousValue.bestTimesByObjective, historyEntry),
+          aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
+          currentSession: null
+        };
+      }
 
       return {
         ...previousValue,
         history: nextHistory,
         bestTimesByObjective: recordBestTime(previousValue.bestTimesByObjective, historyEntry),
         aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
-        currentSession: nextObjective
-          ? buildObjectiveSessionState({
-              session: {
-                ...session,
-                unlockedTapeAreas: session.unlockedTapeAreas
-              },
-              currentArea: nextArea,
-              objective: nextObjective,
-              now: endedAt,
-              usedObjectiveIds: [...session.usedObjectiveIds, nextObjective.id],
-              drillSettings: session.drillSettings ?? previousValue.settings.drillSettings
-            })
-          : null
+        currentSession: buildSeededSessionState({
+          sessionId: session.id,
+          now: endedAt,
+          currentArea: nextTransition.nextArea,
+          objective: nextTransition.nextObjective,
+          currentObjectiveIndex: nextTransition.nextObjectiveIndex,
+          sessionSpec: session.sessionSpec,
+          exportSeed: session.exportSeed,
+          unlockedTapeAreas: session.unlockedTapeAreas,
+          sessionStartedAt: session.sessionStartedAt,
+          sessionTotalPausedMs: session.sessionTotalPausedMs
+        })
       };
     });
+
+    if (nextCompletionSummary) {
+      setCompletionSummary(nextCompletionSummary);
+    }
   }
 
   function goToModeSelect() {
@@ -360,7 +376,33 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function resetAllData() {
+    setCompletionSummary(null);
     setAppState(createDefaultAppState());
+  }
+
+  function deleteHistoryEntry(historyIndex) {
+    updateState((previousValue) => {
+      if (
+        !Number.isInteger(historyIndex) ||
+        historyIndex < 0 ||
+        historyIndex >= previousValue.history.length
+      ) {
+        return previousValue;
+      }
+
+      const nextHistory = previousValue.history.filter((_, index) => index !== historyIndex);
+      const rebuiltPerformance = rebuildPerformanceState(nextHistory);
+
+      return {
+        ...previousValue,
+        history: nextHistory,
+        ...rebuiltPerformance
+      };
+    });
+  }
+
+  function dismissCompletionSummary() {
+    setCompletionSummary(null);
   }
 
   function performPhaseAction() {
@@ -380,6 +422,7 @@ export function useDrillSession(appState, setAppState) {
 
     completeObjective();
   }
+
   const phaseActionLabel = getPhaseActionLabel(currentSession?.phase);
 
   return {
@@ -388,6 +431,7 @@ export function useDrillSession(appState, setAppState) {
     history,
     stats,
     phaseInfo,
+    completionSummary,
     settings: appState.settings,
     startingArea: appState.settings.startingArea,
     selectedMode: appState.selectedMode,
@@ -400,6 +444,7 @@ export function useDrillSession(appState, setAppState) {
     completeObjective,
     skipObjective,
     endSession,
+    dismissCompletionSummary,
     goToModeSelect,
     goToDrills,
     goToLearn,
@@ -407,6 +452,7 @@ export function useDrillSession(appState, setAppState) {
     updateSettings,
     updateHotkey,
     clearHotkey,
-    resetAllData
+    resetAllData,
+    deleteHistoryEntry
   };
 }

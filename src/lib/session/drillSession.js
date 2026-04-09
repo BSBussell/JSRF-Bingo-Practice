@@ -2,7 +2,6 @@
 // This file owns the "travel -> tape -> challenge" shape, plus the bits that
 // are easy to let drift when the runtime session, timer UI, and offline sampler
 // all need to agree on what a square means.
-import { OBJECTIVE_FRESHNESS_WINDOW } from "./drillSessionConstants.js";
 
 export const TAPE_REQUIRED_OBJECTIVE_TYPES = new Set([
   "grind_count",
@@ -53,7 +52,7 @@ export function buildObjectiveSessionState({
   currentArea,
   objective,
   now,
-  usedObjectiveIds,
+  currentObjectiveIndex,
   drillSettings
 }) {
   const phaseInfo = buildObjectivePhaseInfo(
@@ -67,6 +66,7 @@ export function buildObjectiveSessionState({
     ...session,
     currentArea,
     currentObjectiveId: objective.id,
+    currentObjectiveIndex,
     currentObjectiveGeneratedAt: now,
     objectiveStartedAt: now,
     phaseStartedAt: now,
@@ -75,9 +75,6 @@ export function buildObjectiveSessionState({
     tapeStartedAt: phase === "tape" ? now : null,
     tapeUnlockedAt: null,
     challengeStartedAt: phase === "challenge" ? now : null,
-    // Freshness is capped here so every caller gets the same no-repeat window
-    // without having to remember to trim it themselves.
-    usedObjectiveIds: usedObjectiveIds.slice(-OBJECTIVE_FRESHNESS_WINDOW),
     drillSettings,
     unlockedTapeAreas: session.unlockedTapeAreas,
     pausedAt: null,
@@ -85,6 +82,81 @@ export function buildObjectiveSessionState({
     travelPausedMs: 0,
     tapePausedMs: 0,
     challengePausedMs: 0
+  };
+}
+
+export function buildSeededSessionState({
+  sessionId,
+  now,
+  currentArea,
+  objective,
+  currentObjectiveIndex,
+  sessionSpec,
+  exportSeed,
+  unlockedTapeAreas = [],
+  sessionStartedAt = now,
+  sessionTotalPausedMs = 0
+}) {
+  return buildObjectiveSessionState({
+    session: {
+      id: sessionId,
+      unlockedTapeAreas,
+      objectiveIds: sessionSpec.objectiveIds.slice(),
+      sessionSpec,
+      exportSeed,
+      sessionStartedAt,
+      sessionTotalPausedMs
+    },
+    currentArea,
+    objective,
+    now,
+    currentObjectiveIndex,
+    drillSettings: sessionSpec.config
+  });
+}
+
+export function buildSessionCompletionSummary({
+  session,
+  endedAt
+}) {
+  return {
+    sessionId: session.id,
+    finishedAt: endedAt,
+    exportSeed: session.exportSeed ?? "",
+    objectiveCount: Array.isArray(session.objectiveIds) ? session.objectiveIds.length : 0,
+    totalDurationMs: Math.max(
+      0,
+      endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
+    )
+  };
+}
+
+export function resolveSeededSessionTransition({
+  session,
+  currentObjective,
+  result,
+  endedAt,
+  objectiveLookup
+}) {
+  const nextArea =
+    result === "skip"
+      ? session.currentArea
+      : currentObjective.area ?? session.currentArea;
+  const nextObjectiveIndex = session.currentObjectiveIndex + 1;
+  const nextObjectiveId = session.objectiveIds[nextObjectiveIndex] ?? null;
+  const nextObjective = nextObjectiveId ? objectiveLookup(nextObjectiveId) ?? null : null;
+
+  return {
+    nextArea,
+    nextObjectiveIndex,
+    nextObjectiveId,
+    nextObjective,
+    completionSummary: nextObjective
+      ? null
+      : buildSessionCompletionSummary({
+          session,
+          endedAt
+        })
   };
 }
 

@@ -1,3 +1,4 @@
+import { CompletionPanel } from "./components/CompletionPanel.jsx";
 import { Header } from "./components/Header.jsx";
 import { DrillCard } from "./components/DrillCard.jsx";
 import { DustyBackdrop } from "./components/DustyBackdrop.jsx";
@@ -17,14 +18,15 @@ import {
   isDrillPopoutView,
   openDrillPopoutWindow,
   syncDrillPopoutAlwaysOnTop
-} from "./lib/drillPopout.js";
-import { getPhasePausedDuration } from "./lib/drillSession.js";
+} from "./lib/drill/drillPopout.js";
+import { getPhasePausedDuration } from "./lib/session/drillSession.js";
 import { isTauriRuntime } from "./lib/runtime.js";
 import {
   APP_STORAGE_KEY,
   createDefaultAppState,
   normalizeAppState
 } from "./lib/storage.js";
+import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useState } from "react";
 
 function CurrentDrillPanel({
@@ -82,7 +84,10 @@ function PracticeModeView({
         </div>
         {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
         {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
-        <HistoryPanel history={drillSession.history} />
+        <HistoryPanel
+          history={drillSession.history}
+          onDeleteEntry={drillSession.deleteHistoryEntry}
+        />
         <StatsPanel stats={drillSession.stats} />
       </div>
     );
@@ -90,13 +95,22 @@ function PracticeModeView({
 
   return (
     <div className="content-stack">
+      {drillSession.completionSummary ? (
+        <CompletionPanel
+          completionSummary={drillSession.completionSummary}
+          onDismiss={drillSession.dismissCompletionSummary}
+        />
+      ) : null}
       <SetupPanel
         defaultArea={drillSession.startingArea}
         defaultDrillSettings={settings.drillSettings}
         onStartSession={drillSession.startSession}
         mode={activeMode}
       />
-      <HistoryPanel history={drillSession.history} />
+      <HistoryPanel
+        history={drillSession.history}
+        onDeleteEntry={drillSession.deleteHistoryEntry}
+      />
       <StatsPanel stats={drillSession.stats} />
     </div>
   );
@@ -139,9 +153,9 @@ export default function App() {
   );
   const drillSession = useDrillSession(appState, setAppState);
   const totalTimer = useTimer(
-    drillSession.currentSession?.objectiveStartedAt ?? null,
+    drillSession.currentSession?.sessionStartedAt ?? null,
     drillSession.currentSession?.pausedAt ?? null,
-    drillSession.currentSession?.totalPausedMs ?? 0
+    drillSession.currentSession?.sessionTotalPausedMs ?? 0
   );
   const splitTimer = useTimer(
     drillSession.currentSession?.phaseStartedAt ?? null,
@@ -150,6 +164,7 @@ export default function App() {
   );
   const activeMode = appState.selectedMode;
   const settings = drillSession.settings;
+  const activeTheme = resolveTheme(settings.themeId, settings.customTheme);
   const useDesktopGlobalHotkeys = isTauriRuntime();
   const hasActiveSession = Boolean(drillSession.currentSession);
   const isSessionMode = activeMode === "drills" || activeMode === "learn";
@@ -232,7 +247,7 @@ export default function App() {
 
   if (popoutView) {
     return (
-      <div className="popout-root">
+      <div className="popout-root" style={activeTheme.cssVariables}>
         <PopoutViewport>
           {drillSession.currentSession ? (
             <CurrentDrillPanel
@@ -259,8 +274,8 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
-      <DustyBackdrop />
+    <div className="app-shell" style={activeTheme.cssVariables}>
+      <DustyBackdrop backdrop={activeTheme.backdrop} />
       <div className="background-glow background-glow-left" />
       <div className="background-glow background-glow-right" />
 

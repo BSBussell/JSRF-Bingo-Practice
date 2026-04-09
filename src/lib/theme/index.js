@@ -1,0 +1,23 @@
+export {
+  BACKDROP_DENSITY_FIELDS,
+  BACKDROP_DIRECTION_OPTIONS,
+  BACKDROP_MOTION_FIELDS,
+  BACKDROP_SPAWN_ZONE_OPTIONS,
+  CORE_COLOR_FIELDS,
+  CUSTOM_THEME_ID,
+  DEFAULT_BACKDROP,
+  DEFAULT_CUSTOM_THEME,
+  DEFAULT_THEME_ID,
+  HAZE_COLOR_FIELDS,
+  PARTICLE_APPEARANCE_FIELDS,
+  PARTICLE_COLOR_FIELDS,
+  THEME_CAPS
+} from "./schema.js";
+
+export {
+  THEME_OPTIONS,
+  createDefaultCustomTheme,
+  normalizeCustomTheme,
+  normalizeThemeId,
+  resolveTheme
+} from "./resolve.js";

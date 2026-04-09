@@ -1,11 +1,18 @@
-import { areasByDistrict, objectiveAreaOrder } from "../data/areaMeta.js";
-import { DRILL_CATEGORIES } from "./drillCategories.js";
+import { areasByDistrict, objectiveAreaOrder } from "../../data/areaMeta.js";
+import { allObjectives } from "../../data/objectives.js";
+import {
+    DRILL_CATEGORY_BY_KEY,
+    DRILL_CATEGORIES,
+    getObjectiveCategory,
+} from "./drillCategories.js";
 
 export const CATEGORY_VARIANCE_MIN = -3;
 export const CATEGORY_VARIANCE_MAX = 2;
 export const MOVEMENT_VARIANCE_MIN = -2;
 export const MOVEMENT_VARIANCE_MAX = 2;
 export const VARIANCE_STEP = 1;
+export const NUMBER_OF_OBJECTIVES_MIN = 1;
+export const NUMBER_OF_OBJECTIVES_MAX = 123;
 
 export const VARIANCE_LABELS = {
     [-3]: "None",
@@ -41,6 +48,7 @@ export const DRILL_MOVEMENT_FIELDS = [
 ];
 
 export const DEFAULT_DRILL_SETTINGS = {
+    numberOfObjectives: 25,
     excludedAreas: [],
     graffitiVariance: -2,
     unlockVariance: -1,
@@ -53,6 +61,17 @@ export const DEFAULT_DRILL_SETTINGS = {
 
 function fallbackNumber(value, fallback) {
     return Number.isFinite(value) ? value : fallback;
+}
+
+function clampNumberOfObjectives(value, maxValue = NUMBER_OF_OBJECTIVES_MAX) {
+    if (!Number.isFinite(value)) {
+        return DEFAULT_DRILL_SETTINGS.numberOfObjectives;
+    }
+
+    return Math.max(
+        NUMBER_OF_OBJECTIVES_MIN,
+        Math.min(maxValue, Math.round(value)),
+    );
 }
 
 function clampCategoryVariance(value) {
@@ -98,6 +117,34 @@ function deriveNotebookVariance(value) {
     return clampCategoryVariance(sum / legacyNotebookValues.length);
 }
 
+function isObjectiveEnabledBySettings(objective, drillSettings) {
+    if (drillSettings.excludedAreas.includes(objective.area)) {
+        return false;
+    }
+
+    if (drillSettings.trueRandom) {
+        return true;
+    }
+
+    const category = getObjectiveCategory(objective.type);
+    const categorySettingKey = DRILL_CATEGORY_BY_KEY[category]?.settingKey;
+
+    if (!categorySettingKey) {
+        return true;
+    }
+
+    return drillSettings[categorySettingKey] > CATEGORY_VARIANCE_MIN;
+}
+
+export function getAvailableObjectiveCount(drillSettings, objectives = allObjectives) {
+    if (!Array.isArray(objectives) || objectives.length === 0) {
+        return 0;
+    }
+
+    return objectives.filter((objective) => isObjectiveEnabledBySettings(objective, drillSettings))
+        .length;
+}
+
 export function normalizeDrillSettings(value) {
     if (!value || typeof value !== "object") {
         return {
@@ -107,15 +154,21 @@ export function normalizeDrillSettings(value) {
     }
 
     const excludedAreas = Array.isArray(value.excludedAreas)
-        ? value.excludedAreas.filter(
-              (area, index, areas) =>
-                  typeof area === "string" &&
-                  objectiveAreaOrder.includes(area) &&
-                  areas.indexOf(area) === index,
-          )
+        ? value.excludedAreas
+              .filter(
+                  (area, index, areas) =>
+                      typeof area === "string" &&
+                      objectiveAreaOrder.includes(area) &&
+                      areas.indexOf(area) === index,
+              )
+              .sort(
+                  (left, right) =>
+                      objectiveAreaOrder.indexOf(left) -
+                      objectiveAreaOrder.indexOf(right),
+              )
         : [];
 
-    return {
+    const normalizedSettings = {
         excludedAreas,
         graffitiVariance: clampCategoryVariance(
             fallbackNumber(
@@ -154,6 +207,23 @@ export function normalizeDrillSettings(value) {
             typeof value.trueRandom === "boolean"
                 ? value.trueRandom
                 : DEFAULT_DRILL_SETTINGS.trueRandom,
+    };
+
+    const availableObjectiveCount = getAvailableObjectiveCount(normalizedSettings);
+    const effectiveObjectiveMax = Math.max(
+        NUMBER_OF_OBJECTIVES_MIN,
+        Math.min(NUMBER_OF_OBJECTIVES_MAX, availableObjectiveCount),
+    );
+
+    return {
+        ...normalizedSettings,
+        numberOfObjectives: clampNumberOfObjectives(
+            fallbackNumber(
+                value.numberOfObjectives,
+                DEFAULT_DRILL_SETTINGS.numberOfObjectives,
+            ),
+            effectiveObjectiveMax,
+        ),
     };
 }
 

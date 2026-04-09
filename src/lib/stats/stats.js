@@ -18,6 +18,14 @@ function updateBucket(bucket = {}, key, durationMs) {
   };
 }
 
+export function createEmptyAggregateStats() {
+  return {
+    squareByArea: {},
+    tapeByArea: {},
+    graffitiByArea: {}
+  };
+}
+
 export function recordCompletionStats(aggregateStats, entry) {
   const scoreDurationMs = entry.challengeDurationMs ?? entry.durationMs;
   const nextStats = {
@@ -76,6 +84,19 @@ export function recordBestTime(bestTimesByObjective, entry) {
   }
 
   return bestTimesByObjective;
+}
+
+export function rebuildPerformanceState(history) {
+  return history.reduce(
+    (state, entry) => ({
+      bestTimesByObjective: recordBestTime(state.bestTimesByObjective, entry),
+      aggregateStats: recordCompletionStats(state.aggregateStats, entry)
+    }),
+    {
+      bestTimesByObjective: {},
+      aggregateStats: createEmptyAggregateStats()
+    }
+  );
 }
 
 function averageRows(collection) {

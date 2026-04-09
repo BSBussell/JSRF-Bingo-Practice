@@ -1,4 +1,4 @@
-import { sampleDrillGeneration, formatCountsTable } from "../src/lib/drillSampler.js";
+import { sampleDrillGeneration, formatCountsTable } from "../src/lib/drill/drillSampler.js";
 
 function readArgument(flag, fallback = null) {
   const index = process.argv.indexOf(flag);
