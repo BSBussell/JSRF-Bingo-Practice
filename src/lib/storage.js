@@ -31,8 +31,10 @@ export const DEFAULT_SETTINGS = {
   startingArea: "Garage",
   drillSettings: DEFAULT_DRILL_SETTINGS,
   hotkeys: DEFAULT_HOTKEYS,
+  learnPanelDefaultVisible: false,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
+  autoOpenPopout: false,
   popoutAlwaysOnTop: false,
   themeId: DEFAULT_THEME_ID,
   customTheme: createDefaultCustomTheme()
@@ -78,7 +80,7 @@ function normalizeHotkeys(value) {
   };
 }
 
-function normalizeSettings(value) {
+function normalizeSettings(value, legacySelectedMode = null) {
   if (!value || typeof value !== "object") {
     return {
       ...DEFAULT_SETTINGS,
@@ -97,6 +99,12 @@ function normalizeSettings(value) {
         : DEFAULT_SETTINGS.startingArea,
     drillSettings: normalizeDrillSettings(value.drillSettings),
     hotkeys: normalizeHotkeys(value.hotkeys),
+    learnPanelDefaultVisible:
+      typeof value.learnPanelDefaultVisible === "boolean"
+        ? value.learnPanelDefaultVisible
+        : legacySelectedMode === "learn"
+          ? true
+          : DEFAULT_SETTINGS.learnPanelDefaultVisible,
     learnVideoAutoplay:
       typeof value.learnVideoAutoplay === "boolean"
         ? value.learnVideoAutoplay
@@ -105,6 +113,10 @@ function normalizeSettings(value) {
       typeof value.learnAudioMuted === "boolean"
         ? value.learnAudioMuted
         : DEFAULT_SETTINGS.learnAudioMuted,
+    autoOpenPopout:
+      typeof value.autoOpenPopout === "boolean"
+        ? value.autoOpenPopout
+        : DEFAULT_SETTINGS.autoOpenPopout,
     popoutAlwaysOnTop:
       typeof value.popoutAlwaysOnTop === "boolean"
         ? value.popoutAlwaysOnTop
@@ -114,7 +126,7 @@ function normalizeSettings(value) {
   };
 }
 
-function normalizeCurrentSession(currentSession) {
+function normalizeCurrentSession(currentSession, settings) {
   if (!currentSession || typeof currentSession !== "object") {
     return null;
   }
@@ -157,6 +169,13 @@ function normalizeCurrentSession(currentSession) {
     Date.now();
   const phase = currentSession.phase ?? "challenge";
   const phaseStartedAt = currentSession.phaseStartedAt ?? objectiveStartedAt;
+  const sessionUi = currentSession.ui && typeof currentSession.ui === "object" ? currentSession.ui : {};
+  const learnPanelVisible =
+    typeof sessionUi.learnPanelVisible === "boolean"
+      ? sessionUi.learnPanelVisible
+      : typeof currentSession.learnPanelVisible === "boolean"
+        ? currentSession.learnPanelVisible
+        : settings.learnPanelDefaultVisible;
 
   return {
     ...currentSession,
@@ -187,7 +206,11 @@ function normalizeCurrentSession(currentSession) {
     totalPausedMs: currentSession.totalPausedMs ?? 0,
     travelPausedMs: currentSession.travelPausedMs ?? 0,
     tapePausedMs: currentSession.tapePausedMs ?? 0,
-    challengePausedMs: currentSession.challengePausedMs ?? 0
+    challengePausedMs: currentSession.challengePausedMs ?? 0,
+    ui: {
+      ...sessionUi,
+      learnPanelVisible
+    }
   };
 }
 
@@ -220,6 +243,108 @@ function normalizeBestTimesByObjective(bestTimesByObjective) {
   );
 }
 
+function normalizePendingCompletion(pendingCompletion) {
+  if (!pendingCompletion || typeof pendingCompletion !== "object") {
+    return null;
+  }
+
+  const sessionSpecInput = pendingCompletion.sessionSpec;
+  if (
+    !sessionSpecInput ||
+    typeof sessionSpecInput !== "object" ||
+    typeof sessionSpecInput.rngSeed !== "string"
+  ) {
+    return null;
+  }
+
+  const objectiveIds = Array.isArray(sessionSpecInput.objectiveIds)
+    ? sessionSpecInput.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    : [];
+
+  if (objectiveIds.length === 0) {
+    return null;
+  }
+
+  const sessionSpec = {
+    version: sessionSpecInput.version ?? 1,
+    rngSeed: sessionSpecInput.rngSeed,
+    config: normalizeSessionConfig(sessionSpecInput.config),
+    objectiveIds: objectiveIds.slice()
+  };
+  const objectiveCount = Number.isInteger(pendingCompletion.objectiveCount)
+    ? Math.max(0, pendingCompletion.objectiveCount)
+    : objectiveIds.length;
+  const squaresCleared = Number.isInteger(pendingCompletion.squaresCleared)
+    ? Math.min(objectiveCount, Math.max(0, pendingCompletion.squaresCleared))
+    : 0;
+  const finishedAt = Number.isFinite(pendingCompletion.finishedAt)
+    ? Math.max(0, pendingCompletion.finishedAt)
+    : 0;
+  const totalDurationMs = Number.isFinite(pendingCompletion.totalDurationMs)
+    ? Math.max(0, pendingCompletion.totalDurationMs)
+    : 0;
+
+  return {
+    sessionId:
+      typeof pendingCompletion.sessionId === "string" ? pendingCompletion.sessionId : "",
+    finishedAt,
+    objectiveCount,
+    squaresCleared,
+    totalDurationMs,
+    exportSeed:
+      typeof pendingCompletion.exportSeed === "string" && pendingCompletion.exportSeed
+        ? pendingCompletion.exportSeed
+        : encodeSessionSeed(sessionSpec),
+    sessionSpec
+  };
+}
+
+function normalizeStartCountdown(startCountdown) {
+  if (!startCountdown || typeof startCountdown !== "object") {
+    return null;
+  }
+
+  const sessionSpecInput = startCountdown.sessionSpec;
+  if (
+    !sessionSpecInput ||
+    typeof sessionSpecInput !== "object" ||
+    typeof sessionSpecInput.rngSeed !== "string"
+  ) {
+    return null;
+  }
+
+  const objectiveIds = Array.isArray(sessionSpecInput.objectiveIds)
+    ? sessionSpecInput.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    : [];
+
+  if (objectiveIds.length === 0) {
+    return null;
+  }
+
+  return {
+    id:
+      typeof startCountdown.id === "string" && startCountdown.id
+        ? startCountdown.id
+        : `countdown_${Date.now()}`,
+    sessionId:
+      typeof startCountdown.sessionId === "string" && startCountdown.sessionId
+        ? startCountdown.sessionId
+        : `session_${Date.now()}`,
+    startedAt:
+      Number.isFinite(startCountdown.startedAt) && startCountdown.startedAt >= 0
+        ? startCountdown.startedAt
+        : Date.now(),
+    exportSeed:
+      typeof startCountdown.exportSeed === "string" ? startCountdown.exportSeed : "",
+    sessionSpec: {
+      version: sessionSpecInput.version ?? 1,
+      rngSeed: sessionSpecInput.rngSeed,
+      config: normalizeSessionConfig(sessionSpecInput.config),
+      objectiveIds: objectiveIds.slice()
+    }
+  };
+}
+
 export function createDefaultAppState() {
   return {
     selectedMode: null,
@@ -232,6 +357,8 @@ export function createDefaultAppState() {
       customTheme: createDefaultCustomTheme()
     },
     currentSession: null,
+    startCountdown: null,
+    pendingCompletion: null,
     history: [],
     bestTimesByObjective: {},
     aggregateStats: createEmptyAggregateStats()
@@ -244,11 +371,30 @@ export function normalizeAppState(value) {
     return defaults;
   }
 
+  const rawSelectedMode =
+    typeof value.selectedMode === "string"
+      ? value.selectedMode
+      : typeof value.selectedView === "string"
+        ? value.selectedView
+        : null;
+  const selectedMode =
+    rawSelectedMode === "settings"
+      ? "settings"
+      : rawSelectedMode === "practice" ||
+          rawSelectedMode === "drills" ||
+          rawSelectedMode === "learn"
+        ? "practice"
+        : null;
+  const settings = normalizeSettings(value.settings, rawSelectedMode);
+
   return {
     ...defaults,
     ...value,
-    settings: normalizeSettings(value.settings),
-    currentSession: normalizeCurrentSession(value.currentSession),
+    selectedMode,
+    settings,
+    currentSession: normalizeCurrentSession(value.currentSession, settings),
+    startCountdown: normalizeStartCountdown(value.startCountdown),
+    pendingCompletion: normalizePendingCompletion(value.pendingCompletion),
     history: Array.isArray(value.history) ? value.history.map(normalizeHistoryEntry) : [],
     bestTimesByObjective: normalizeBestTimesByObjective(value.bestTimesByObjective),
     aggregateStats: {

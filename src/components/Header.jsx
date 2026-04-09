@@ -2,8 +2,7 @@ export function Header({
   activeMode,
   hasActiveSession,
   onOpenHome,
-  onSelectDrills,
-  onSelectLearn,
+  onSelectPractice,
   onSelectSettings
 }) {
   return (
@@ -15,20 +14,12 @@ export function Header({
 
       <nav className="main-nav" aria-label="Practice modes">
         <button
-          className={`nav-link ${activeMode === "drills" ? "is-active" : ""}`}
+          className={`nav-link ${activeMode === "practice" ? "is-active" : ""}`}
           type="button"
-          onClick={onSelectDrills}
+          onClick={onSelectPractice}
         >
-          Drills
-          {hasActiveSession && activeMode === "drills" ? <span className="nav-badge">Live</span> : null}
-        </button>
-        <button
-          className={`nav-link ${activeMode === "learn" ? "is-active" : ""}`}
-          type="button"
-          onClick={onSelectLearn}
-        >
-          Learn
-          {hasActiveSession && activeMode === "learn" ? <span className="nav-badge">Live</span> : null}
+          Practice
+          {hasActiveSession && activeMode === "practice" ? <span className="nav-badge">Live</span> : null}
         </button>
         <button
           className={`nav-link ${activeMode === "settings" ? "is-active" : ""}`}

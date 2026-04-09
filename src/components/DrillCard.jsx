@@ -4,12 +4,14 @@ import { TimerDisplay } from "./TimerDisplay.jsx";
 export function DrillCard({
   objective,
   learnContent,
+  learnPanelVisible,
   phaseInfo,
   totalTimer,
   splitTimer,
   phaseActionLabel,
   onPhaseAction,
   onSkipSplit,
+  onToggleLearnPanel,
   onTogglePause,
   onSkip,
   onEndSession
@@ -122,7 +124,7 @@ export function DrillCard({
       >
         <div className="timer-subslot">
           <TimerDisplay
-            label="Total Run"
+            label="Total Drill Time"
             formattedElapsed={totalTimer.formattedElapsed}
             isRunning={totalTimer.isRunning}
             isPaused={totalTimer.isPaused}
@@ -131,22 +133,50 @@ export function DrillCard({
         </div>
       </TimerDisplay>
 
-      <div className="action-row">
-        <button className="primary-button" type="button" onClick={onPhaseAction}>
-          {phaseActionLabel}
-        </button>
-        <button className="secondary-button" type="button" onClick={onSkipSplit}>
-          Skip Split
-        </button>
-        <button className="secondary-button" type="button" onClick={onSkip}>
-          Skip Objective
-        </button>
-        <button className="secondary-button" type="button" onClick={onTogglePause}>
-          {phaseInfo?.isPaused ? "Resume" : "Pause"}
-        </button>
-        <button className="ghost-button" type="button" onClick={onEndSession}>
-          End Session
-        </button>
+      <div className="action-row drill-action-row">
+        <div className="drill-action-main">
+          <button className="primary-button" type="button" onClick={onPhaseAction}>
+            {phaseActionLabel}
+          </button>
+          <button className="secondary-button" type="button" onClick={onSkip}>
+            Skip Objective
+          </button>
+          <button className="secondary-button" type="button" onClick={onTogglePause}>
+            {phaseInfo?.isPaused ? "Resume" : "Pause"}
+          </button>
+        </div>
+
+        <div className="drill-action-menu">
+          <button
+            className="secondary-button drill-action-menu-trigger"
+            type="button"
+            aria-label="More actions"
+            aria-haspopup="menu"
+          >
+            ☰
+          </button>
+          <div className="drill-action-menu-list" role="menu" aria-label="Additional actions">
+            <button className="secondary-button drill-action-menu-item" type="button" onClick={onSkipSplit}>
+              Skip Split
+            </button>
+            {onToggleLearnPanel ? (
+              <button
+                className="secondary-button drill-action-menu-item"
+                type="button"
+                onClick={onToggleLearnPanel}
+              >
+                {learnPanelVisible ? "Hide Route Guide" : "Show Route Guide"}
+              </button>
+            ) : null}
+            <button
+              className="secondary-button danger-button drill-action-menu-item"
+              type="button"
+              onClick={onEndSession}
+            >
+              End Session
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

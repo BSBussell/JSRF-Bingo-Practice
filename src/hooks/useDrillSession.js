@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { objectivesById } from "../data/objectives.js";
 import {
@@ -21,9 +21,14 @@ import {
 
 const START_COUNTDOWN_SEQUENCE = ["3", "2", "1", "GO!"];
 const START_COUNTDOWN_STEP_MS = 1000;
+const START_COUNTDOWN_DURATION_MS = START_COUNTDOWN_SEQUENCE.length * START_COUNTDOWN_STEP_MS;
 
 function buildSessionId() {
   return `session_${Date.now()}`;
+}
+
+function buildCountdownId() {
+  return `countdown_${Date.now()}`;
 }
 
 function resolveCurrentObjective(currentSession) {
@@ -38,11 +43,37 @@ function resolveCurrentObjective(currentSession) {
   return objectivesById[objectiveId] ?? null;
 }
 
+function resolveSessionLearnPanelVisible(session, settings) {
+  if (typeof session?.ui?.learnPanelVisible === "boolean") {
+    return session.ui.learnPanelVisible;
+  }
+
+  return settings.learnPanelDefaultVisible;
+}
+
+function resolveStartCountdownDeadline(startCountdown) {
+  return (startCountdown?.startedAt ?? 0) + START_COUNTDOWN_DURATION_MS;
+}
+
+function resolveStartCountdownLabel(startCountdown, now) {
+  if (!startCountdown) {
+    return null;
+  }
+
+  const elapsedMs = Math.max(0, now - startCountdown.startedAt);
+  const stepIndex = Math.min(
+    START_COUNTDOWN_SEQUENCE.length - 1,
+    Math.floor(elapsedMs / START_COUNTDOWN_STEP_MS)
+  );
+
+  return START_COUNTDOWN_SEQUENCE[stepIndex] ?? null;
+}
+
 export function useDrillSession(appState, setAppState) {
-  const [completionSummary, setCompletionSummary] = useState(null);
-  const [startCountdownStepIndex, setStartCountdownStepIndex] = useState(null);
-  const startCountdownTimeoutRef = useRef(null);
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const currentSession = appState.currentSession;
+  const startCountdown = appState.startCountdown;
+  const pendingCompletion = appState.pendingCompletion;
   const currentObjective = resolveCurrentObjective(currentSession);
   const history = appState.history;
   const stats = buildStatsViewModel(appState.aggregateStats, appState.history);
@@ -57,116 +88,155 @@ export function useDrillSession(appState, setAppState) {
     setAppState((previousValue) => normalizeAppState(updater(previousValue)));
   }
 
-  function setSelectedMode(selectedMode) {
-    updateState((previousValue) => ({
-      ...previousValue,
-      selectedMode
-    }));
-  }
-
-  function clearStartCountdownTimeout() {
-    if (startCountdownTimeoutRef.current !== null) {
-      window.clearTimeout(startCountdownTimeoutRef.current);
-      startCountdownTimeoutRef.current = null;
-    }
-  }
-
-  function cancelStartCountdown() {
-    clearStartCountdownTimeout();
-    setStartCountdownStepIndex(null);
-  }
-
   useEffect(
-    () => () => {
-      clearStartCountdownTimeout();
+    () => {
+      if (!startCountdown) {
+        return undefined;
+      }
+
+      let timeoutId = null;
+
+      function scheduleCountdownTick() {
+        const now = Date.now();
+        setCountdownNow(now);
+
+        const launchAt = resolveStartCountdownDeadline(startCountdown);
+        const remainingMs = launchAt - now;
+        if (remainingMs <= 0) {
+          return;
+        }
+
+        const elapsedMs = Math.max(0, now - startCountdown.startedAt);
+        const msUntilNextStep = START_COUNTDOWN_STEP_MS - (elapsedMs % START_COUNTDOWN_STEP_MS);
+        timeoutId = window.setTimeout(
+          scheduleCountdownTick,
+          Math.min(msUntilNextStep, remainingMs)
+        );
+      }
+
+      scheduleCountdownTick();
+
+      return () => {
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+        }
+      };
     },
-    []
+    [startCountdown]
   );
 
-  function launchSessionNow(sessionLaunch) {
-    updateState((previousValue) => {
-      const sessionSpec = sessionLaunch?.sessionSpec;
-      const exportSeed = sessionLaunch?.exportSeed ?? "";
-
-      if (!sessionSpec?.objectiveIds?.length) {
-        return {
-          ...previousValue,
-          currentSession: null
-        };
+  useEffect(
+    () => {
+      if (!startCountdown) {
+        return undefined;
       }
 
-      const firstObjective = objectivesById[sessionSpec.objectiveIds[0]];
-      if (!firstObjective) {
-        return {
-          ...previousValue,
-          currentSession: null
-        };
-      }
+      const timeoutId = window.setTimeout(() => {
+        updateState((previousValue) => {
+          const pendingStartCountdown = previousValue.startCountdown;
+          if (!pendingStartCountdown || pendingStartCountdown.id !== startCountdown.id) {
+            return previousValue;
+          }
 
-      const sessionId = buildSessionId();
-      const now = Date.now();
-      const selectedMode = previousValue.selectedMode ?? "drills";
-      const nextSettings = {
-        ...previousValue.settings,
-        startingArea: sessionSpec.config.startingArea,
-        drillSettings: sessionSpec.config
+          const sessionSpec = pendingStartCountdown.sessionSpec;
+          const exportSeed = pendingStartCountdown.exportSeed ?? "";
+          if (!sessionSpec?.objectiveIds?.length) {
+            return {
+              ...previousValue,
+              startCountdown: null,
+              currentSession: null
+            };
+          }
+
+          const firstObjective = objectivesById[sessionSpec.objectiveIds[0]];
+          if (!firstObjective) {
+            return {
+              ...previousValue,
+              startCountdown: null,
+              currentSession: null
+            };
+          }
+
+          const learnPanelVisible = resolveSessionLearnPanelVisible(
+            previousValue.currentSession,
+            previousValue.settings
+          );
+          const nextSettings = {
+            ...previousValue.settings,
+            startingArea: sessionSpec.config.startingArea,
+            drillSettings: sessionSpec.config
+          };
+          const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown);
+
+          return {
+            ...previousValue,
+            selectedMode: "practice",
+            settings: nextSettings,
+            pendingCompletion: null,
+            startCountdown: null,
+            currentSession: {
+              ...buildSeededSessionState({
+                sessionId: pendingStartCountdown.sessionId,
+                now: launchedAt,
+                currentArea: sessionSpec.config.startingArea,
+                objective: firstObjective,
+                currentObjectiveIndex: 0,
+                sessionSpec,
+                exportSeed
+              }),
+              ui: {
+                learnPanelVisible
+              }
+            }
+          };
+        });
+      }, Math.max(0, resolveStartCountdownDeadline(startCountdown) - Date.now()));
+
+      return () => {
+        window.clearTimeout(timeoutId);
       };
-
-      return {
-        ...previousValue,
-        selectedMode,
-        settings: nextSettings,
-        currentSession: buildSeededSessionState({
-          sessionId,
-          now,
-          currentArea: sessionSpec.config.startingArea,
-          objective: firstObjective,
-          currentObjectiveIndex: 0,
-          sessionSpec,
-          exportSeed
-        })
-      };
-    });
-  }
-
-  function scheduleStartCountdownStep(sessionLaunch, nextStepIndex) {
-    clearStartCountdownTimeout();
-    startCountdownTimeoutRef.current = window.setTimeout(() => {
-      if (nextStepIndex >= START_COUNTDOWN_SEQUENCE.length) {
-        cancelStartCountdown();
-        launchSessionNow(sessionLaunch);
-        return;
-      }
-
-      setStartCountdownStepIndex(nextStepIndex);
-      scheduleStartCountdownStep(sessionLaunch, nextStepIndex + 1);
-    }, START_COUNTDOWN_STEP_MS);
-  }
+    },
+    [startCountdown, setAppState]
+  );
 
   function startSession(sessionLaunch) {
-    setCompletionSummary(null);
-    if (startCountdownStepIndex !== null || startCountdownTimeoutRef.current !== null) {
+    if (startCountdown) {
       return;
     }
 
     const sessionSpec = sessionLaunch?.sessionSpec;
     const exportSeed = sessionLaunch?.exportSeed ?? "";
     if (!sessionSpec?.objectiveIds?.length || !objectivesById[sessionSpec.objectiveIds[0]]) {
-      cancelStartCountdown();
       updateState((previousValue) => ({
         ...previousValue,
+        startCountdown: null,
         currentSession: null
       }));
       return;
     }
 
-    const pendingLaunchState = {
-      sessionSpec,
-      exportSeed
-    };
+    const countdownId = buildCountdownId();
+    const startedAt = Date.now();
 
-    setStartCountdownStepIndex(0);
-    scheduleStartCountdownStep(pendingLaunchState, 1);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "practice",
+      currentSession: null,
+      pendingCompletion: null,
+      startCountdown: {
+        id: countdownId,
+        sessionId: buildSessionId(),
+        startedAt,
+        sessionSpec: {
+          ...sessionSpec,
+          config: {
+            ...sessionSpec.config
+          },
+          objectiveIds: sessionSpec.objectiveIds.slice()
+        },
+        exportSeed
+      }
+    }));
   }
 
   function markEnteredLevel() {
@@ -264,10 +334,9 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function endSession() {
-    setCompletionSummary(null);
-    cancelStartCountdown();
     updateState((previousValue) => ({
       ...previousValue,
+      startCountdown: null,
       currentSession: null
     }));
   }
@@ -316,8 +385,6 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function resolveObjective(result) {
-    let nextCompletionSummary = null;
-
     updateState((previousValue) => {
       const session = previousValue.currentSession;
       if (!session) {
@@ -384,13 +451,32 @@ export function useDrillSession(appState, setAppState) {
       });
 
       if (!nextTransition.nextObjective) {
-        nextCompletionSummary = nextTransition.completionSummary;
+        const squaresCleared = nextHistory.reduce((count, entry) => {
+          if (entry.sessionId === session.id && entry.result === "complete") {
+            return count + 1;
+          }
+
+          return count;
+        }, 0);
+        const sessionSpec = {
+          ...session.sessionSpec,
+          config: {
+            ...session.sessionSpec.config
+          },
+          objectiveIds: session.sessionSpec.objectiveIds.slice()
+        };
 
         return {
           ...previousValue,
           history: nextHistory,
           bestTimesByObjective: recordBestTime(previousValue.bestTimesByObjective, historyEntry),
           aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
+          pendingCompletion: {
+            ...nextTransition.completionSummary,
+            exportSeed: session.exportSeed ?? nextTransition.completionSummary.exportSeed ?? "",
+            squaresCleared,
+            sessionSpec
+          },
           currentSession: null
         };
       }
@@ -400,44 +486,75 @@ export function useDrillSession(appState, setAppState) {
         history: nextHistory,
         bestTimesByObjective: recordBestTime(previousValue.bestTimesByObjective, historyEntry),
         aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
-        currentSession: buildSeededSessionState({
-          sessionId: session.id,
-          now: endedAt,
-          currentArea: nextTransition.nextArea,
-          objective: nextTransition.nextObjective,
-          currentObjectiveIndex: nextTransition.nextObjectiveIndex,
-          sessionSpec: session.sessionSpec,
-          exportSeed: session.exportSeed,
-          unlockedTapeAreas: session.unlockedTapeAreas,
-          sessionStartedAt: session.sessionStartedAt,
-          sessionTotalPausedMs: session.sessionTotalPausedMs
-        })
+        pendingCompletion: null,
+        currentSession: {
+          ...buildSeededSessionState({
+            sessionId: session.id,
+            now: endedAt,
+            currentArea: nextTransition.nextArea,
+            objective: nextTransition.nextObjective,
+            currentObjectiveIndex: nextTransition.nextObjectiveIndex,
+            sessionSpec: session.sessionSpec,
+            exportSeed: session.exportSeed,
+            unlockedTapeAreas: session.unlockedTapeAreas,
+            sessionStartedAt: session.sessionStartedAt,
+            sessionTotalPausedMs: session.sessionTotalPausedMs
+          }),
+          ui: {
+            learnPanelVisible: resolveSessionLearnPanelVisible(
+              session,
+              previousValue.settings
+            )
+          }
+        }
       };
     });
-
-    if (nextCompletionSummary) {
-      setCompletionSummary(nextCompletionSummary);
-    }
   }
 
   function goToModeSelect() {
-    cancelStartCountdown();
-    setSelectedMode(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: null,
+      startCountdown: null
+    }));
   }
 
-  function goToDrills() {
-    cancelStartCountdown();
-    setSelectedMode("drills");
-  }
-
-  function goToLearn() {
-    cancelStartCountdown();
-    setSelectedMode("learn");
+  function goToPractice() {
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "practice",
+      startCountdown: null
+    }));
   }
 
   function goToSettings() {
-    cancelStartCountdown();
-    setSelectedMode("settings");
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "settings",
+      startCountdown: null
+    }));
+  }
+
+  function toggleLearnPanelVisibility() {
+    updateState((previousValue) => {
+      const session = previousValue.currentSession;
+      if (!session) {
+        return previousValue;
+      }
+
+      const currentValue = resolveSessionLearnPanelVisible(session, previousValue.settings);
+
+      return {
+        ...previousValue,
+        currentSession: {
+          ...session,
+          ui: {
+            ...session.ui,
+            learnPanelVisible: !currentValue
+          }
+        }
+      };
+    });
   }
 
   function updateSettings(settingsUpdater) {
@@ -479,8 +596,6 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function resetAllData() {
-    setCompletionSummary(null);
-    cancelStartCountdown();
     setAppState(createDefaultAppState());
   }
 
@@ -505,8 +620,58 @@ export function useDrillSession(appState, setAppState) {
     });
   }
 
-  function dismissCompletionSummary() {
-    setCompletionSummary(null);
+  function clearPendingCompletion() {
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "practice",
+      pendingCompletion: null
+    }));
+  }
+
+  function replayPendingCompletion() {
+    if (!pendingCompletion?.sessionSpec?.objectiveIds?.length) {
+      return;
+    }
+
+    const replayObjectiveId = pendingCompletion.sessionSpec.objectiveIds[0];
+    if (!replayObjectiveId || !objectivesById[replayObjectiveId]) {
+      return;
+    }
+
+    const sessionSpec = {
+      ...pendingCompletion.sessionSpec,
+      config: {
+        ...pendingCompletion.sessionSpec.config
+      },
+      objectiveIds: pendingCompletion.sessionSpec.objectiveIds.slice()
+    };
+
+    try {
+      startSession({
+        sessionSpec,
+        exportSeed: pendingCompletion.exportSeed
+      });
+    } catch (error) {
+      console.warn("Failed to replay pending completion", error);
+    }
+  }
+
+  async function copyPendingCompletionSeed() {
+    const exportSeed = pendingCompletion?.exportSeed;
+    if (!exportSeed) {
+      return false;
+    }
+
+    if (!globalThis.navigator?.clipboard?.writeText) {
+      return false;
+    }
+
+    try {
+      await globalThis.navigator.clipboard.writeText(exportSeed);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function performPhaseAction() {
@@ -528,10 +693,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   const phaseActionLabel = getPhaseActionLabel(currentSession?.phase);
-  const startCountdownLabel =
-    typeof startCountdownStepIndex === "number"
-      ? START_COUNTDOWN_SEQUENCE[startCountdownStepIndex]
-      : null;
+  const startCountdownLabel = resolveStartCountdownLabel(startCountdown, countdownNow);
 
   return {
     currentSession,
@@ -539,12 +701,12 @@ export function useDrillSession(appState, setAppState) {
     history,
     stats,
     phaseInfo,
-    completionSummary,
+    pendingCompletion,
     settings: appState.settings,
     startingArea: appState.settings.startingArea,
     selectedMode: appState.selectedMode,
     startCountdownLabel,
-    isStartCountdownActive: startCountdownLabel !== null,
+    isStartCountdownActive: startCountdown !== null,
     startSession,
     markEnteredLevel,
     unlockTape,
@@ -555,11 +717,13 @@ export function useDrillSession(appState, setAppState) {
     skipCurrentSplit,
     skipObjective,
     endSession,
-    dismissCompletionSummary,
+    clearPendingCompletion,
+    replayPendingCompletion,
+    copyPendingCompletionSeed,
     goToModeSelect,
-    goToDrills,
-    goToLearn,
+    goToPractice,
     goToSettings,
+    toggleLearnPanelVisibility,
     updateSettings,
     updateHotkey,
     clearHotkey,

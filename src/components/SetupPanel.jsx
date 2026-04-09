@@ -78,9 +78,8 @@ export function SetupPanel({
   defaultArea,
   defaultDrillSettings,
   onStartSession,
-  mode = "drills"
+  isLearnPanelDefaultVisible = false
 }) {
-  const isLearnMode = mode === "learn";
   const [startingArea, setStartingArea] = useState(defaultArea);
   const [drillSettings, setDrillSettings] = useState(() =>
     normalizeDrillSettings(defaultDrillSettings)
@@ -253,13 +252,13 @@ export function SetupPanel({
     <section className="panel setup-panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">{isLearnMode ? "Learn Mode" : "Drill Mode"}</p>
-          <h1>{isLearnMode ? "Start a learn session" : "Start a drill session"}</h1>
+          <p className="eyebrow">Practice Mode</p>
+          <h1>Start a practice session</h1>
         </div>
         <p className="panel-note">
-          {isLearnMode
-            ? "Pick a starting area or resolve a seed before the route video session begins."
-            : "Pick a starting area or resolve a seed before the session starts."}
+          Pick a starting area or resolve a seed before the session starts.
+          Route guide videos default to {isLearnPanelDefaultVisible ? "visible" : "hidden"} and can
+          be toggled mid-session.
         </p>
       </div>
 
@@ -463,7 +462,7 @@ export function SetupPanel({
 
         <div className="setup-submit-row">
           <button className="primary-button setup-submit-button" type="submit">
-            {isLearnMode ? "Start Learn Session" : "Start Drill Session"}
+            Start Practice Session
           </button>
           <button className="secondary-button" type="button" onClick={handleCopySeed}>
             Copy Seed to Clipboard

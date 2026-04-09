@@ -30,17 +30,19 @@ import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
 
 function CurrentDrillPanel({
-  activeMode,
   drillSession,
   settings,
   totalTimer,
-  splitTimer
+  splitTimer,
+  onToggleLearnPanel
 }) {
+  const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
+
   return (
     <DrillCard
       objective={drillSession.currentObjective}
       learnContent={
-        activeMode === "learn" ? (
+        learnPanelVisible ? (
           <LearnPanel
             objective={drillSession.currentObjective}
             phaseInfo={drillSession.phaseInfo}
@@ -58,6 +60,8 @@ function CurrentDrillPanel({
       onTogglePause={drillSession.togglePause}
       onSkip={drillSession.skipObjective}
       onEndSession={drillSession.endSession}
+      learnPanelVisible={learnPanelVisible}
+      onToggleLearnPanel={onToggleLearnPanel}
     />
   );
 }
@@ -79,25 +83,28 @@ function StartCountdownPanel({ countdownLabel }) {
 }
 
 function PracticeModeView({
-  activeMode,
   drillSession,
   settings,
+  backdrop,
   totalTimer,
   splitTimer,
   popoutControl,
-  popoutError
+  popoutError,
+  onToggleLearnPanel
 }) {
+  const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
+
   if (drillSession.currentSession || drillSession.isStartCountdownActive) {
     return (
       <div className="content-stack">
-        <div className={`practice-drill-slot ${activeMode === "learn" ? "learn-session-layout" : ""}`}>
+        <div className={`practice-drill-slot ${learnPanelVisible ? "learn-session-layout" : ""}`}>
           {drillSession.currentSession ? (
             <CurrentDrillPanel
-              activeMode={activeMode}
               drillSession={drillSession}
               settings={settings}
               totalTimer={totalTimer}
               splitTimer={splitTimer}
+              onToggleLearnPanel={onToggleLearnPanel}
             />
           ) : (
             <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
@@ -114,19 +121,37 @@ function PracticeModeView({
     );
   }
 
+  if (drillSession.pendingCompletion) {
+    return (
+      <div className="content-stack">
+        <div className="practice-drill-slot">
+          <CompletionPanel
+            completionSummary={drillSession.pendingCompletion}
+            onNewExercise={drillSession.clearPendingCompletion}
+            onRunBack={drillSession.replayPendingCompletion}
+            onCopySeed={drillSession.copyPendingCompletionSeed}
+            backdrop={backdrop}
+            history={drillSession.history}
+          />
+        </div>
+        {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
+        {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
+        <HistoryPanel
+          history={drillSession.history}
+          onDeleteEntry={drillSession.deleteHistoryEntry}
+        />
+        <StatsPanel stats={drillSession.stats} />
+      </div>
+    );
+  }
+
   return (
     <div className="content-stack">
-      {drillSession.completionSummary ? (
-        <CompletionPanel
-          completionSummary={drillSession.completionSummary}
-          onDismiss={drillSession.dismissCompletionSummary}
-        />
-      ) : null}
       <SetupPanel
         defaultArea={drillSession.startingArea}
         defaultDrillSettings={settings.drillSettings}
         onStartSession={drillSession.startSession}
-        mode={activeMode}
+        isLearnPanelDefaultVisible={settings.learnPanelDefaultVisible}
       />
       <HistoryPanel
         history={drillSession.history}
@@ -167,6 +192,8 @@ function SettingsModeView({
 
 export default function App() {
   const popoutView = isDrillPopoutView();
+  const appMainRef = useRef(null);
+  const lastAutoOpenKeyRef = useRef(null);
   const [appState, setAppState] = useLocalStorage(
     APP_STORAGE_KEY,
     createDefaultAppState(),
@@ -188,13 +215,17 @@ export default function App() {
   const activeTheme = resolveTheme(settings.themeId, settings.customTheme);
   const useDesktopGlobalHotkeys = isTauriRuntime();
   const hasActiveSession = Boolean(drillSession.currentSession);
-  const isSessionMode = activeMode === "drills" || activeMode === "learn";
+  const isSessionMode = activeMode === "practice";
   const [capturingAction, setCapturingAction] = useState(null);
   const [popoutError, setPopoutError] = useState(null);
   const [hasWindowFocus, setHasWindowFocus] = useState(
     typeof document === "undefined" ? true : document.hasFocus()
   );
   const previousCountdownActiveRef = useRef(drillSession.isStartCountdownActive);
+  const autoOpenKey =
+    appState.startCountdown?.id ??
+    drillSession.currentSession?.id ??
+    null;
 
   useEffect(() => {
     function handleFocus() {
@@ -229,10 +260,16 @@ export default function App() {
       return;
     }
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
+    const frameId = window.requestAnimationFrame(() => {
+      appMainRef.current?.scrollIntoView({
+        block: "start",
+        behavior: "smooth"
+      });
     });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [drillSession.isStartCountdownActive, popoutView]);
 
   useEffect(() => {
@@ -244,6 +281,26 @@ export default function App() {
       console.warn("Failed to sync drill popout always-on-top setting", error);
     });
   }, [settings.popoutAlwaysOnTop]);
+
+  useEffect(() => {
+    if (popoutView || !settings.autoOpenPopout || !autoOpenKey) {
+      if (!autoOpenKey) {
+        lastAutoOpenKeyRef.current = null;
+      }
+      return;
+    }
+
+    if (lastAutoOpenKeyRef.current === autoOpenKey) {
+      return;
+    }
+
+    lastAutoOpenKeyRef.current = autoOpenKey;
+    setPopoutError(null);
+    openDrillPopoutWindow(settings.popoutAlwaysOnTop).catch((error) => {
+      console.warn("Failed to auto-open drill pop-out window", error);
+      setPopoutError(error instanceof Error ? error.message : String(error));
+    });
+  }, [autoOpenKey, popoutView, settings.autoOpenPopout, settings.popoutAlwaysOnTop]);
 
   useSessionHotkeys({
     enabled: (!useDesktopGlobalHotkeys || hasWindowFocus) && isSessionMode,
@@ -277,7 +334,8 @@ export default function App() {
   }
 
   const popoutButton =
-    !popoutView && (drillSession.currentSession || drillSession.isStartCountdownActive) ? (
+    !popoutView &&
+    (drillSession.currentSession || drillSession.isStartCountdownActive || drillSession.pendingCompletion) ? (
     <button className="secondary-button drill-popout-button" type="button" onClick={handlePopoutClick}>
       Pop Out
     </button>
@@ -289,14 +347,23 @@ export default function App() {
         <PopoutViewport>
           {drillSession.currentSession ? (
             <CurrentDrillPanel
-              activeMode={activeMode}
               drillSession={drillSession}
               settings={settings}
               totalTimer={totalTimer}
               splitTimer={splitTimer}
+              onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
             />
           ) : drillSession.isStartCountdownActive ? (
             <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
+          ) : drillSession.pendingCompletion ? (
+            <CompletionPanel
+              completionSummary={drillSession.pendingCompletion}
+              onNewExercise={drillSession.clearPendingCompletion}
+              onRunBack={drillSession.replayPendingCompletion}
+              onCopySeed={drillSession.copyPendingCompletionSeed}
+              backdrop={activeTheme.backdrop}
+              history={drillSession.history}
+            />
           ) : (
             <section className="panel drill-panel popout-empty-panel">
               <div className="drill-panel-header vertical">
@@ -323,21 +390,21 @@ export default function App() {
         activeMode={activeMode}
         hasActiveSession={Boolean(drillSession.currentSession)}
         onOpenHome={drillSession.goToModeSelect}
-        onSelectDrills={drillSession.goToDrills}
-        onSelectLearn={drillSession.goToLearn}
+        onSelectPractice={drillSession.goToPractice}
         onSelectSettings={drillSession.goToSettings}
       />
 
-      <main className="app-main">
-        {activeMode === "drills" || activeMode === "learn" ? (
+      <main ref={appMainRef} className="app-main">
+        {activeMode === "practice" ? (
           <PracticeModeView
-            activeMode={activeMode}
             drillSession={drillSession}
             settings={settings}
+            backdrop={activeTheme.backdrop}
             totalTimer={totalTimer}
             splitTimer={splitTimer}
             popoutControl={popoutButton}
             popoutError={popoutError}
+            onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
           />
         ) : activeMode === "settings" ? (
           <SettingsModeView
@@ -349,8 +416,7 @@ export default function App() {
         ) : (
           <ModeSelect
             hasActiveSession={Boolean(drillSession.currentSession)}
-            onSelectDrills={drillSession.goToDrills}
-            onSelectLearn={drillSession.goToLearn}
+            onSelectPractice={drillSession.goToPractice}
             onSelectSettings={drillSession.goToSettings}
           />
         )}

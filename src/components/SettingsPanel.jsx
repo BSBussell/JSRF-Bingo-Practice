@@ -530,10 +530,16 @@ export function SettingsPanel({
 
         <div className="settings-section">
           <div className="settings-section-copy">
-            <h2>Learn mode playback</h2>
-            <p>These defaults apply to the embedded route videos during learn sessions.</p>
+            <h2>Route guide playback</h2>
+            <p>These defaults apply to the embedded route videos in practice sessions.</p>
           </div>
           <div className="settings-list">
+            <ToggleField
+              label="Show route guide by default"
+              description="Starts new sessions with the route guide embed visible."
+              checked={settings.learnPanelDefaultVisible}
+              onChange={(value) => onUpdateSetting("learnPanelDefaultVisible", value)}
+            />
             <ToggleField
               label="Video auto play"
               description="Starts the mapped route video automatically when a new square loads."
@@ -549,22 +555,28 @@ export function SettingsPanel({
           </div>
         </div>
 
-        {isTauriRuntime() ? (
-          <div className="settings-section">
-            <div className="settings-section-copy">
-              <h2>Pop out window</h2>
-              <p>Controls the native desktop drill popout window.</p>
-            </div>
-            <div className="settings-list">
+        <div className="settings-section">
+          <div className="settings-section-copy">
+            <h2>Pop out window</h2>
+            <p>Controls the drill popout window.</p>
+          </div>
+          <div className="settings-list">
+            <ToggleField
+              label="Auto open on drill start"
+              description="Opens the drill popout automatically when a new practice countdown begins."
+              checked={settings.autoOpenPopout}
+              onChange={(value) => onUpdateSetting("autoOpenPopout", value)}
+            />
+            {isTauriRuntime() ? (
               <ToggleField
                 label="Pop Up always on top"
                 description="Keeps the drill popout window above other desktop windows when it is open."
                 checked={settings.popoutAlwaysOnTop}
                 onChange={(value) => onUpdateSetting("popoutAlwaysOnTop", value)}
               />
-            </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
 
         <div className="settings-section danger-zone">
           <div className="settings-section-copy">
@@ -600,4 +612,3 @@ export function SettingsPanel({
     </>
   );
 }
-

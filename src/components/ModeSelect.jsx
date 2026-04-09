@@ -1,6 +1,5 @@
 export function ModeSelect({
-  onSelectDrills,
-  onSelectLearn,
+  onSelectPractice,
   onSelectSettings,
   hasActiveSession
 }) {
@@ -21,28 +20,15 @@ export function ModeSelect({
         <article className="mode-card">
           <div>
             <p className="mode-label">Minimal Gaming</p>
-            <h2>Drills</h2>
+            <h2>Practice</h2>
             <p>
-              Start from a chosen level and be assigned random objectives to complete,
-              Tracks your found objects, personal bests, and overall progress.
-              Will assume starting from a fresh bingo save.
+              Start from a chosen level and be assigned random objectives to complete.
+              Track your found objects, personal bests, and overall progress.
+              Route guide videos can be shown or hidden at any time during a run.
             </p>
           </div>
-          <button className="primary-button" type="button" onClick={onSelectDrills}>
-            {hasActiveSession ? "Resume Drills" : "Enter Drills"}
-          </button>
-        </article>
-        <article className="mode-card">
-          <div>
-            <p className="mode-label">Bingopedia-backed</p>
-            <h2>Learn</h2>
-            <p>
-              The same as Drill mode, but each objective will also present the relevant
-              Bingopedia entry for the objective, good for bee's who don't know anything yet.
-            </p>
-          </div>
-          <button className="primary-button" type="button" onClick={onSelectLearn}>
-            {hasActiveSession ? "Resume Learn" : "Enter Learn"}
+          <button className="primary-button" type="button" onClick={onSelectPractice}>
+            {hasActiveSession ? "Resume Session" : "Start Practice"}
           </button>
         </article>
         <article className="mode-card">
