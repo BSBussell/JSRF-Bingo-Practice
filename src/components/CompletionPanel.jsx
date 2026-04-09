@@ -108,9 +108,6 @@ export function CompletionPanel({
         <div>
           <p className="eyebrow">Drill Complete</p>
           <h2>You did it!</h2>
-          <p className="completion-copy">
-            You finished all {objectiveCount} {objectiveLabel}.
-          </p>
         </div>
       </div>
 

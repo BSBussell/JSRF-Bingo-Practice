@@ -3,8 +3,17 @@ import { isTauriRuntime } from "../runtime.js";
 export const DRILL_POPOUT_LABEL = "drill-popout";
 export const DRILL_POPOUT_VIEW = "drill-popout";
 
+function resolveAppBaseUrl() {
+  const configuredBase =
+    typeof import.meta !== "undefined" && import.meta.env?.BASE_URL
+      ? import.meta.env.BASE_URL
+      : "./";
+
+  return new URL(configuredBase, window.location.href);
+}
+
 function buildDrillPopoutUrl() {
-  return new URL("/popout.html", window.location.href).toString();
+  return new URL("popout.html", resolveAppBaseUrl()).toString();
 }
 
 function openBrowserDrillPopout(url) {
