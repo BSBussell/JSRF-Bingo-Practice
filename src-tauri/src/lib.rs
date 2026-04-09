@@ -2,11 +2,20 @@
 // The native layer owns desktop-only window behavior: booting the same frontend
 // in dev/prod, opening the drill popout, and keeping that popout's native
 // window state in sync with the frontend's settings.
+use serde::Serialize;
+use std::process::Command;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const LOCALHOST_HOST: &str = "127.0.0.1";
 const LOCALHOST_PORT: u16 = 1430;
 const DRILL_POPOUT_LABEL: &str = "drill-popout";
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DesktopPlatformInfo {
+    os: &'static str,
+    arch: &'static str,
+}
 
 #[tauri::command]
 async fn open_drill_popout(app: AppHandle, always_on_top: bool) -> Result<(), String> {
@@ -67,12 +76,62 @@ fn set_drill_popout_always_on_top(app: AppHandle, always_on_top: bool) -> Result
     Ok(())
 }
 
+#[tauri::command]
+fn get_desktop_platform_info() -> DesktopPlatformInfo {
+    DesktopPlatformInfo {
+        os: std::env::consts::OS,
+        arch: std::env::consts::ARCH,
+    }
+}
+
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    let trimmed_url = url.trim();
+
+    if !trimmed_url.starts_with("https://") {
+        return Err("Only https release URLs are supported.".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(trimmed_url)
+            .spawn()
+            .map_err(|error| error.to_string())?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "", trimmed_url])
+            .spawn()
+            .map_err(|error| error.to_string())?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(trimmed_url)
+            .spawn()
+            .map_err(|error| error.to_string())?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        return Err("Opening external URLs is unsupported on this target.".to_string());
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             open_drill_popout,
-            set_drill_popout_always_on_top
+            set_drill_popout_always_on_top,
+            get_desktop_platform_info,
+            open_external_url
         ])
         .plugin(
             tauri_plugin_localhost::Builder::new(LOCALHOST_PORT)

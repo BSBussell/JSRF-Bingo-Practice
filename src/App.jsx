@@ -11,7 +11,9 @@ import { SetupPanel } from "./components/SetupPanel.jsx";
 import { StatsPanel } from "./components/StatsPanel.jsx";
 import { useDrillSession } from "./hooks/useDrillSession.js";
 import { useDesktopGlobalShortcuts } from "./hooks/useDesktopGlobalShortcuts.js";
+import { useDesktopUpdate } from "./hooks/useDesktopUpdate.js";
 import { useLocalStorage } from "./hooks/useLocalStorage.js";
+import { useReleaseDownload } from "./hooks/useReleaseDownload.js";
 import { useSessionHotkeys } from "./hooks/useSessionHotkeys.js";
 import { useTimer } from "./hooks/useTimer.js";
 import {
@@ -213,7 +215,8 @@ export default function App() {
   const activeMode = appState.selectedMode;
   const settings = drillSession.settings;
   const activeTheme = resolveTheme(settings.themeId, settings.customTheme);
-  const useDesktopGlobalHotkeys = isTauriRuntime();
+  const desktopRuntime = isTauriRuntime();
+  const useDesktopGlobalHotkeys = desktopRuntime;
   const hasActiveSession = Boolean(drillSession.currentSession);
   const isSessionMode = activeMode === "practice";
   const [capturingAction, setCapturingAction] = useState(null);
@@ -226,6 +229,18 @@ export default function App() {
     appState.startCountdown?.id ??
     drillSession.currentSession?.id ??
     null;
+  const webReleaseDownload = useReleaseDownload({
+    enabled: !desktopRuntime && !popoutView
+  });
+  const desktopUpdate = useDesktopUpdate({
+    enabled: desktopRuntime && !popoutView
+  });
+  const headerReleaseAction = desktopRuntime
+    ? desktopUpdate.action
+    : webReleaseDownload.action;
+  const headerReleaseActionLoading = desktopRuntime
+    ? desktopUpdate.isChecking
+    : webReleaseDownload.isChecking;
 
   useEffect(() => {
     function handleFocus() {
@@ -389,6 +404,8 @@ export default function App() {
       <Header
         activeMode={activeMode}
         hasActiveSession={Boolean(drillSession.currentSession)}
+        releaseAction={headerReleaseAction}
+        releaseActionLoading={headerReleaseActionLoading}
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
         onSelectSettings={drillSession.goToSettings}

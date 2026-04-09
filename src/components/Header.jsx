@@ -1,6 +1,8 @@
 export function Header({
   activeMode,
   hasActiveSession,
+  releaseAction,
+  releaseActionLoading,
   onOpenHome,
   onSelectPractice,
   onSelectSettings
@@ -28,6 +30,24 @@ export function Header({
         >
           Settings
         </button>
+        <span className="header-release-slot">
+          {releaseAction ? (
+            <button
+              className={`nav-link release-nav-link ${
+                releaseAction.tone === "highlight" ? "is-highlight" : ""
+              }`}
+              type="button"
+              title={releaseAction.title}
+              onClick={releaseAction.onClick}
+            >
+              {releaseAction.label}
+            </button>
+          ) : releaseActionLoading ? (
+            <span className="nav-link release-nav-link is-placeholder" aria-hidden="true">
+              Download
+            </span>
+          ) : null}
+        </span>
       </nav>
     </header>
   );

@@ -553,6 +553,9 @@ button {
 
 .main-nav {
     display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 0.75rem;
 }
 
@@ -577,6 +580,27 @@ button {
     background: var(--nav-active-background);
     border-color: var(--nav-active-border);
     box-shadow: var(--nav-active-shadow);
+}
+
+.header-release-slot {
+    display: flex;
+    min-width: 7.75rem;
+}
+
+.release-nav-link {
+    width: 100%;
+    justify-content: center;
+}
+
+.release-nav-link.is-highlight {
+    background: var(--nav-active-background);
+    border-color: var(--nav-active-border);
+    box-shadow: var(--nav-active-shadow);
+}
+
+.release-nav-link.is-placeholder {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .nav-badge,
@@ -2390,6 +2414,15 @@ button {
     .app-main {
         width: min(100% - 1rem, 100%);
         padding-top: 1rem;
+    }
+
+    .main-nav,
+    .header-release-slot {
+        width: 100%;
+    }
+
+    .release-nav-link {
+        justify-content: flex-start;
     }
 
     .panel {
