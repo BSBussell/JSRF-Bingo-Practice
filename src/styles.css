@@ -206,6 +206,12 @@
     --split-live-border: rgba(230, 180, 87, 0.35);
     --split-done-background: linear-gradient(180deg, rgba(103, 199, 189, 0.08), rgba(103, 199, 189, 0.03));
     --split-done-border: rgba(103, 199, 189, 0.28);
+    --route-district-shibuya: rgb(121, 225, 160);
+    --route-district-shibuya-glow: rgba(121, 225, 160, 0.34);
+    --route-district-kogane: rgb(225, 133, 116);
+    --route-district-kogane-glow: rgba(225, 133, 116, 0.34);
+    --route-district-benten: rgb(121, 176, 223);
+    --route-district-benten-glow: rgba(121, 176, 223, 0.34);
     --popout-background:
         radial-gradient(circle at 14% 12%, rgba(230, 180, 87, 0.18), transparent 26%),
         radial-gradient(circle at 80% 84%, rgba(103, 199, 189, 0.08), transparent 32%),
@@ -2269,11 +2275,28 @@ button {
     padding: 0.25rem 0.62rem 0.6rem;
     color: inherit;
     text-align: left;
+    --route-location-color: var(--text-muted);
+    --route-location-glow: transparent;
     transition:
         transform 160ms ease,
         border-color 160ms ease,
         background 160ms ease,
         box-shadow 160ms ease;
+}
+
+.route-tile[data-district="ShibuyaCho"] {
+    --route-location-color: var(--route-district-shibuya);
+    --route-location-glow: var(--route-district-shibuya-glow);
+}
+
+.route-tile[data-district="Kogane"] {
+    --route-location-color: var(--route-district-kogane);
+    --route-location-glow: var(--route-district-kogane-glow);
+}
+
+.route-tile[data-district="Benten"] {
+    --route-location-color: var(--route-district-benten);
+    --route-location-glow: var(--route-district-benten-glow);
 }
 
 .route-tile-body {
@@ -2313,6 +2336,17 @@ button {
     letter-spacing: 0.08em;
     line-height: 1;
     text-transform: uppercase;
+}
+
+.route-tile-area {
+    color: inherit;
+}
+
+.route-tile.uses-district-location-color .route-tile-area {
+    color: var(--route-location-color);
+    font-size: 0.74rem;
+    font-weight: 750;
+    text-shadow: 0 0 8px var(--route-location-glow);
 }
 
 .route-tile.is-active {

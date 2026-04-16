@@ -53,6 +53,7 @@ function CurrentDrillPanel({
         visibleCount={drillSession.currentSession?.sessionSpec?.config?.routeVisibleCount ?? 0}
         totalTimer={totalTimer}
         isPaused={Boolean(drillSession.currentSession?.pausedAt)}
+        useDistrictLocationColors={settings.routeDistrictColorsEnabled}
         onCompleteSlot={drillSession.completeRouteSlot}
         onTogglePause={drillSession.togglePause}
         onEndSession={drillSession.endSession}

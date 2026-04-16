@@ -8,6 +8,7 @@ import { ROUTE_REVEAL_MODE_BURST } from "./session/routeRevealMode.js";
 test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
   assert.equal(state.settings.autoOpenPopout, false);
+  assert.equal(state.settings.routeDistrictColorsEnabled, true);
   assert.equal(state.startCountdown, null);
   assert.equal(state.pendingCompletion, null);
 });
@@ -20,6 +21,16 @@ test("normalizeAppState preserves autoOpenPopout setting", () => {
   });
 
   assert.equal(state.settings.autoOpenPopout, true);
+});
+
+test("normalizeAppState preserves route district color setting", () => {
+  const state = normalizeAppState({
+    settings: {
+      routeDistrictColorsEnabled: false
+    }
+  });
+
+  assert.equal(state.settings.routeDistrictColorsEnabled, false);
 });
 
 test("normalizeAppState migrates legacy district jump tendency settings to explicit distributions", () => {

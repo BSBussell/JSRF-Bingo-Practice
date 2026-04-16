@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS = {
   learnPanelDefaultVisible: false,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
+  routeDistrictColorsEnabled: true,
   autoOpenPopout: false,
   popoutAlwaysOnTop: false,
   themeId: DEFAULT_THEME_ID,
@@ -120,6 +121,10 @@ function normalizeSettings(value, legacySelectedMode = null) {
       typeof value.learnAudioMuted === "boolean"
         ? value.learnAudioMuted
         : DEFAULT_SETTINGS.learnAudioMuted,
+    routeDistrictColorsEnabled:
+      typeof value.routeDistrictColorsEnabled === "boolean"
+        ? value.routeDistrictColorsEnabled
+        : DEFAULT_SETTINGS.routeDistrictColorsEnabled,
     autoOpenPopout:
       typeof value.autoOpenPopout === "boolean"
         ? value.autoOpenPopout

@@ -108,6 +108,11 @@ function rgbToHex({ r, g, b }) {
     .join("")}`;
 }
 
+function rgbString(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function rgba(hex, alpha) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
@@ -137,10 +142,230 @@ function getRelativeLuminance(hex) {
   return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
 }
 
+function rgbChannelToHslChannel(channel) {
+  return channel / 255;
+}
+
+function hexToHsl(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const red = rgbChannelToHslChannel(r);
+  const green = rgbChannelToHslChannel(g);
+  const blue = rgbChannelToHslChannel(b);
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+
+  if (delta === 0) {
+    return {
+      h: 0,
+      s: 0,
+      l: lightness
+    };
+  }
+
+  const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+  let hue = 0;
+
+  if (max === red) {
+    hue = 60 * (((green - blue) / delta) % 6);
+  } else if (max === green) {
+    hue = 60 * ((blue - red) / delta + 2);
+  } else {
+    hue = 60 * ((red - green) / delta + 4);
+  }
+
+  return {
+    h: hue < 0 ? hue + 360 : hue,
+    s: saturation,
+    l: lightness
+  };
+}
+
+function hueToRgbChannel(p, q, t) {
+  let channel = t;
+  if (channel < 0) {
+    channel += 1;
+  }
+  if (channel > 1) {
+    channel -= 1;
+  }
+  if (channel < 1 / 6) {
+    return p + (q - p) * 6 * channel;
+  }
+  if (channel < 1 / 2) {
+    return q;
+  }
+  if (channel < 2 / 3) {
+    return p + (q - p) * (2 / 3 - channel) * 6;
+  }
+
+  return p;
+}
+
+function hslToHex({ h, s, l }) {
+  const hue = ((h % 360) + 360) % 360;
+  const saturation = Math.max(0, Math.min(1, s));
+  const lightness = Math.max(0, Math.min(1, l));
+
+  if (saturation === 0) {
+    const channel = lightness * 255;
+    return rgbToHex({ r: channel, g: channel, b: channel });
+  }
+
+  const q = lightness < 0.5
+    ? lightness * (1 + saturation)
+    : lightness + saturation - lightness * saturation;
+  const p = 2 * lightness - q;
+
+  return rgbToHex({
+    r: hueToRgbChannel(p, q, hue / 360 + 1 / 3) * 255,
+    g: hueToRgbChannel(p, q, hue / 360) * 255,
+    b: hueToRgbChannel(p, q, hue / 360 - 1 / 3) * 255
+  });
+}
+
+function getContrastRatio(left, right) {
+  const leftLuminance = getRelativeLuminance(left);
+  const rightLuminance = getRelativeLuminance(right);
+  const lighter = Math.max(leftLuminance, rightLuminance);
+  const darker = Math.min(leftLuminance, rightLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getHueDistance(left, right) {
+  const distance = Math.abs(left - right) % 360;
+  return Math.min(distance, 360 - distance);
+}
+
 function resolveButtonText(accent, background) {
   return getRelativeLuminance(accent) > 0.44
     ? mixColors(background, "#000000", 0.22)
     : "#fff7ea";
+}
+
+function resolveReadableHslColor({
+  hue,
+  saturation,
+  lightness,
+  background,
+  minimumContrast = 4.5
+}) {
+  const backgroundIsDark = getRelativeLuminance(background) < 0.38;
+  let nextLightness = lightness;
+  let color = hslToHex({ h: hue, s: saturation, l: nextLightness });
+
+  for (
+    let attempt = 0;
+    attempt < 24 && getContrastRatio(color, background) < minimumContrast;
+    attempt += 1
+  ) {
+    nextLightness = backgroundIsDark
+      ? Math.min(0.86, nextLightness + 0.025)
+      : Math.max(0.18, nextLightness - 0.025);
+    color = hslToHex({ h: hue, s: saturation, l: nextLightness });
+  }
+
+  return color;
+}
+
+function findNearestPaletteColor(targetHue, paletteColors) {
+  return paletteColors
+    .map((color) => ({
+      color,
+      hsl: hexToHsl(color)
+    }))
+    .sort((left, right) =>
+      getHueDistance(targetHue, left.hsl.h) - getHueDistance(targetHue, right.hsl.h)
+    )[0];
+}
+
+function resolveDistrictColor({
+  hue,
+  saturation,
+  lightness,
+  surface,
+  paletteColors
+}) {
+  const readableBaseColor = resolveReadableHslColor({
+    hue,
+    saturation,
+    lightness,
+    background: surface
+  });
+  const nearestPaletteColor = findNearestPaletteColor(hue, paletteColors);
+  const paletteHuePull = nearestPaletteColor
+    ? Math.max(0, 1 - getHueDistance(hue, nearestPaletteColor.hsl.h) / 120) * 0.18
+    : 0;
+  const paletteMix = 0.04 + paletteHuePull;
+  const harmonizedColor = nearestPaletteColor
+    ? mixColors(readableBaseColor, nearestPaletteColor.color, paletteMix)
+    : readableBaseColor;
+
+  return getContrastRatio(harmonizedColor, surface) >= 4.5
+    ? harmonizedColor
+    : resolveReadableHslColor({
+        hue,
+        saturation,
+        lightness,
+        background: surface
+      });
+}
+
+function resolveDistrictColors({
+  surface,
+  text,
+  accent,
+  accentSoft,
+  secondaryAccent
+}) {
+  const accentHsl = hexToHsl(accent);
+  const accentSoftHsl = hexToHsl(accentSoft);
+  const secondaryHsl = hexToHsl(secondaryAccent);
+  const textHsl = hexToHsl(text);
+  const paletteColors = [accent, accentSoft, secondaryAccent];
+  const surfaceIsDark = getRelativeLuminance(surface) < getRelativeLuminance(text);
+  const paletteSaturation =
+    accentHsl.s * 0.42 + accentSoftHsl.s * 0.28 + secondaryHsl.s * 0.3;
+  const paletteLightness =
+    accentHsl.l * 0.38 + accentSoftHsl.l * 0.24 + secondaryHsl.l * 0.38;
+  const saturation = surfaceIsDark
+    ? Math.max(0.46, Math.min(0.95, paletteSaturation * 0.68 + 0.18))
+    : Math.max(0.62, Math.min(0.95, paletteSaturation * 0.74 + 0.22));
+  const lightness = surfaceIsDark
+    ? Math.max(
+        0.56,
+        Math.min(0.78, paletteLightness * 0.52 + textHsl.l * 0.22 + 0.16)
+      )
+    : Math.max(
+        0.32,
+        Math.min(0.4, paletteLightness * 0.24 + textHsl.l * 0.2 + 0.2)
+      );
+
+  return {
+    ShibuyaCho: resolveDistrictColor({
+      hue: 136,
+      saturation,
+      lightness,
+      surface,
+      paletteColors
+    }),
+    Kogane: resolveDistrictColor({
+      hue: 6,
+      saturation,
+      lightness,
+      surface,
+      paletteColors
+    }),
+    Benten: resolveDistrictColor({
+      hue: 214,
+      saturation,
+      lightness,
+      surface,
+      paletteColors
+    })
+  };
 }
 
 function normalizeBackdropDirection(value, fallback = DEFAULT_BACKDROP.motion.direction) {
@@ -399,6 +624,13 @@ function buildCssVariables(palette) {
   const learnWarm = mixColors(learnBase, accent, 0.35);
   const buttonText = resolveButtonText(accent, background);
   const buttonBase = mixColors(accent, background, 0.2);
+  const districtColors = resolveDistrictColors({
+    surface,
+    text,
+    accent,
+    accentSoft,
+    secondaryAccent
+  });
 
   return {
     "--text-primary": text,
@@ -496,6 +728,12 @@ function buildCssVariables(palette) {
     "--split-live-border": rgba(accent, 0.35),
     "--split-done-background": `linear-gradient(180deg, ${rgba(secondaryAccent, 0.08)}, ${rgba(secondaryAccent, 0.03)})`,
     "--split-done-border": rgba(secondaryAccent, 0.28),
+    "--route-district-shibuya": rgbString(districtColors.ShibuyaCho),
+    "--route-district-shibuya-glow": rgba(districtColors.ShibuyaCho, 0.3 * glow),
+    "--route-district-kogane": rgbString(districtColors.Kogane),
+    "--route-district-kogane-glow": rgba(districtColors.Kogane, 0.3 * glow),
+    "--route-district-benten": rgbString(districtColors.Benten),
+    "--route-district-benten-glow": rgba(districtColors.Benten, 0.3 * glow),
     "--popout-background": `radial-gradient(circle at 14% 12%, ${rgba(accent, 0.18 * glow)}, transparent 26%), radial-gradient(circle at 80% 84%, ${rgba(secondaryAccent, 0.08 * glow)}, transparent 32%), radial-gradient(circle at 52% 100%, ${rgba(accentSoft, 0.1 * glow)}, transparent 30%), linear-gradient(180deg, ${rgba(mixColors(background, "#ffffff", 0.03), 0.98)}, ${rgba(mixColors(background, "#000000", 0.1), 1)})`,
     "--popout-learn-frame-shadow": `inset 0 0 0 1px ${rgba(learnBase, 0.14)}, 0 0 20px ${rgba(learnBase, 0.3)}, 0 0 42px ${rgba(accent, 0.2 * glow)}`,
     "--history-row-background": rgba(text, 0.04),

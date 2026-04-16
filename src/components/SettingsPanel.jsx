@@ -530,6 +530,21 @@ export function SettingsPanel({
 
         <div className="settings-section">
           <div className="settings-section-copy">
+            <h2>Route board</h2>
+            <p>Controls the live route square grid.</p>
+          </div>
+          <div className="settings-list">
+            <ToggleField
+              label="District-colored area labels"
+              description="Colors route square area labels by the Shibuya-Cho, Kogane, and Benten bingo convention."
+              checked={settings.routeDistrictColorsEnabled}
+              onChange={(value) => onUpdateSetting("routeDistrictColorsEnabled", value)}
+            />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <div className="settings-section-copy">
             <h2>Route guide playback</h2>
             <p>These defaults apply to the embedded route videos in practice sessions.</p>
           </div>

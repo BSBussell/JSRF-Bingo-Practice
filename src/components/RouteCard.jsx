@@ -32,11 +32,22 @@ function resolveGridColumns(slotCount) {
   return 4;
 }
 
+function routeTileClassName(slot, useDistrictLocationColors) {
+  return [
+    "route-tile",
+    slot.objective ? "is-active" : "is-empty",
+    useDistrictLocationColors ? "uses-district-location-color" : null
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function RouteCard({
   routeSlots,
   visibleCount,
   totalTimer,
   isPaused,
+  useDistrictLocationColors = true,
   onCompleteSlot,
   onTogglePause,
   onEndSession
@@ -58,7 +69,8 @@ export function RouteCard({
         {routeSlots.map((slot) => (
           <button
             key={`${slot.slotIndex}-${slot.objectiveId ?? "empty"}`}
-            className={`route-tile ${slot.objective ? "is-active" : "is-empty"}`}
+            className={routeTileClassName(slot, useDistrictLocationColors)}
+            data-district={slot.objective?.district ?? undefined}
             type="button"
             onClick={() => onCompleteSlot(slot.slotIndex)}
             disabled={isPaused || !slot.objective}
@@ -75,7 +87,7 @@ export function RouteCard({
                   <strong>{formatRouteObjectiveLabel(slot.objective)}</strong>
                 </div>
                 <div className="route-tile-footer">
-                  <span>{getAreaLabel(slot.objective.area)}</span>
+                  <span className="route-tile-area">{getAreaLabel(slot.objective.area)}</span>
                 </div>
               </>
             ) : (

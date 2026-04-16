@@ -442,7 +442,7 @@ export function SetupPanel({
                     }
                   />
                   <span className="field-hint">
-                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-0`.
+                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-9`.
                   </span>
                 </label>
 
