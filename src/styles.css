@@ -1748,6 +1748,15 @@ button {
     box-shadow: var(--dropdown-shadow);
 }
 
+.drill-action-menu-list::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -0.35rem;
+    width: 100%;
+    height: 0.35rem;
+}
+
 .drill-action-menu:hover .drill-action-menu-list,
 .drill-action-menu:focus-within .drill-action-menu-list {
     display: grid;
