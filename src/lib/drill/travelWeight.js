@@ -5,9 +5,6 @@ export function travelWeight(fromArea, toArea, areaMeta) {
   const b = areaMeta[toArea];
 
   if (!a || !b) return 0.1;
-  if (a.transitHub) {
-    return b.depth === 0 ? 1 : 0;
-  }
 
   if (a.district === b.district) {
     const depthDiff = Math.abs(a.depth - b.depth);

@@ -14,6 +14,8 @@ export function Header({
   onSelectRoute,
   onSelectSettings
 }) {
+  const showReleaseSlot = Boolean(releaseAction) || releaseActionLoading;
+
   return (
     <header className="app-header">
       <button className="brand-button" type="button" onClick={onOpenHome}>
@@ -45,24 +47,26 @@ export function Header({
         >
           Settings
         </button>
-        <span className="header-release-slot">
-          {releaseAction ? (
-            <button
-              className={`nav-link release-nav-link ${
-                releaseAction.tone === "highlight" ? "is-highlight" : ""
-              }`}
-              type="button"
-              title={releaseAction.title}
-              onClick={releaseAction.onClick}
-            >
-              {releaseAction.label}
-            </button>
-          ) : releaseActionLoading ? (
-            <span className="nav-link release-nav-link is-placeholder" aria-hidden="true">
-              Download
-            </span>
-          ) : null}
-        </span>
+        {showReleaseSlot ? (
+          <span className="header-release-slot">
+            {releaseAction ? (
+              <button
+                className={`nav-link release-nav-link ${
+                  releaseAction.tone === "highlight" ? "is-highlight" : ""
+                }`}
+                type="button"
+                title={releaseAction.title}
+                onClick={releaseAction.onClick}
+              >
+                {releaseAction.label}
+              </button>
+            ) : (
+              <span className="nav-link release-nav-link is-placeholder" aria-hidden="true">
+                Download
+              </span>
+            )}
+          </span>
+        ) : null}
       </nav>
     </header>
   );

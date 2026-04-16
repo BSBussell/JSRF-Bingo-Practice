@@ -1,1 +1,0 @@
-export const OBJECTIVE_FRESHNESS_WINDOW = 24;

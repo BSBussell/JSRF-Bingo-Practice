@@ -9,6 +9,11 @@ import {
 } from "../drill/drillSettings.js";
 import { PRACTICE_SESSION_TYPE, isRouteSessionType } from "./sessionTypes.js";
 
+const ROUTE_ONLY_DRILL_SETTING_KEYS = [
+  "routeVisibleCount",
+  "routeRevealMode"
+];
+
 export function normalizeSessionConfig(value) {
   const normalizedDrillSettings = normalizeDrillSettings(value);
 
@@ -25,8 +30,11 @@ export function normalizeSessionConfig(value) {
     notebookVariance: normalizedDrillSettings.notebookVariance,
     levelShift: normalizedDrillSettings.levelShift,
     districtShift: normalizedDrillSettings.districtShift,
+    levelShiftDistribution: normalizedDrillSettings.levelShiftDistribution,
+    districtJumpDistribution: normalizedDrillSettings.districtJumpDistribution,
     trueRandom: normalizedDrillSettings.trueRandom,
-    routeVisibleCount: normalizedDrillSettings.routeVisibleCount
+    routeVisibleCount: normalizedDrillSettings.routeVisibleCount,
+    routeRevealMode: normalizedDrillSettings.routeRevealMode
   };
 }
 
@@ -61,6 +69,29 @@ export function normalizeSessionConfigForType(configInput, sessionType = PRACTIC
 
 export function normalizeDrillSettingsForSessionType(value, sessionType = PRACTICE_SESSION_TYPE) {
   return normalizeDrillSettings(normalizeSessionConfigForType(value, sessionType));
+}
+
+export function mergeSessionConfigIntoDrillSettings(
+  previousDrillSettings,
+  sessionConfig,
+  sessionType = PRACTICE_SESSION_TYPE
+) {
+  const normalizedPrevious = normalizeDrillSettings(previousDrillSettings);
+  const normalizedSessionConfig = normalizeSessionConfigForType(sessionConfig, sessionType);
+
+  if (isRouteSessionType(sessionType)) {
+    return normalizeDrillSettings(normalizedSessionConfig);
+  }
+
+  const preservedRouteSettings = Object.fromEntries(
+    ROUTE_ONLY_DRILL_SETTING_KEYS.map((key) => [key, normalizedPrevious[key]])
+  );
+
+  return normalizeDrillSettings({
+    ...normalizedPrevious,
+    ...normalizedSessionConfig,
+    ...preservedRouteSettings
+  });
 }
 
 export function buildSessionConfig(startingArea, drillSettings) {

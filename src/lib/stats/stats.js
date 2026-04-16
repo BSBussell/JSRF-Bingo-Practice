@@ -22,8 +22,7 @@ export function createEmptyAggregateStats() {
   return {
     squareByArea: {},
     tapeByArea: {},
-    graffitiByArea: {},
-    routeByVisibleCount: {}
+    graffitiByArea: {}
   };
 }
 
@@ -32,21 +31,10 @@ export function recordCompletionStats(aggregateStats, entry) {
   const nextStats = {
     squareByArea: aggregateStats.squareByArea ?? {},
     tapeByArea: aggregateStats.tapeByArea ?? {},
-    graffitiByArea: aggregateStats.graffitiByArea ?? {},
-    routeByVisibleCount: aggregateStats.routeByVisibleCount ?? {}
+    graffitiByArea: aggregateStats.graffitiByArea ?? {}
   };
 
-  if (
-    entry.sessionType === "route" &&
-    entry.result === "complete" &&
-    typeof entry.totalDurationMs === "number" &&
-    Number.isInteger(entry.visibleCount)
-  ) {
-    nextStats.routeByVisibleCount = updateBucket(
-      nextStats.routeByVisibleCount,
-      String(entry.visibleCount),
-      entry.totalDurationMs
-    );
+  if (entry.sessionType === "route" && entry.result === "complete") {
     return nextStats;
   }
 
@@ -136,13 +124,10 @@ function averageRows(collection) {
     });
 }
 
-export function buildStatsViewModel(aggregateStats, history) {
+export function buildStatsViewModel(aggregateStats) {
   return {
     squareByArea: averageRows(aggregateStats.squareByArea ?? {}),
     tapeByArea: averageRows(aggregateStats.tapeByArea ?? {}),
-    graffitiByArea: averageRows(aggregateStats.graffitiByArea ?? {}),
-    routeByVisibleCount: averageRows(aggregateStats.routeByVisibleCount ?? {}).sort(
-      (left, right) => Number(left.key) - Number(right.key)
-    )
+    graffitiByArea: averageRows(aggregateStats.graffitiByArea ?? {})
   };
 }

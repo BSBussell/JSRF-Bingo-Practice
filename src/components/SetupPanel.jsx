@@ -3,6 +3,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { areaLabels, areasByDistrict } from "../data/areaMeta.js";
 import { areaOptions } from "../data/objectives.js";
 import {
+  DistrictJumpDistributionEditor,
+  LevelShiftDistributionEditor
+} from "./ProbabilityDistributionEditor.jsx";
+import { SegmentedChoice } from "./SegmentedChoice.jsx";
+import {
+  DEFAULT_DISTRICT_JUMP_DISTRIBUTION,
+  DEFAULT_LEVEL_SHIFT_DISTRIBUTION,
   CATEGORY_VARIANCE_MAX,
   CATEGORY_VARIANCE_MIN,
   CATEGORY_VARIANCE_FIELDS,
@@ -28,12 +35,18 @@ import {
 import {
   buildSessionConfig,
   getSessionObjectiveMax,
+  mergeSessionConfigIntoDrillSettings,
   normalizeDrillSettingsForSessionType
 } from "../lib/session/sessionConfig.js";
 import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
 } from "../lib/session/sessionTypes.js";
+import {
+  ROUTE_REVEAL_MODE_BURST,
+  ROUTE_REVEAL_MODE_LABELS,
+  ROUTE_REVEAL_MODE_ROLLING
+} from "../lib/session/routeRevealMode.js";
 
 function VarianceSlider({
   label,
@@ -41,6 +54,8 @@ function VarianceSlider({
   max,
   labels = VARIANCE_LABELS,
   value,
+  description,
+  hint,
   disabled,
   onChange
 }) {
@@ -48,6 +63,7 @@ function VarianceSlider({
     <label className={`drill-slider-row ${disabled ? "is-disabled" : ""}`}>
       <div className="drill-slider-copy">
         <strong>{label}</strong>
+        {description ? <p>{description}</p> : null}
       </div>
       <div className="drill-slider-control">
         <span className="drill-slider-value">{labels[value] ?? labels[0]}</span>
@@ -61,8 +77,17 @@ function VarianceSlider({
           onChange={(event) => onChange(Number(event.target.value))}
         />
       </div>
+      {hint ? <span className="field-hint">{hint}</span> : null}
     </label>
   );
+}
+
+function distributionsMatch(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
 }
 
 function formatSeedModeLabel(mode) {
@@ -134,12 +159,28 @@ export function SetupPanel({
   );
   const manualConfig = buildSessionConfig(startingArea, drillSettings);
   const manualConfigSignature = JSON.stringify(manualConfig);
+  const advancedControlsDisabled = controlsLocked || effectiveDrillSettings.trueRandom;
+  const distributionsAtDefault =
+    distributionsMatch(
+      effectiveDrillSettings.levelShiftDistribution,
+      DEFAULT_LEVEL_SHIFT_DISTRIBUTION
+    ) &&
+    distributionsMatch(
+      effectiveDrillSettings.districtJumpDistribution,
+      DEFAULT_DISTRICT_JUMP_DISTRIBUTION
+    );
 
   useEffect(() => {
     if (resolvedSeedMode === "exported" && resolvedExportSeed) {
       if (lastAppliedExportSeedRef.current !== resolvedExportSeed) {
         setStartingArea(resolvedSeedState.sessionSpec.config.startingArea);
-        setDrillSettings(resolvedSeedState.sessionSpec.config);
+        setDrillSettings((previousValue) =>
+          mergeSessionConfigIntoDrillSettings(
+            previousValue,
+            resolvedSeedState.sessionSpec.config,
+            sessionType
+          )
+        );
         setManualSeedState(null);
         setManualError("");
         lastAppliedExportSeedRef.current = resolvedExportSeed;
@@ -148,7 +189,7 @@ export function SetupPanel({
     }
 
     lastAppliedExportSeedRef.current = "";
-  }, [resolvedSeedMode, resolvedExportSeed]);
+  }, [resolvedSeedMode, resolvedExportSeed, resolvedSeedState.sessionSpec, sessionType]);
 
   function clearManualDerivedState() {
     setManualSeedState(null);
@@ -163,6 +204,19 @@ export function SetupPanel({
         {
           ...previousValue,
           [key]: value
+        },
+        sessionType
+      )
+    );
+  }
+
+  function updateDrillSettings(nextSettings) {
+    clearManualDerivedState();
+    setDrillSettings((previousValue) =>
+      normalizeDrillSettingsForSessionType(
+        {
+          ...previousValue,
+          ...nextSettings
         },
         sessionType
       )
@@ -311,6 +365,9 @@ export function SetupPanel({
               <span className="field-hint">
                 Entering a seed will lock all below settings to the provided seed. If you just want to generate a seed from the current settings, leave this blank and click "Copy Seed to Clipboard" to copy the generated seed for the current settings.
               </span>
+              {resolvedSeedState.warning ? (
+                <p className="setup-warning">{resolvedSeedState.warning}</p>
+              ) : null}
             </label>
 
             <label className="setup-toggle-card">
@@ -371,22 +428,42 @@ export function SetupPanel({
               </span>
             </label>
             {isRouteMode ? (
-              <label className="field">
-                <span>Visible squares</span>
-                <input
-                  type="number"
-                  min={ROUTE_VISIBLE_COUNT_MIN}
-                  max={effectiveRouteVisibleMax}
-                  value={effectiveDrillSettings.routeVisibleCount}
+              <>
+                <label className="field">
+                  <span>Visible squares</span>
+                  <input
+                    type="number"
+                    min={ROUTE_VISIBLE_COUNT_MIN}
+                    max={effectiveRouteVisibleMax}
+                    value={effectiveDrillSettings.routeVisibleCount}
+                    disabled={controlsLocked}
+                    onChange={(event) =>
+                      updateDrillSetting("routeVisibleCount", Number(event.target.value))
+                    }
+                  />
+                  <span className="field-hint">
+                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-0`.
+                  </span>
+                </label>
+
+                <SegmentedChoice
+                  label="Reveal mode"
+                  value={effectiveDrillSettings.routeRevealMode}
                   disabled={controlsLocked}
-                  onChange={(event) =>
-                    updateDrillSetting("routeVisibleCount", Number(event.target.value))
-                  }
+                  options={[
+                    {
+                      value: ROUTE_REVEAL_MODE_ROLLING,
+                      label: ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]
+                    },
+                    {
+                      value: ROUTE_REVEAL_MODE_BURST,
+                      label: ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]
+                    }
+                  ]}
+                  hint={`${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]} refills each cleared slot immediately. ${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]} waits until the whole visible wave is cleared before revealing the next group.`}
+                  onChange={(value) => updateDrillSetting("routeRevealMode", value)}
                 />
-                <span className="field-hint">
-                  Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-0`.
-                </span>
-              </label>
+              </>
             ) : null}
           </div>
         </div>
@@ -475,6 +552,7 @@ export function SetupPanel({
               <VarianceSlider
                 key={field.key}
                 label={field.label}
+                description={field.description}
                 min={MOVEMENT_VARIANCE_MIN}
                 max={MOVEMENT_VARIANCE_MAX}
                 labels={MOVEMENT_LABELS}
@@ -483,6 +561,41 @@ export function SetupPanel({
                 onChange={(value) => updateDrillSetting(field.key, value)}
               />
             ))}
+            <details className={`setup-advanced-panel ${advancedControlsDisabled ? "is-disabled" : ""}`}>
+              <summary className="setup-advanced-summary">
+                <span className="setup-advanced-title">Advanced</span>
+                <span className="field-hint">Fine-tune shift distances.</span>
+              </summary>
+              <div className="setup-advanced-content">
+                <div className="drill-slider-list">
+                  <LevelShiftDistributionEditor
+                    value={effectiveDrillSettings.levelShiftDistribution}
+                    disabled={advancedControlsDisabled}
+                    onChange={(value) => updateDrillSetting("levelShiftDistribution", value)}
+                  />
+                  <DistrictJumpDistributionEditor
+                    value={effectiveDrillSettings.districtJumpDistribution}
+                    disabled={advancedControlsDisabled}
+                    onChange={(value) => updateDrillSetting("districtJumpDistribution", value)}
+                  />
+                </div>
+                <div className="setup-advanced-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={advancedControlsDisabled || distributionsAtDefault}
+                    onClick={() =>
+                      updateDrillSettings({
+                        levelShiftDistribution: DEFAULT_LEVEL_SHIFT_DISTRIBUTION.slice(),
+                        districtJumpDistribution: DEFAULT_DISTRICT_JUMP_DISTRIBUTION.slice()
+                      })
+                    }
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -505,9 +618,6 @@ export function SetupPanel({
             <p className="field-hint">
               Copying exports the full reproducible session seed, not the original phrase.
             </p>
-          ) : null}
-          {resolvedSeedState.warning ? (
-            <p className="setup-warning">{resolvedSeedState.warning}</p>
           ) : null}
           {manualError ? <p className="setup-error">{manualError}</p> : null}
           {copyStatus ? <p className="field-hint">{copyStatus}</p> : null}

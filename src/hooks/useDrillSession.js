@@ -22,6 +22,7 @@ import {
   resolveSeededSessionTransition,
   skipSessionSplit
 } from "../lib/session/drillSession.js";
+import { mergeSessionConfigIntoDrillSettings } from "../lib/session/sessionConfig.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
   buildStatsViewModel,
@@ -101,7 +102,7 @@ export function useDrillSession(appState, setAppState) {
     (objectiveId) => objectivesById[objectiveId]
   );
   const history = appState.history;
-  const stats = buildStatsViewModel(appState.aggregateStats, appState.history);
+  const stats = buildStatsViewModel(appState.aggregateStats);
   const phaseInfo =
     currentSession?.sessionType === ROUTE_SESSION_TYPE
       ? null
@@ -189,13 +190,17 @@ export function useDrillSession(appState, setAppState) {
             previousValue.currentSession,
             previousValue.settings
           );
+          const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown);
+          const sessionType = normalizeSessionType(sessionSpec.sessionType);
           const nextSettings = {
             ...previousValue.settings,
             startingArea: sessionSpec.config.startingArea,
-            drillSettings: sessionSpec.config
+            drillSettings: mergeSessionConfigIntoDrillSettings(
+              previousValue.settings.drillSettings,
+              sessionSpec.config,
+              sessionType
+            )
           };
-          const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown);
-          const sessionType = normalizeSessionType(sessionSpec.sessionType);
 
           return {
             ...previousValue,

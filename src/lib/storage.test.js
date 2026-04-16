@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { buildSessionConfig, buildSessionSpecFromConfig, encodeSessionSeed } from "./seed/sessionSeed.js";
 import { createDefaultAppState, normalizeAppState } from "./storage.js";
+import { ROUTE_REVEAL_MODE_BURST } from "./session/routeRevealMode.js";
 
 test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
@@ -19,6 +20,30 @@ test("normalizeAppState preserves autoOpenPopout setting", () => {
   });
 
   assert.equal(state.settings.autoOpenPopout, true);
+});
+
+test("normalizeAppState migrates legacy district jump tendency settings to explicit distributions", () => {
+  const state = normalizeAppState({
+    settings: {
+      drillSettings: {
+        districtJumpTendency: 2
+      }
+    }
+  });
+
+  assert.deepEqual(state.settings.drillSettings.districtJumpDistribution, [50, 30, 20]);
+});
+
+test("normalizeAppState preserves explicit level shift distributions", () => {
+  const state = normalizeAppState({
+    settings: {
+      drillSettings: {
+        levelShiftDistribution: [35, 65]
+      }
+    }
+  });
+
+  assert.deepEqual(state.settings.drillSettings.levelShiftDistribution, [35, 65]);
 });
 
 test("normalizeAppState preserves a valid shared startCountdown payload", () => {
@@ -93,7 +118,8 @@ test("normalizeAppState preserves route mode payloads", () => {
   const { sessionSpec, exportSeed } = buildSessionSpecFromConfig(
     buildSessionConfig("Garage", {
       numberOfObjectives: 3,
-      routeVisibleCount: 2
+      routeVisibleCount: 2,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST
     }),
     "89abcdef01234567fedcba9876543210",
     "route"
@@ -120,18 +146,9 @@ test("normalizeAppState preserves route mode payloads", () => {
       squaresCleared: 3,
       totalDurationMs: 3900,
       visibleCount: 2,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST,
       exportSeed,
       sessionSpec
-    },
-    aggregateStats: {
-      routeByVisibleCount: {
-        2: {
-          attempts: 1,
-          completions: 1,
-          totalDurationMs: 3900,
-          bestMs: 3900
-        }
-      }
     }
   });
 
@@ -143,13 +160,11 @@ test("normalizeAppState preserves route mode payloads", () => {
   ]);
   assert.equal(state.pendingCompletion.sessionType, "route");
   assert.equal(state.pendingCompletion.visibleCount, 2);
-  assert.deepEqual(state.aggregateStats.routeByVisibleCount, {
-    2: {
-      attempts: 1,
-      completions: 1,
-      totalDurationMs: 3900,
-      bestMs: 3900
-    }
+  assert.equal(state.pendingCompletion.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.deepEqual(state.aggregateStats, {
+    squareByArea: {},
+    tapeByArea: {},
+    graffitiByArea: {}
   });
 });
 
@@ -175,6 +190,27 @@ test("normalizeAppState computes missing pendingCompletion export seed from sess
   assert.ok(state.pendingCompletion);
   assert.equal(state.pendingCompletion.squaresCleared, 1);
   assert.equal(state.pendingCompletion.exportSeed, encodeSessionSeed(sessionSpec));
+});
+
+test("normalizeAppState drops legacy route stats buckets", () => {
+  const state = normalizeAppState({
+    aggregateStats: {
+      routeByVisibleCount: {
+        4: {
+          attempts: 2,
+          completions: 2,
+          totalDurationMs: 10000,
+          bestMs: 4500
+        }
+      }
+    }
+  });
+
+  assert.deepEqual(state.aggregateStats, {
+    squareByArea: {},
+    tapeByArea: {},
+    graffitiByArea: {}
+  });
 });
 
 test("normalizeAppState drops invalid pendingCompletion payloads", () => {

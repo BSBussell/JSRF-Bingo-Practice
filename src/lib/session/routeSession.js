@@ -1,4 +1,9 @@
 import { ROUTE_SESSION_TYPE } from "./sessionTypes.js";
+import {
+  ROUTE_REVEAL_MODE_BURST,
+  getRouteRevealModeLabel,
+  normalizeRouteRevealMode
+} from "./routeRevealMode.js";
 
 export function buildInitialRouteVisibleObjectiveIds(objectiveIds, visibleCount) {
   const safeObjectiveIds = Array.isArray(objectiveIds) ? objectiveIds : [];
@@ -42,11 +47,13 @@ export function buildRouteCompletionResult({
   endedAt
 }) {
   const visibleCount = session.sessionSpec?.config?.routeVisibleCount ?? 0;
+  const routeRevealMode = normalizeRouteRevealMode(session.sessionSpec?.config?.routeRevealMode);
+  const revealModeLabel = getRouteRevealModeLabel(routeRevealMode);
 
   return {
     sessionId: session.id,
     sessionType: ROUTE_SESSION_TYPE,
-    label: `Route x${visibleCount}`,
+    label: `${revealModeLabel} Route x${visibleCount}`,
     result: "complete",
     finishedAt: endedAt,
     startedAt: session.sessionStartedAt,
@@ -58,7 +65,8 @@ export function buildRouteCompletionResult({
       0,
       endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
     ),
-    visibleCount
+    visibleCount,
+    routeRevealMode
   };
 }
 
@@ -69,6 +77,7 @@ export function buildRouteHistoryEntry(routeResult) {
     label: routeResult.label,
     result: routeResult.result,
     visibleCount: routeResult.visibleCount,
+    routeRevealMode: routeResult.routeRevealMode,
     objectiveCount: routeResult.objectiveCount,
     squaresCleared: routeResult.squaresCleared,
     totalDurationMs: routeResult.totalDurationMs,
@@ -120,15 +129,35 @@ export function completeRouteSlot({
     };
   }
 
-  const nextRevealIndex = session.nextRevealIndex ?? 0;
-  const revealedObjectiveId = session.objectiveIds[nextRevealIndex] ?? null;
   const visibleObjectiveIds = session.visibleObjectiveIds.slice();
-  visibleObjectiveIds[slotIndex] = revealedObjectiveId;
+  visibleObjectiveIds[slotIndex] = null;
+  const routeRevealMode = normalizeRouteRevealMode(session.sessionSpec?.config?.routeRevealMode);
+  let nextRevealIndex = session.nextRevealIndex ?? 0;
+
+  if (routeRevealMode === ROUTE_REVEAL_MODE_BURST) {
+    if (!visibleObjectiveIds.some(Boolean) && nextRevealIndex < session.objectiveIds.length) {
+      const nextBurstObjectiveIds = buildInitialRouteVisibleObjectiveIds(
+        session.objectiveIds.slice(nextRevealIndex),
+        session.sessionSpec?.config?.routeVisibleCount
+      );
+      visibleObjectiveIds.splice(0, visibleObjectiveIds.length, ...nextBurstObjectiveIds);
+      nextRevealIndex = Math.min(
+        session.objectiveIds.length,
+        nextRevealIndex + (session.sessionSpec?.config?.routeVisibleCount ?? 0)
+      );
+    }
+  } else {
+    const revealedObjectiveId = session.objectiveIds[nextRevealIndex] ?? null;
+    visibleObjectiveIds[slotIndex] = revealedObjectiveId;
+    if (revealedObjectiveId) {
+      nextRevealIndex += 1;
+    }
+  }
 
   const nextSession = {
     ...session,
     visibleObjectiveIds,
-    nextRevealIndex: revealedObjectiveId ? nextRevealIndex + 1 : nextRevealIndex,
+    nextRevealIndex,
     completedCount: (session.completedCount ?? 0) + 1
   };
   const hasVisibleObjectivesRemaining = visibleObjectiveIds.some(Boolean);

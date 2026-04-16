@@ -84,7 +84,8 @@ export function RouteCard({
                   <strong>Cleared</strong>
                 </div>
                 <div className="route-tile-footer">
-                  <span>Waiting for route completion</span>
+                  
+                  <span>Clear the Board to Continue</span>
                 </div>
               </>
             )}

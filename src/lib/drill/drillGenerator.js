@@ -6,14 +6,17 @@ import { areaMeta } from "../../data/areaMeta.js";
 import { DRILL_CATEGORY_BY_KEY, DRILL_CATEGORY_KEYS, getObjectiveCategory } from "./drillCategories.js";
 import {
   DEFAULT_DRILL_SETTINGS,
+  DISTRICT_JUMP_DEPTHS,
+  LEVEL_SHIFT_LENGTHS,
   categoryVarianceMultiplier,
-  movementTargetShare
+  movementTargetShare,
+  normalizeDistrictJumpDistribution,
+  normalizeLevelShiftDistribution
 } from "./drillSettings.js";
 import { travelWeight } from "./travelWeight.js";
 import { weightedPick } from "./weightedPick.js";
 
 const MOVEMENT_CLASSES = ["sameArea", "sameLevelMove", "levelShift", "districtChange"];
-
 function recentSessionEntries(history, sessionId, count = 3) {
   return history.filter((entry) => entry.sessionId === sessionId).slice(-count);
 }
@@ -106,10 +109,6 @@ function buildObjectiveWeight(objective, context) {
     return 0;
   }
 
-  if (drillSettings.trueRandom) {
-    return 1;
-  }
-
   if (usedObjectiveIds.has(objective.id)) {
     return 0;
   }
@@ -121,6 +120,11 @@ function buildObjectiveWeight(objective, context) {
   const category = getObjectiveCategory(objective.type);
   const currentMeta = areaMeta[currentArea];
   const targetMeta = areaMeta[objective.area];
+  const movementClass = resolveMovementClass(currentArea, objective.area);
+
+  if (drillSettings.trueRandom) {
+    return 1;
+  }
 
   // Unlock cadence is local-only: if the current district can't naturally reach a character unlock,
   // the unlock category should simply drop out instead of forcing a map transfer.
@@ -134,7 +138,6 @@ function buildObjectiveWeight(objective, context) {
     return 0;
   }
 
-  const movementClass = resolveMovementClass(currentArea, objective.area);
   let weight = travelWeight(currentArea, objective.area, areaMeta);
   const recent = recentSessionEntries(history, sessionId, 3);
   const recentTypes = recent.map((entry) => entry.type);
@@ -145,14 +148,6 @@ function buildObjectiveWeight(objective, context) {
     sessionId,
     currentMeta?.district
   );
-
-  if (movementClass === "districtChange") {
-    // Cross-district rolls are only legal to top-level areas; anything deeper
-    // would imply a pathing shortcut the current trainer state does not model.
-    if (!targetMeta || targetMeta.depth !== 0) {
-      return 0;
-    }
-  }
 
   if (movementClass === "levelShift" && currentMeta && targetMeta) {
     const isLowerDepthTarget =
@@ -283,6 +278,188 @@ function buildWeightedObjectivesByMovement(entries, currentArea) {
   }, {});
 }
 
+function buildMovementSelectionState(movementBuckets, context) {
+  return Object.fromEntries(
+    MOVEMENT_CLASSES.map((movementClass) => {
+      const movementCategories = buildWeightedEntryCategories(
+        movementBuckets[movementClass] ?? []
+      );
+      const categoryScores = Object.fromEntries(
+        DRILL_CATEGORY_KEYS.map((category) => [
+          category,
+          buildCategoryScore(category, movementCategories[category] ?? [], context)
+        ])
+      );
+
+      return [
+        movementClass,
+        {
+          movementCategories,
+          categoryScores
+        }
+      ];
+    })
+  );
+}
+
+function buildBucketSelectionState(entries, bucketKeys, resolveBucketKey, context) {
+  const entryBuckets = entries.reduce((buckets, entry) => {
+    const bucketKey = resolveBucketKey(entry);
+
+    if (!bucketKeys.includes(bucketKey)) {
+      return buckets;
+    }
+
+    if (!buckets[bucketKey]) {
+      buckets[bucketKey] = [];
+    }
+
+    buckets[bucketKey].push(entry);
+    return buckets;
+  }, {});
+
+  return Object.fromEntries(
+    bucketKeys.map((bucketKey) => {
+      const movementCategories = buildWeightedEntryCategories(entryBuckets[bucketKey] ?? []);
+      const categoryScores = Object.fromEntries(
+        DRILL_CATEGORY_KEYS.map((category) => [
+          category,
+          buildCategoryScore(category, movementCategories[category] ?? [], context)
+        ])
+      );
+
+      return [
+        bucketKey,
+        {
+          movementCategories,
+          categoryScores,
+          totalWeight: (entryBuckets[bucketKey] ?? []).reduce((sum, entry) => sum + entry.weight, 0)
+        }
+      ];
+    })
+  );
+}
+
+function buildBucketDistributionScores(selectionState, bucketKeys, distribution) {
+  const distributionByKey = Object.fromEntries(
+    bucketKeys.map((bucketKey, index) => [bucketKey, distribution[index] ?? 0])
+  );
+  const availableKeys = bucketKeys.filter((bucketKey) => (selectionState[bucketKey]?.totalWeight ?? 0) > 0);
+
+  if (availableKeys.length === 0) {
+    return Object.fromEntries(bucketKeys.map((bucketKey) => [bucketKey, 0]));
+  }
+
+  const totalDistribution = availableKeys.reduce(
+    (sum, bucketKey) => sum + (distributionByKey[bucketKey] ?? 0),
+    0
+  );
+  const totalWeight = availableKeys.reduce(
+    (sum, bucketKey) => sum + (selectionState[bucketKey]?.totalWeight ?? 0),
+    0
+  );
+
+  if (totalDistribution <= 0 || totalWeight <= 0) {
+    return Object.fromEntries(bucketKeys.map((bucketKey) => [bucketKey, 0]));
+  }
+
+  return Object.fromEntries(
+    bucketKeys.map((bucketKey) => [
+      bucketKey,
+      (selectionState[bucketKey]?.totalWeight ?? 0) > 0
+        ? totalWeight * ((distributionByKey[bucketKey] ?? 0) / totalDistribution)
+        : 0
+    ])
+  );
+}
+
+function hasSelectableBucketSelection(bucketKeys, selectionState, bucketScores) {
+  return bucketKeys.some((bucketKey) => {
+    const categoryScores = selectionState[bucketKey]?.categoryScores ?? {};
+    const hasSelectableCategory = DRILL_CATEGORY_KEYS.some(
+      (category) => (categoryScores[category] ?? 0) > 0
+    );
+
+    return hasSelectableCategory && (bucketScores[bucketKey] ?? 0) > 0;
+  });
+}
+
+function pickBucketSelectionState(bucketKeys, selectionState, bucketScores, rng) {
+  const selectedBucket = weightedPick(
+    bucketKeys,
+    (bucketKey) => {
+      const categoryScores = selectionState[bucketKey]?.categoryScores ?? {};
+      const hasSelectableCategory = DRILL_CATEGORY_KEYS.some(
+        (category) => (categoryScores[category] ?? 0) > 0
+      );
+
+      return hasSelectableCategory ? bucketScores[bucketKey] ?? 0 : 0;
+    },
+    rng
+  );
+
+  return selectedBucket === null || selectedBucket === undefined
+    ? null
+    : selectionState[selectedBucket] ?? null;
+}
+
+function resolveDistrictJumpDepth(entry) {
+  const depth = areaMeta[entry.objective.area]?.depth;
+  return Number.isInteger(depth) && DISTRICT_JUMP_DEPTHS.includes(depth) ? depth : 0;
+}
+
+function resolveLevelShiftLength(currentArea, entry) {
+  const currentDepth = areaMeta[currentArea]?.depth;
+  const targetDepth = areaMeta[entry.objective.area]?.depth;
+  const length = Math.abs((targetDepth ?? currentDepth) - currentDepth);
+
+  return Number.isInteger(length) && LEVEL_SHIFT_LENGTHS.includes(length)
+    ? length
+    : LEVEL_SHIFT_LENGTHS[0];
+}
+
+function buildDistrictJumpSelection(entries, context) {
+  const selectionState = buildBucketSelectionState(
+    entries,
+    DISTRICT_JUMP_DEPTHS,
+    resolveDistrictJumpDepth,
+    context
+  );
+
+  return {
+    bucketKeys: DISTRICT_JUMP_DEPTHS,
+    selectionState,
+    bucketScores: buildBucketDistributionScores(
+      selectionState,
+      DISTRICT_JUMP_DEPTHS,
+      normalizeDistrictJumpDistribution(
+        (context.drillSettings ?? DEFAULT_DRILL_SETTINGS).districtJumpDistribution
+      )
+    )
+  };
+}
+
+function buildLevelShiftSelection(entries, context) {
+  const selectionState = buildBucketSelectionState(
+    entries,
+    LEVEL_SHIFT_LENGTHS,
+    (entry) => resolveLevelShiftLength(context.currentArea, entry),
+    context
+  );
+
+  return {
+    bucketKeys: LEVEL_SHIFT_LENGTHS,
+    selectionState,
+    bucketScores: buildBucketDistributionScores(
+      selectionState,
+      LEVEL_SHIFT_LENGTHS,
+      normalizeLevelShiftDistribution(
+        (context.drillSettings ?? DEFAULT_DRILL_SETTINGS).levelShiftDistribution
+      )
+    )
+  };
+}
+
 function buildMovementClassScores(movementBuckets, context) {
   const drillSettings = context.drillSettings ?? DEFAULT_DRILL_SETTINGS;
   const baseScores = Object.fromEntries(
@@ -372,6 +549,35 @@ function buildMovementClassScores(movementBuckets, context) {
   };
 }
 
+function buildRecoveryCategoryScores(entries, context) {
+  const recoveryCategories = buildWeightedEntryCategories(entries);
+
+  return Object.fromEntries(
+    DRILL_CATEGORY_KEYS.map((category) => [
+      category,
+      buildCategoryScore(category, recoveryCategories[category] ?? [], context)
+    ])
+  );
+}
+
+function pickRecoveryObjective(entries, context) {
+  if (!entries.length) {
+    return null;
+  }
+
+  const categoryScores = buildRecoveryCategoryScores(entries, context);
+
+  return (
+    weightedPick(
+      entries,
+      (entry) =>
+        entry.weight *
+        (categoryScores[getObjectiveCategory(entry.objective.type)] ?? 0),
+      context.rng
+    )?.objective ?? null
+  );
+}
+
 export function generateNextDrill(objectives, context) {
   const usedObjectiveIds = new Set(context.usedObjectiveIds);
   const nextContext = {
@@ -398,32 +604,75 @@ export function generateNextDrill(objectives, context) {
     allWeightedEntries,
     nextContext.currentArea
   );
+  const movementSelectionState = buildMovementSelectionState(movementBuckets, nextContext);
   const movementScores = buildMovementClassScores(movementBuckets, nextContext);
+  const movementBucketSelections = {
+    levelShift: buildLevelShiftSelection(movementBuckets.levelShift ?? [], nextContext),
+    districtChange: buildDistrictJumpSelection(movementBuckets.districtChange ?? [], nextContext)
+  };
   const selectedMovement = weightedPick(
     MOVEMENT_CLASSES,
-    (movementClass) => movementScores[movementClass] ?? 0,
+    (movementClass) => {
+      if (movementClass === "levelShift" || movementClass === "districtChange") {
+        const bucketSelection = movementBucketSelections[movementClass];
+
+        return hasSelectableBucketSelection(
+          bucketSelection.bucketKeys,
+          bucketSelection.selectionState,
+          bucketSelection.bucketScores
+        )
+          ? movementScores[movementClass] ?? 0
+          : 0;
+      }
+
+      const categoryScores = movementSelectionState[movementClass]?.categoryScores ?? {};
+      const hasSelectableCategory = DRILL_CATEGORY_KEYS.some(
+        (category) => (categoryScores[category] ?? 0) > 0
+      );
+
+      return hasSelectableCategory ? movementScores[movementClass] ?? 0 : 0;
+    },
     nextContext.rng
   );
 
   if (!selectedMovement) {
-    return null;
+    return pickRecoveryObjective(allWeightedEntries, nextContext);
   }
 
-  const selectedMovementEntries = movementBuckets[selectedMovement] ?? [];
-  const movementCategories = buildWeightedEntryCategories(selectedMovementEntries);
+  const selectedMovementState = movementSelectionState[selectedMovement] ?? {
+    movementCategories: {},
+    categoryScores: {}
+  };
+  const activeSelectionState =
+    selectedMovement === "levelShift" || selectedMovement === "districtChange"
+      ? pickBucketSelectionState(
+          movementBucketSelections[selectedMovement].bucketKeys,
+          movementBucketSelections[selectedMovement].selectionState,
+          movementBucketSelections[selectedMovement].bucketScores,
+          nextContext.rng
+        )
+      : selectedMovementState;
+
+  if (!activeSelectionState) {
+    return pickRecoveryObjective(allWeightedEntries, nextContext);
+  }
+
   const selectedCategory = weightedPick(
     DRILL_CATEGORY_KEYS,
-    (category) => buildCategoryScore(category, movementCategories[category] ?? [], nextContext),
+    (category) => activeSelectionState.categoryScores[category] ?? 0,
     nextContext.rng
   );
 
   if (!selectedCategory) {
-    return null;
+    return pickRecoveryObjective(allWeightedEntries, nextContext);
   }
 
-  return weightedPick(
-    movementCategories[selectedCategory] ?? [],
+  return (
+    weightedPick(
+    activeSelectionState.movementCategories[selectedCategory] ?? [],
     (entry) => entry.weight,
     nextContext.rng
-  )?.objective ?? null;
+    )?.objective ??
+    pickRecoveryObjective(allWeightedEntries, nextContext)
+  );
 }

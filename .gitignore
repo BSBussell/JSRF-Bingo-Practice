@@ -3,3 +3,6 @@ dist
 .DS_Store
 target
 src-tauri/target
+
+# Local repo memory for collaborators; intentionally not committed.
+AGENTS.md

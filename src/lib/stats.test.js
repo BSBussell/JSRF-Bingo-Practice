@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { rebuildPerformanceState } from "./stats/stats.js";
+import {
+  ROUTE_REVEAL_MODE_BURST,
+  ROUTE_REVEAL_MODE_ROLLING
+} from "./session/routeRevealMode.js";
 
 function buildEntry({
   sessionType = "practice",
@@ -15,6 +19,7 @@ function buildEntry({
   tapeDurationMs = null,
   endedAt,
   visibleCount = null,
+  routeRevealMode = null,
   objectiveCount = null,
   squaresCleared = null
 }) {
@@ -31,6 +36,7 @@ function buildEntry({
     tapeDurationMs,
     endedAt,
     visibleCount,
+    routeRevealMode,
     objectiveCount,
     squaresCleared
   };
@@ -116,12 +122,11 @@ test("rebuildPerformanceState recomputes PBs and area stats from remaining histo
         totalDurationMs: 7000,
         bestMs: 7000
       }
-    },
-    routeByVisibleCount: {}
+    }
   });
 });
 
-test("rebuildPerformanceState tracks route runs separately from practice PBs", () => {
+test("rebuildPerformanceState ignores route runs in performance stats", () => {
   const history = [
     buildEntry({
       sessionType: "route",
@@ -130,6 +135,7 @@ test("rebuildPerformanceState tracks route runs separately from practice PBs", (
       totalDurationMs: 9000,
       endedAt: 100,
       visibleCount: 4,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST,
       objectiveCount: 12,
       squaresCleared: 12
     }),
@@ -154,12 +160,49 @@ test("rebuildPerformanceState tracks route runs separately from practice PBs", (
       updatedAt: 200
     }
   });
-  assert.deepEqual(rebuilt.aggregateStats.routeByVisibleCount, {
-    4: {
-      attempts: 1,
-      completions: 1,
-      totalDurationMs: 9000,
-      bestMs: 9000
-    }
+  assert.deepEqual(rebuilt.aggregateStats, {
+    squareByArea: {
+      Garage: {
+        attempts: 1,
+        completions: 1,
+        totalDurationMs: 3000,
+        bestMs: 3000
+      }
+    },
+    tapeByArea: {},
+    graffitiByArea: {}
+  });
+});
+
+test("rebuildPerformanceState does not create route stats buckets", () => {
+  const history = [
+    buildEntry({
+      sessionType: "route",
+      label: "Rolling Route x4",
+      totalDurationMs: 8000,
+      endedAt: 100,
+      visibleCount: 4,
+      routeRevealMode: ROUTE_REVEAL_MODE_ROLLING,
+      objectiveCount: 12,
+      squaresCleared: 12
+    }),
+    buildEntry({
+      sessionType: "route",
+      label: "Burst Route x4",
+      totalDurationMs: 11000,
+      endedAt: 200,
+      visibleCount: 4,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST,
+      objectiveCount: 12,
+      squaresCleared: 12
+    })
+  ];
+
+  const rebuilt = rebuildPerformanceState(history);
+
+  assert.deepEqual(rebuilt.aggregateStats, {
+    squareByArea: {},
+    tapeByArea: {},
+    graffitiByArea: {}
   });
 });

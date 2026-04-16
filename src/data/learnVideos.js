@@ -23,7 +23,7 @@ function playlistVariant(playlistId, label, videoId = null) {
 
 const graffitiPlaylist = playlistVariant(
   "PLrqAmeXg8tekWV7QHQb5T3c8TbYxwb-ot",
-  "Bingo Routes Playlist"
+  "Crabbi's Route"
 );
 
 const areaSearchTerms = {
@@ -146,7 +146,7 @@ export const learningVideosByObjective = {
   dogen_006: entry("u_Bj4QjVm4o", "Dogenzaka - Tricks x20"),
   dogen_035: entry("KoHafSNvZzc", "Dogenzaka - 50k Points"),
   dogen_062: entry("t6RUsWb-7-8", "Dogenzaka - Special"),
-  dogen_graffiti: entry("FtzmNK2Tig4", "Dogenzaka - Graffiti Route", [graffitiPlaylist]),
+  dogen_graffiti: entry("FtzmNK2Tig4", "Dogenzaka - Graffiti Route"),
 
   shibuya_007: entry(
     "Hs3SfUBxa8g",
@@ -183,7 +183,7 @@ export const learningVideosByObjective = {
     "Shibuya - Special (13 Platforms)",
     [variant("Znq5t6SzJwQ", "Shibuya - Special (boosted variant)")]
   ),
-  shibuya_graffiti: entry("gu4VwQW3744", "Shibuya - Graffiti Route", [graffitiPlaylist]),
+  shibuya_graffiti: entry("gu4VwQW3744", "Shibuya - Graffiti Route"),
 
   chuo_037: entry("RXAkh0a9eoA", "Chuo - Canals"),
   chuo_064: entry("Fs8dUnlUhC8", "Chuo - Cubby"),
@@ -193,7 +193,7 @@ export const learningVideosByObjective = {
   chuo_038: entry("MUZTMqbRrA0", "Chuo - Tricks x30"),
   chuo_065: entry("lV0EhH2NsyE", "Chuo - Points 60k"),
   chuo_096: entry("ikbNJDK2VCk", "Chuo - Special"),
-  chuo_graffiti: entry("73wyJq6Veqg", "Chuo Street - Graffiti Route", [graffitiPlaylist]),
+  chuo_graffiti: entry("73wyJq6Veqg", "Chuo Street - Graffiti Route"),
 
   hikage_045: entry("kKWArXi9Wr0", "Hikage - Cubby"),
   hikage_073: entry("zw3iE6Do6Ik", "Hikage - Crane"),
@@ -241,11 +241,7 @@ export const learningVideosByObjective = {
   "99th_069": entry("Lae8bP0M0bc", "99th Street - Tricks x40"),
   "99th_099": entry("Jrs5x7RgCbU", "99th Street - 100k Points"),
   "99th_127": entry("a9OLu34AvoU", "99th Street - Special"),
-  "99th_graffiti": entry(
-    "u9I9bYdmBvs",
-    "99th Street - Graffiti Route",
-    [graffitiPlaylist]
-  ),
+  "99th_graffiti": entry("u9I9bYdmBvs", "99th Street - Graffiti Route"),
 
   sewers_013: entry("f5PiY9Vstl4", "Sewers - Entrance"),
   sewers_042: entry("g2y0zDD5SPk", "Sewers - Center Structure"),
@@ -391,15 +387,15 @@ export const learningVideosByObjective = {
     ]
   ),
   dino_055: entry("fayKWRAv7VY", "Sky Dino - Special"),
-  dino_graffiti: entry("KKco2ni8ZEU", "Sky Dino - Graffiti Route", [graffitiPlaylist]),
+  dino_graffiti: entry("KKco2ni8ZEU", "Sky Dino - Graffiti Route"),
 
-  frz_graffiti: entry("jTs81NmqAZY", "FRZ - Graffiti Route", [graffitiPlaylist]),
-  hikage_graffiti: entry("HZnV78p4z0s", "Hikage - Graffiti Route", [graffitiPlaylist]),
-  kibo_graffiti: entry("KM7Wvb8TXD8", "Kibogaoka - Graffiti Route", [graffitiPlaylist]),
-  sdpp_graffiti: entry("-EeF9qmuB9E", "SDPP - Graffiti Route", [graffitiPlaylist]),
-  hwy0_graffiti: entry("Iz0eBbWVBWg", "Highway Zero - Graffiti Route", [graffitiPlaylist]),
-  bp_graffiti: entry("A7xT85Q2qlo", "Bottom Point - Graffiti Route", [graffitiPlaylist]),
-  rdh_graffiti: entry("i3S0R1KJeL0", "RDH - Graffiti Route", [graffitiPlaylist]),
+  frz_graffiti: entry("jTs81NmqAZY", "FRZ - Graffiti Route"),
+  hikage_graffiti: entry("HZnV78p4z0s", "Hikage - Graffiti Route"),
+  kibo_graffiti: entry("KM7Wvb8TXD8", "Kibogaoka - Graffiti Route"),
+  sdpp_graffiti: entry("-EeF9qmuB9E", "SDPP - Graffiti Route"),
+  hwy0_graffiti: entry("Iz0eBbWVBWg", "Highway Zero - Graffiti Route"),
+  bp_graffiti: entry("A7xT85Q2qlo", "Bottom Point - Graffiti Route"),
+  rdh_graffiti: entry("i3S0R1KJeL0", "RDH - Graffiti Route"),
   sewers_graffiti: entry("lG9NGpofsBc", "Sewers - Graffiti Route")
 };
 

@@ -1,6 +1,7 @@
 import { getAreaLabel } from "../data/areaMeta.js";
 import { formatDuration } from "../hooks/useTimer.js";
 import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
+import { getRouteRevealModeLabel } from "../lib/session/routeRevealMode.js";
 
 function formatResult(result) {
   return result[0].toUpperCase() + result.slice(1);
@@ -13,7 +14,7 @@ function renderHistoryMeta(entry) {
         <span className={`result-chip result-${entry.result}`}>
           {formatResult(entry.result)}
         </span>
-        <span>{entry.visibleCount} visible</span>
+        <span>{entry.visibleCount} visible · {getRouteRevealModeLabel(entry.routeRevealMode)}</span>
         <span>{entry.squaresCleared ?? 0} / {entry.objectiveCount ?? 0} cleared</span>
         <span>
           Route {typeof entry.totalDurationMs === "number" ? formatDuration(entry.totalDurationMs) : "n/a"}
@@ -62,7 +63,7 @@ export function HistoryPanel({ history, onDeleteEntry }) {
                   <strong>{entry.sessionType === "route" ? entry.label ?? "Route Run" : entry.label}</strong>
                   <p>
                     {entry.sessionType === "route"
-                      ? `Route mode / ${entry.objectiveCount ?? 0} squares`
+                      ? `${getRouteRevealModeLabel(entry.routeRevealMode)} route / ${entry.objectiveCount ?? 0} squares`
                       : `${getAreaLabel(entry.area)} / ${formatObjectiveTypeLabel(entry.type)}`}
                   </p>
                 </div>

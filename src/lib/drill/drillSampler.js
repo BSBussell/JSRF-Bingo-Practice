@@ -3,7 +3,6 @@ import { allObjectives } from "../../data/objectives.js";
 import { generateNextDrill } from "./drillGenerator.js";
 import { getObjectiveCategory } from "./drillCategories.js";
 import { objectiveRequiresTape } from "../session/drillSession.js";
-import { OBJECTIVE_FRESHNESS_WINDOW } from "../session/drillSessionConstants.js";
 import { normalizeDrillSettings } from "./drillSettings.js";
 import { createSeededRng } from "../seed/sessionSeed.js";
 
@@ -116,7 +115,7 @@ export function sampleDrillGeneration({
       }
     }
 
-    usedObjectiveIds = [...usedObjectiveIds, objective.id].slice(-OBJECTIVE_FRESHNESS_WINDOW);
+    usedObjectiveIds = [...usedObjectiveIds, objective.id];
     const nextArea = result === "skip" ? currentArea : objective.area ?? currentArea;
 
     if (

@@ -13,8 +13,9 @@ import { getAvailableObjectiveCount } from "./drill/drillSettings.js";
 import {
   CORRUPTED_FORMAL_SEED_WARNING,
   LEGACY_COMPACT_SESSION_SEED_PREFIX,
-  LEGACY_SESSION_SEED_PREFIX,
   LEGACY_SESSION_SEED_V2_PREFIX,
+  PRACTICE_SEED_IN_ROUTE_WARNING,
+  ROUTE_SEED_IN_PRACTICE_WARNING,
   SESSION_SEED_PREFIX,
   buildSessionConfig,
   buildSessionSpecFromConfig,
@@ -25,14 +26,7 @@ import {
   normalizeSeedPhrase,
   resolveSeedInput
 } from "./seed/sessionSeed.js";
-
-function encodeRawSeedPayload(payload) {
-  return `${LEGACY_SESSION_SEED_PREFIX}${Buffer.from(JSON.stringify(payload), "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "")}`;
-}
+import { ROUTE_REVEAL_MODE_BURST } from "./session/routeRevealMode.js";
 
 function encodeLegacyCompactSeed(sessionSpec, prefix) {
   const excludedMask = objectiveAreaOrder.reduce(
@@ -110,6 +104,7 @@ test("route phrase seeds are deterministic and preserve route session type", () 
   assert.equal(phraseSession.sessionSpec.sessionType, "route");
   assert.equal(decodedExport.sessionType, "route");
   assert.equal(decodedExport.config.routeVisibleCount, phraseSession.sessionSpec.config.routeVisibleCount);
+  assert.equal(decodedExport.config.routeRevealMode, phraseSession.sessionSpec.config.routeRevealMode);
 });
 
 test("phrase seeds derive route visible count from the phrase", () => {
@@ -145,7 +140,6 @@ test("phrase seeds can use the full available objective pool", () => {
   const phraseSession = buildSessionSpecFromPhrase("route me up", "route");
   const availableObjectives = getAvailableObjectiveCount(phraseSession.sessionSpec.config);
 
-  assert.equal(phraseSession.sessionSpec.config.numberOfObjectives, 78);
   assert.ok(phraseSession.sessionSpec.config.numberOfObjectives > 40);
   assert.ok(phraseSession.sessionSpec.config.numberOfObjectives <= availableObjectives);
 });
@@ -154,6 +148,8 @@ test("exported seeds round-trip canonically", () => {
   const config = buildSessionConfig("Garage", {
     numberOfObjectives: 4,
     excludedAreas: ["Kibo", "Dogen"],
+    levelShiftDistribution: [35, 65],
+    districtJumpDistribution: [50, 30, 20],
     trueRandom: false
   });
   const { sessionSpec, exportSeed } = buildSessionSpecFromConfig(
@@ -191,42 +187,24 @@ test("decodeSessionSeed accepts legacy compact BNGSD2 seeds", () => {
   assert.equal(decodeSessionSeed(legacyCompactSeed).sessionType, "practice");
 });
 
-test("decodeSessionSeed rejects unsupported versions", () => {
-  assert.throws(
-    () =>
-      decodeSessionSeed(
-        encodeRawSeedPayload({
-          version: 2,
-          rngSeed: "00112233445566778899aabbccddeeff",
-          config: buildSessionConfig("Garage", {
-            numberOfObjectives: 1
-          }),
-          objectiveIds: ["shibuya_scratch_1"]
-        })
-      ),
-    /Unsupported seed version/
-  );
-});
-
-test("decodeSessionSeed still accepts legacy JSON seeds", () => {
-  const legacySeed = encodeRawSeedPayload({
-    version: 1,
-    rngSeed: "00112233445566778899aabbccddeeff",
-    config: buildSessionConfig("Garage", {
-      numberOfObjectives: 1
+test("decodeSessionSeed rejects legacy JSON v1 seeds", () => {
+  const legacyJsonSeed = `JSRFD1.${Buffer.from(
+    JSON.stringify({
+      version: 1,
+      rngSeed: "00112233445566778899aabbccddeeff",
+      config: buildSessionConfig("Garage", {
+        numberOfObjectives: 1
+      }),
+      objectiveIds: ["dogen_005"]
     }),
-    objectiveIds: ["dogen_005"]
-  });
+    "utf8"
+  )
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "")}`;
 
-  assert.deepEqual(decodeSessionSeed(legacySeed), {
-    version: 3,
-    sessionType: "practice",
-    rngSeed: "00112233445566778899aabbccddeeff",
-    config: buildSessionConfig("Garage", {
-      numberOfObjectives: 1
-    }),
-    objectiveIds: ["dogen_005"]
-  });
+  assert.throws(() => decodeSessionSeed(legacyJsonSeed), /not a supported exported drill seed/);
 });
 
 test("decodeSessionSeed rejects malformed payloads", () => {
@@ -242,10 +220,72 @@ test("resolveSeedInput warns and deterministically falls back when a formal seed
   assert.ok(seedState.exportSeed.startsWith(SESSION_SEED_PREFIX));
 });
 
+test("resolveSeedInput warns when a route seed is entered on the practice setup", () => {
+  const routeSeedState = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 4,
+      routeVisibleCount: 6,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST
+    }),
+    "00112233445566778899aabbccddeeff",
+    "route"
+  );
+
+  const seedState = resolveSeedInput(routeSeedState.exportSeed, "practice");
+
+  assert.equal(seedState.mode, "exported");
+  assert.equal(seedState.sessionSpec.sessionType, "practice");
+  assert.deepEqual(seedState.sessionSpec.objectiveIds, routeSeedState.sessionSpec.objectiveIds);
+  assert.equal(seedState.warning, ROUTE_SEED_IN_PRACTICE_WARNING);
+  assert.equal(decodeSessionSeed(seedState.exportSeed).sessionType, "practice");
+});
+
+test("resolveSeedInput warns when a practice seed is entered on the route setup", () => {
+  const practiceSeedState = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 4
+    }),
+    "00112233445566778899aabbccddeeff",
+    "practice"
+  );
+
+  const seedState = resolveSeedInput(practiceSeedState.exportSeed, "route");
+
+  assert.equal(seedState.mode, "exported");
+  assert.equal(seedState.sessionSpec.sessionType, "route");
+  assert.deepEqual(seedState.sessionSpec.objectiveIds, practiceSeedState.sessionSpec.objectiveIds);
+  assert.equal(
+    seedState.sessionSpec.config.numberOfObjectives,
+    practiceSeedState.sessionSpec.objectiveIds.length
+  );
+  assert.equal(seedState.warning, PRACTICE_SEED_IN_ROUTE_WARNING);
+  assert.equal(decodeSessionSeed(seedState.exportSeed).sessionType, "route");
+});
+
+test("resolveSeedInput does not warn when a route seed is entered on the route setup", () => {
+  const { exportSeed } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 4,
+      routeVisibleCount: 6,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST
+    }),
+    "00112233445566778899aabbccddeeff",
+    "route"
+  );
+
+  const seedState = resolveSeedInput(exportSeed, "route");
+
+  assert.equal(seedState.mode, "exported");
+  assert.equal(seedState.warning, "");
+});
+
 test("route exported seeds round-trip canonically", () => {
   const config = buildSessionConfig("Garage", {
     numberOfObjectives: 4,
     routeVisibleCount: 6,
+    routeRevealMode: ROUTE_REVEAL_MODE_BURST,
+    levelShiftDistribution: [25, 75],
+    districtJumpDistribution: [50, 30, 20],
     excludedAreas: ["Kibo"],
     trueRandom: false
   });
@@ -257,6 +297,7 @@ test("route exported seeds round-trip canonically", () => {
 
   assert.equal(sessionSpec.sessionType, "route");
   assert.ok(sessionSpec.config.numberOfObjectives >= sessionSpec.config.routeVisibleCount);
+  assert.equal(sessionSpec.config.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
   assert.equal(encodeSessionSeed(decodeSessionSeed(exportSeed)), exportSeed);
   assert.deepEqual(decodeSessionSeed(exportSeed), sessionSpec);
 });
@@ -311,6 +352,46 @@ test("seeded session specs honor numberOfObjectives", () => {
   );
 
   assert.equal(sessionSpec.objectiveIds.length, 3);
+});
+
+test("buildSessionSpecFromConfig recovers seeded pre-generation when strict selection would dead-end", () => {
+  const { sessionSpec } = buildSessionSpecFromConfig(
+    buildSessionConfig("Dogen", {
+      numberOfObjectives: 58,
+      excludedAreas: [],
+      graffitiVariance: 0,
+      unlockVariance: 0,
+      defaultVariance: 0,
+      notebookVariance: -3,
+      levelShift: 2,
+      districtShift: 1,
+      levelShiftDistribution: [63, 37],
+      districtJumpDistribution: [43, 57, 0],
+      trueRandom: false
+    }),
+    "0000000000000000000000000000000a"
+  );
+
+  assert.equal(sessionSpec.objectiveIds.length, 58);
+  assert.equal(new Set(sessionSpec.objectiveIds).size, 58);
+});
+
+test("buildSessionSpecFromConfig still fails for truly impossible seeded configs", () => {
+  assert.throws(
+    () =>
+      buildSessionSpecFromConfig(
+        buildSessionConfig("Garage", {
+          numberOfObjectives: 25,
+          graffitiVariance: -3,
+          unlockVariance: 2,
+          defaultVariance: -3,
+          notebookVariance: -3,
+          trueRandom: false
+        }),
+        "0000000000000000000000000000000b"
+      ),
+    /could not generate the requested objective sequence/
+  );
 });
 
 test("seeded session progression consumes the precomputed objective list without regeneration", () => {

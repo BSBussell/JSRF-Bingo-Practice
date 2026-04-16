@@ -6,15 +6,24 @@ import {
   completeRouteSlot
 } from "./session/routeSession.js";
 import { buildSessionConfig } from "./seed/sessionSeed.js";
+import {
+  ROUTE_REVEAL_MODE_BURST,
+  ROUTE_REVEAL_MODE_ROLLING
+} from "./session/routeRevealMode.js";
 
-function buildRouteSpec(objectiveIds, routeVisibleCount = 3) {
+function buildRouteSpec(
+  objectiveIds,
+  routeVisibleCount = 3,
+  routeRevealMode = ROUTE_REVEAL_MODE_ROLLING
+) {
   return {
     version: 3,
     sessionType: "route",
     rngSeed: "00112233445566778899aabbccddeeff",
     config: buildSessionConfig("Garage", {
       numberOfObjectives: objectiveIds.length,
-      routeVisibleCount
+      routeVisibleCount,
+      routeRevealMode
     }),
     objectiveIds
   };
@@ -52,6 +61,37 @@ test("completeRouteSlot reveals the next objective into the cleared slot", () =>
   assert.equal(resolution.nextSession.nextRevealIndex, 4);
   assert.equal(resolution.nextSession.completedCount, 1);
   assert.equal(resolution.completionResult, null);
+});
+
+test("completeRouteSlot in burst mode waits until the wave is clear before revealing more", () => {
+  const session = buildRouteSessionState({
+    sessionId: "route_burst",
+    now: 1000,
+    sessionSpec: buildRouteSpec(["a", "b", "c", "d", "e"], 2, ROUTE_REVEAL_MODE_BURST),
+    exportSeed: "BNGSD3.test"
+  });
+
+  const firstClear = completeRouteSlot({
+    session,
+    slotIndex: 0,
+    endedAt: 1500
+  });
+
+  assert.equal(firstClear.completedObjectiveId, "a");
+  assert.deepEqual(firstClear.nextSession.visibleObjectiveIds, [null, "b"]);
+  assert.equal(firstClear.nextSession.nextRevealIndex, 2);
+  assert.equal(firstClear.completionResult, null);
+
+  const secondClear = completeRouteSlot({
+    session: firstClear.nextSession,
+    slotIndex: 1,
+    endedAt: 2000
+  });
+
+  assert.equal(secondClear.completedObjectiveId, "b");
+  assert.deepEqual(secondClear.nextSession.visibleObjectiveIds, ["c", "d"]);
+  assert.equal(secondClear.nextSession.nextRevealIndex, 4);
+  assert.equal(secondClear.completionResult, null);
 });
 
 test("completeRouteSlot ignores paused sessions", () => {
@@ -100,7 +140,7 @@ test("completeRouteSlot returns a completion summary on the final clear", () => 
   assert.deepEqual(secondClear.completionResult, {
     sessionId: "route_3",
     sessionType: "route",
-    label: "Route x2",
+    label: "Rolling Route x2",
     result: "complete",
     finishedAt: 2200,
     startedAt: 1000,
@@ -109,8 +149,38 @@ test("completeRouteSlot returns a completion summary on the final clear", () => 
     objectiveCount: 2,
     squaresCleared: 2,
     totalDurationMs: 1000,
-    visibleCount: 2
+    visibleCount: 2,
+    routeRevealMode: ROUTE_REVEAL_MODE_ROLLING
   });
+});
+
+test("burst mode completes after the last visible wave is cleared", () => {
+  const session = buildRouteSessionState({
+    sessionId: "route_burst_complete",
+    now: 1000,
+    sessionSpec: buildRouteSpec(["a", "b", "c"], 2, ROUTE_REVEAL_MODE_BURST),
+    exportSeed: "BNGSD3.test"
+  });
+
+  const firstClear = completeRouteSlot({
+    session,
+    slotIndex: 0,
+    endedAt: 1200
+  });
+  const secondClear = completeRouteSlot({
+    session: firstClear.nextSession,
+    slotIndex: 1,
+    endedAt: 1400
+  });
+  const thirdClear = completeRouteSlot({
+    session: secondClear.nextSession,
+    slotIndex: 0,
+    endedAt: 1800
+  });
+
+  assert.equal(thirdClear.nextSession, null);
+  assert.equal(thirdClear.completionResult.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.equal(thirdClear.completionResult.label, "Burst Route x2");
 });
 
 test("buildRouteSessionState handles drills equal to the visible count", () => {

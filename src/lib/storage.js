@@ -13,6 +13,7 @@ import {
   ROUTE_SESSION_TYPE,
   normalizeSessionType
 } from "./session/sessionTypes.js";
+import { normalizeRouteRevealMode } from "./session/routeRevealMode.js";
 import {
   DEFAULT_THEME_ID,
   createDefaultCustomTheme,
@@ -276,6 +277,10 @@ function normalizeHistoryEntry(entry) {
     sessionType,
     type: sessionType === ROUTE_SESSION_TYPE ? entry.type ?? null : normalizeObjectiveType(entry.type),
     visibleCount: Number.isInteger(entry.visibleCount) ? Math.max(0, entry.visibleCount) : null,
+    routeRevealMode:
+      sessionType === ROUTE_SESSION_TYPE
+        ? normalizeRouteRevealMode(entry.routeRevealMode)
+        : null,
     objectiveCount:
       Number.isInteger(entry.objectiveCount) ? Math.max(0, entry.objectiveCount) : null,
     squaresCleared:
@@ -357,6 +362,13 @@ function normalizePendingCompletion(pendingCompletion) {
       Number.isInteger(pendingCompletion.visibleCount) && pendingCompletion.visibleCount >= 0
         ? pendingCompletion.visibleCount
         : sessionSpec.config.routeVisibleCount,
+    routeRevealMode:
+      normalizeSessionType(pendingCompletion.sessionType ?? sessionSpecInput.sessionType) ===
+      ROUTE_SESSION_TYPE
+        ? normalizeRouteRevealMode(
+            pendingCompletion.routeRevealMode ?? sessionSpec.config.routeRevealMode
+          )
+        : null,
     exportSeed:
       typeof pendingCompletion.exportSeed === "string" && pendingCompletion.exportSeed
         ? pendingCompletion.exportSeed
@@ -483,11 +495,6 @@ export function normalizeAppState(value) {
         value.aggregateStats?.graffitiByArea &&
         typeof value.aggregateStats.graffitiByArea === "object"
           ? value.aggregateStats.graffitiByArea
-          : {},
-      routeByVisibleCount:
-        value.aggregateStats?.routeByVisibleCount &&
-        typeof value.aggregateStats.routeByVisibleCount === "object"
-          ? value.aggregateStats.routeByVisibleCount
           : {}
     }
   };

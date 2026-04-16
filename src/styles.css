@@ -1228,6 +1228,52 @@ button {
     font: inherit;
 }
 
+.segmented-control {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: calc(var(--radius-control) + 0.2rem);
+    border: 1px solid var(--input-border);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
+        var(--input-background);
+}
+
+.segmented-control.is-disabled {
+    opacity: 0.7;
+}
+
+.segmented-control-option {
+    min-height: 2.85rem;
+    padding: 0.8rem 1rem;
+    border: 0;
+    border-radius: calc(var(--radius-control) - 0.05rem);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-weight: 600;
+    transition:
+        background 120ms ease,
+        color 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.segmented-control-option:hover,
+.segmented-control-option:focus-visible {
+    color: inherit;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.segmented-control-option.is-selected {
+    color: var(--timer-pill-text);
+    background: var(--timer-pill-primary-background);
+    box-shadow:
+        inset 0 0 0 1px var(--timer-pill-accent-border),
+        var(--timer-pill-primary-shadow);
+}
+
 .seed-textarea {
     resize: vertical;
     min-height: 3.6rem;
@@ -1303,6 +1349,45 @@ button {
     gap: 0.7rem;
 }
 
+.setup-advanced-panel {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--surface-card-border);
+    background: var(--surface-card-background);
+}
+
+.setup-advanced-panel.is-disabled {
+    opacity: 0.72;
+}
+
+.setup-advanced-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.setup-advanced-summary::-webkit-details-marker {
+    display: none;
+}
+
+.setup-advanced-title {
+    font-weight: 700;
+}
+
+.setup-advanced-content {
+    display: grid;
+    gap: 0.9rem;
+    padding: 0 0.85rem 0.85rem;
+}
+
+.setup-advanced-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .drill-slider-row {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(12rem, 0.8fr);
@@ -1344,6 +1429,109 @@ button {
 .drill-slider-control input[type="range"] {
     width: 100%;
     accent-color: var(--accent);
+}
+
+.probability-distribution-editor {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 1.1rem;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 1px solid var(--surface-card-border);
+    background: var(--panel-bg);
+}
+
+.probability-distribution-editor.is-disabled {
+    opacity: 0.75;
+}
+
+.probability-distribution-segment.distribution-tone-depth-0,
+.probability-distribution-swatch.distribution-tone-depth-0,
+.probability-distribution-segment.distribution-tone-level-1,
+.probability-distribution-swatch.distribution-tone-level-1 {
+    background: linear-gradient(90deg, var(--accent), var(--accent));
+}
+
+.probability-distribution-segment.distribution-tone-depth-1,
+.probability-distribution-swatch.distribution-tone-depth-1 {
+    background: linear-gradient(90deg, var(--accent-soft), var(--accent-soft));
+}
+
+.probability-distribution-segment.distribution-tone-depth-2,
+.probability-distribution-swatch.distribution-tone-depth-2,
+.probability-distribution-segment.distribution-tone-level-2,
+.probability-distribution-swatch.distribution-tone-level-2 {
+    background: linear-gradient(90deg, var(--text-primary), var(--text-primary));
+}
+
+.probability-distribution-handle {
+    position: absolute;
+    top: -0.2rem;
+    bottom: -0.2rem;
+    width: 1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+.probability-distribution-handle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+}
+
+.probability-distribution-handle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-card-border);
+    background: var(--panel-background);
+    transform: translate(-50%, -50%);
+}
+
+.probability-distribution-handle:hover::after,
+.probability-distribution-handle:focus-visible::after {
+    background: var(--accent);
+}
+
+.probability-distribution-handle:focus-visible {
+    outline: none;
+}
+
+.probability-distribution-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+    justify-content: flex-end;
+}
+
+.probability-distribution-chip {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.probability-distribution-swatch {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-card-border);
 }
 
 .setup-submit-button {

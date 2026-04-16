@@ -1,6 +1,10 @@
 import { areasByDistrict, objectiveAreaOrder } from "../../data/areaMeta.js";
 import { allObjectives } from "../../data/objectives.js";
 import {
+    DEFAULT_ROUTE_REVEAL_MODE,
+    normalizeRouteRevealMode
+} from "../session/routeRevealMode.js";
+import {
     DRILL_CATEGORY_BY_KEY,
     DRILL_CATEGORIES,
     getObjectiveCategory,
@@ -15,6 +19,12 @@ export const NUMBER_OF_OBJECTIVES_MIN = 1;
 export const NUMBER_OF_OBJECTIVES_MAX = 123;
 export const ROUTE_VISIBLE_COUNT_MIN = 2;
 export const ROUTE_VISIBLE_COUNT_MAX = 10;
+export const DISTRICT_JUMP_DEPTHS = [0, 1, 2];
+export const LEVEL_SHIFT_LENGTHS = [1, 2];
+export const DISTRICT_JUMP_DISTRIBUTION_TOTAL = 100;
+export const DISTRICT_JUMP_BOUNDARY_STEP = 1;
+export const LEVEL_SHIFT_DISTRIBUTION_TOTAL = DISTRICT_JUMP_DISTRIBUTION_TOTAL;
+export const LEVEL_SHIFT_BOUNDARY_STEP = DISTRICT_JUMP_BOUNDARY_STEP;
 
 export const VARIANCE_LABELS = {
     [-3]: "None",
@@ -33,6 +43,27 @@ export const MOVEMENT_LABELS = {
     2: "Always",
 };
 
+export const LEGACY_DISTRICT_JUMP_TENDENCY_DISTRIBUTIONS = {
+    0: {
+        0: 100,
+        1: 0,
+        2: 0,
+    },
+    1: {
+        0: 70,
+        1: 20,
+        2: 10,
+    },
+    2: {
+        0: 50,
+        1: 30,
+        2: 20,
+    },
+};
+
+export const DEFAULT_DISTRICT_JUMP_DISTRIBUTION = [75, 15, 10];
+export const DEFAULT_LEVEL_SHIFT_DISTRIBUTION = [80, 20];
+
 export const CATEGORY_VARIANCE_FIELDS = DRILL_CATEGORIES.map((category) => ({
     key: category.settingKey,
     label: `${category.label} Variance`,
@@ -42,16 +73,19 @@ export const DRILL_MOVEMENT_FIELDS = [
     {
         key: "levelShift",
         label: "Level Shift",
+        description: "How often you move to a new level.",
     },
     {
         key: "districtShift",
         label: "District Shift",
+        description: "How often a level shift crosses districts.",
     },
 ];
 
 export const DEFAULT_DRILL_SETTINGS = {
     numberOfObjectives: 25,
     routeVisibleCount: 4,
+    routeRevealMode: DEFAULT_ROUTE_REVEAL_MODE,
     excludedAreas: [],
     graffitiVariance: -2,
     unlockVariance: -1,
@@ -59,6 +93,8 @@ export const DEFAULT_DRILL_SETTINGS = {
     notebookVariance: 0,
     levelShift: 0,
     districtShift: -1,
+    levelShiftDistribution: DEFAULT_LEVEL_SHIFT_DISTRIBUTION,
+    districtJumpDistribution: DEFAULT_DISTRICT_JUMP_DISTRIBUTION,
     trueRandom: false,
 };
 
@@ -110,6 +146,81 @@ function clampMovementVariance(value) {
     );
 }
 
+function roundNormalizedShares(values, total) {
+    const scaledValues = values.map((value) => (value / total) * DISTRICT_JUMP_DISTRIBUTION_TOTAL);
+    const flooredValues = scaledValues.map((value) => Math.floor(value));
+    let remainder = DISTRICT_JUMP_DISTRIBUTION_TOTAL -
+        flooredValues.reduce((sum, value) => sum + value, 0);
+    const fractionalRanks = scaledValues
+        .map((value, index) => ({
+            index,
+            remainder: value - flooredValues[index],
+        }))
+        .sort((left, right) => right.remainder - left.remainder || left.index - right.index);
+
+    for (let index = 0; index < fractionalRanks.length && remainder > 0; index += 1) {
+        flooredValues[fractionalRanks[index].index] += 1;
+        remainder -= 1;
+    }
+
+    return flooredValues;
+}
+
+function normalizeExplicitDistribution(rawDistribution, defaultDistribution) {
+    const normalizedValues = defaultDistribution.map((_, index) => {
+        const nextValue = rawDistribution?.[index];
+        return Number.isFinite(nextValue) ? Math.max(0, nextValue) : 0;
+    });
+    const sum = normalizedValues.reduce((total, entry) => total + entry, 0);
+
+    if (sum <= 0) {
+        return defaultDistribution.slice();
+    }
+
+    return roundNormalizedShares(normalizedValues, sum);
+}
+
+function buildDistributionBoundaries(distribution, normalizeDistribution) {
+    const normalizedDistribution = normalizeDistribution(distribution);
+    const boundaries = [];
+    let runningTotal = 0;
+
+    for (let index = 0; index < normalizedDistribution.length - 1; index += 1) {
+        runningTotal += normalizedDistribution[index];
+        boundaries.push(runningTotal);
+    }
+
+    return boundaries;
+}
+
+function buildDistributionFromBoundaries(
+    boundaries,
+    defaultDistribution,
+    distributionTotal = DISTRICT_JUMP_DISTRIBUTION_TOTAL,
+) {
+    const normalizedDefault = normalizeExplicitDistribution(
+        defaultDistribution,
+        defaultDistribution,
+    );
+    const nextDistribution = [];
+    let previousBoundary = 0;
+
+    for (let index = 0; index < normalizedDefault.length - 1; index += 1) {
+        const fallbackBoundary = previousBoundary + normalizedDefault[index];
+        const nextBoundary = Number.isFinite(boundaries?.[index])
+            ? Math.max(
+                  previousBoundary,
+                  Math.min(distributionTotal, Math.round(boundaries[index])),
+              )
+            : fallbackBoundary;
+        nextDistribution.push(nextBoundary - previousBoundary);
+        previousBoundary = nextBoundary;
+    }
+
+    nextDistribution.push(distributionTotal - previousBoundary);
+    return nextDistribution;
+}
+
 function deriveNotebookVariance(value) {
     if (Number.isFinite(value?.notebookVariance)) {
         return clampCategoryVariance(value.notebookVariance);
@@ -159,10 +270,89 @@ export function getAvailableObjectiveCount(drillSettings, objectives = allObject
         .length;
 }
 
+function legacyDistrictJumpDistribution(value) {
+    const legacyScalar = Number.isFinite(value?.districtJumpTendency)
+        ? value.districtJumpTendency
+        : Number.isFinite(value?.districtJumpDepth)
+            ? value.districtJumpDepth
+            : null;
+
+    if (!Number.isFinite(legacyScalar)) {
+        return DEFAULT_DISTRICT_JUMP_DISTRIBUTION;
+    }
+
+    const normalizedScalar = Math.max(
+        0,
+        Math.min(
+            Object.keys(LEGACY_DISTRICT_JUMP_TENDENCY_DISTRIBUTIONS).length - 1,
+            Math.round(legacyScalar),
+        ),
+    );
+    const legacyDistribution = LEGACY_DISTRICT_JUMP_TENDENCY_DISTRIBUTIONS[normalizedScalar];
+
+    return DISTRICT_JUMP_DEPTHS.map((depth) => legacyDistribution?.[depth] ?? 0);
+}
+
+export function normalizeDistrictJumpDistribution(value) {
+    const rawDistribution = Array.isArray(value)
+        ? value
+        : value && typeof value === "object" && Array.isArray(value.districtJumpDistribution)
+            ? value.districtJumpDistribution
+            : legacyDistrictJumpDistribution(value);
+    return normalizeExplicitDistribution(
+        rawDistribution,
+        DEFAULT_DISTRICT_JUMP_DISTRIBUTION,
+    );
+}
+
+export function normalizeLevelShiftDistribution(value) {
+    const rawDistribution = Array.isArray(value)
+        ? value
+        : value && typeof value === "object" && Array.isArray(value.levelShiftDistribution)
+            ? value.levelShiftDistribution
+            : DEFAULT_LEVEL_SHIFT_DISTRIBUTION;
+
+    return normalizeExplicitDistribution(
+        rawDistribution,
+        DEFAULT_LEVEL_SHIFT_DISTRIBUTION,
+    );
+}
+
+export function buildDistrictJumpBoundaries(distribution) {
+    return buildDistributionBoundaries(
+        distribution,
+        normalizeDistrictJumpDistribution,
+    );
+}
+
+export function buildDistrictJumpDistributionFromBoundaries(boundaries) {
+    return buildDistributionFromBoundaries(
+        boundaries,
+        DEFAULT_DISTRICT_JUMP_DISTRIBUTION,
+    );
+}
+
+export function buildLevelShiftBoundaries(distribution) {
+    return buildDistributionBoundaries(
+        distribution,
+        normalizeLevelShiftDistribution,
+    );
+}
+
+export function buildLevelShiftDistributionFromBoundaries(boundaries) {
+    return buildDistributionFromBoundaries(
+        boundaries,
+        DEFAULT_LEVEL_SHIFT_DISTRIBUTION,
+        LEVEL_SHIFT_DISTRIBUTION_TOTAL,
+    );
+}
+
 export function normalizeDrillSettings(value) {
     if (!value || typeof value !== "object") {
         return {
             ...DEFAULT_DRILL_SETTINGS,
+            levelShiftDistribution: DEFAULT_LEVEL_SHIFT_DISTRIBUTION.slice(),
+            districtJumpDistribution: DEFAULT_DISTRICT_JUMP_DISTRIBUTION.slice(),
             excludedAreas: [],
         };
     }
@@ -189,6 +379,7 @@ export function normalizeDrillSettings(value) {
                 DEFAULT_DRILL_SETTINGS.routeVisibleCount,
             ),
         ),
+        routeRevealMode: normalizeRouteRevealMode(value.routeRevealMode),
         excludedAreas,
         graffitiVariance: clampCategoryVariance(
             fallbackNumber(
@@ -223,6 +414,8 @@ export function normalizeDrillSettings(value) {
                 DEFAULT_DRILL_SETTINGS.districtShift,
             ),
         ),
+        levelShiftDistribution: normalizeLevelShiftDistribution(value),
+        districtJumpDistribution: normalizeDistrictJumpDistribution(value),
         trueRandom:
             typeof value.trueRandom === "boolean"
                 ? value.trueRandom
