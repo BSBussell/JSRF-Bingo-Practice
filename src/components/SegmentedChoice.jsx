@@ -6,6 +6,11 @@ export function SegmentedChoice({
   hint,
   onChange
 }) {
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value)
+  );
+
   return (
     <div className="field">
       <span>{label}</span>
@@ -13,7 +18,9 @@ export function SegmentedChoice({
         className={`segmented-control ${disabled ? "is-disabled" : ""}`}
         role="radiogroup"
         aria-label={label}
+        style={{ "--segmented-selected-index": selectedIndex }}
       >
+        <span className="segmented-control-indicator" aria-hidden="true" />
         {options.map((option) => {
           const checked = option.value === value;
 

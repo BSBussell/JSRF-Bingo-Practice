@@ -106,6 +106,179 @@ function copyTextToClipboard(value) {
   return navigator.clipboard.writeText(value);
 }
 
+function SetupSection({ eyebrow, title, description, children }) {
+  return (
+    <section className="setup-section">
+      <div className="setup-section-header">
+        <div className="setup-section-copy">
+          {eyebrow ? <p className="eyebrow setup-section-eyebrow">{eyebrow}</p> : null}
+          <h2>{title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SetupActionBar({
+  submitLabel,
+  seedModeLabel,
+  displayedExportSeed,
+  copyStatus,
+  manualError,
+  seedFootnote,
+  sessionSummary,
+  onCopySeed
+}) {
+  const statusLabel = manualError || copyStatus || "Ready to generate";
+
+  return (
+    <div className="setup-action-bar" aria-label="Session generator">
+      <div className="setup-action-status">
+        <div className="setup-action-heading">
+          {/* Left empty because it looks better */}
+          <div className="setup-action-meta">
+            <span className="badge">{seedModeLabel}</span>
+            {sessionSummary.map((item) => (
+              <span className="result-chip" key={item}>
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+        <code className="setup-action-seed">
+          {displayedExportSeed || "Seed will be generated on start or copy."}
+        </code>
+        <p className={`setup-action-message ${manualError ? "is-error" : ""}`}>
+          {statusLabel}
+        </p>
+        {seedFootnote ? <p className="setup-action-message">{seedFootnote}</p> : null}
+      </div>
+
+      <div className="setup-action-controls">
+        <button className="primary-button setup-launch-button" type="submit">
+          {submitLabel}
+        </button>
+        <button className="secondary-button" type="button" onClick={onCopySeed}>
+          Copy Seed
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getDistrictExclusionState(drillSettings, districtGroup) {
+  const excludedCount = districtGroup.areas.filter((area) =>
+    isAreaExcluded(drillSettings, area)
+  ).length;
+
+  if (excludedCount === 0) {
+    return "none";
+  }
+
+  if (excludedCount === districtGroup.areas.length) {
+    return "all";
+  }
+
+  return "some";
+}
+
+function ExcludedAreasControl({
+  drillSettings,
+  disabled,
+  onAreaToggle,
+  onDistrictToggle
+}) {
+  return (
+    <>
+      <div className="district-table-shell">
+        <table className="district-table">
+          <tbody>
+            {areasByDistrict.map((districtGroup) => {
+              const districtExcluded = isDistrictExcluded(
+                drillSettings,
+                districtGroup.district
+              );
+
+              return (
+                <tr key={districtGroup.district}>
+                  <th scope="row">
+                    <button
+                      className={`district-cell-button ${districtExcluded ? "is-excluded" : ""}`}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onDistrictToggle(districtGroup.district)}
+                    >
+                      {districtGroup.label}
+                    </button>
+                  </th>
+                  {districtGroup.areas.map((area) => {
+                    const excluded = isAreaExcluded(drillSettings, area);
+
+                    return (
+                      <td key={area}>
+                        <button
+                          className={`district-cell-button area-cell-button ${excluded ? "is-excluded" : ""}`}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => onAreaToggle(area)}
+                        >
+                          {areaLabels[area] ?? area}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="excluded-area-mobile" aria-label="Excluded areas by district">
+        {areasByDistrict.map((districtGroup) => {
+          const districtState = getDistrictExclusionState(drillSettings, districtGroup);
+          const districtExcluded = districtState === "all";
+
+          return (
+            <section className="excluded-area-mobile-group" key={districtGroup.district}>
+              <button
+                className={`excluded-area-mobile-district is-${districtState}`}
+                type="button"
+                disabled={disabled}
+                aria-pressed={districtExcluded}
+                onClick={() => onDistrictToggle(districtGroup.district)}
+              >
+                {districtGroup.label}
+              </button>
+
+              <div className="excluded-area-mobile-chips">
+                {districtGroup.areas.map((area) => {
+                  const excluded = isAreaExcluded(drillSettings, area);
+
+                  return (
+                    <button
+                      className={`excluded-area-mobile-chip ${excluded ? "is-excluded" : ""}`}
+                      type="button"
+                      key={area}
+                      disabled={disabled}
+                      aria-pressed={excluded}
+                      onClick={() => onAreaToggle(area)}
+                    >
+                      {areaLabels[area] ?? area}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export function SetupPanel({
   defaultArea,
   defaultDrillSettings,
@@ -337,8 +510,23 @@ export function SetupPanel({
   const sessionTitle = isRouteMode ? "Start a route session" : "Start a practice session";
   const sessionNote = isRouteMode
     ? "Pick a starting area, choose how many squares stay visible, or resolve a seed before the route begins."
-    : `Pick a starting area or resolve a seed before the session starts. Route guide videos default to ${isLearnPanelDefaultVisible ? "visible" : "hidden"} and can be toggled mid-session.`;
+    : `Pick a starting area or enter a seed before the session starts. Route guide videos default to ${isLearnPanelDefaultVisible ? "visible" : "hidden"} and can be toggled mid-session.`;
   const submitLabel = isRouteMode ? "Start Route Session" : "Start Practice Session";
+  const sessionSummary = [
+    `${effectiveDrillSettings.numberOfObjectives} square${effectiveDrillSettings.numberOfObjectives === 1 ? "" : "s"}`,
+    areaLabels[effectiveStartingArea] ?? effectiveStartingArea
+  ];
+
+  if (isRouteMode) {
+    sessionSummary.push(
+      `${effectiveDrillSettings.routeVisibleCount} visible`,
+      ROUTE_REVEAL_MODE_LABELS[effectiveDrillSettings.routeRevealMode]
+    );
+  }
+
+  if (effectiveDrillSettings.trueRandom) {
+    sessionSummary.push("True random");
+  }
 
   return (
     <section className="panel setup-panel">
@@ -352,7 +540,11 @@ export function SetupPanel({
 
       <form className="setup-form setup-form-extended" onSubmit={handleSubmit}>
         <div className="setup-top-stack">
-          <div className="setup-grid setup-grid-seed-row">
+          <SetupSection
+            eyebrow=""
+            title="Seed"
+            description="Paste a phrase or exported seed to replay a known setup. Leave it blank to generate from the controls below."
+          >
             <label className="field">
               <span>Seed input</span>
               <textarea
@@ -363,72 +555,58 @@ export function SetupPanel({
                 onChange={(event) => handleSeedInputChange(event.target.value)}
               />
               <span className="field-hint">
-                Entering a seed will lock all below settings to the provided seed. If you just want to generate a seed from the current settings, leave this blank and click "Copy Seed to Clipboard" to copy the generated seed for the current settings.
+                Active seeds lock manual controls so the exported session stays reproducible.
               </span>
               {resolvedSeedState.warning ? (
                 <p className="setup-warning">{resolvedSeedState.warning}</p>
               ) : null}
             </label>
+          </SetupSection>
 
-            <label className="setup-toggle-card">
-              <div className="settings-row-copy">
-                <strong>True random</strong>
-                <p>you will spend more time moving across map and less time actually unlocking things but your funeral.</p>
-              </div>
-
-              <span className="toggle-shell">
-                <input
-                  type="checkbox"
-                  checked={effectiveDrillSettings.trueRandom}
+          <SetupSection
+            eyebrow=""
+            title="Core settings"
+            description=""
+          >
+            <div className="setup-grid setup-grid-two-column setup-grid-run-profile">
+              <label className="field">
+                <span>Starting area</span>
+                <select
+                  name="startingArea"
+                  value={effectiveStartingArea}
+                  required
                   disabled={controlsLocked}
-                  onChange={(event) => updateDrillSetting("trueRandom", event.target.checked)}
-                />
-                <span className="toggle-track" aria-hidden="true">
-                  <span className="toggle-thumb" />
+                  onChange={(event) => handleStartingAreaChange(event.target.value)}
+                >
+                  {areaOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="field-hint">
+                  Where you are when you want to start
                 </span>
-              </span>
-            </label>
-          </div>
+              </label>
 
-          <div className="setup-grid setup-grid-two-column">
-            <label className="field">
-              <span>Starting area</span>
-              <select
-                name="startingArea"
-                value={effectiveStartingArea}
-                required
-                disabled={controlsLocked}
-                onChange={(event) => handleStartingAreaChange(event.target.value)}
-              >
-                {areaOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+              <label className="field">
+                <span>Number of squares</span>
+                <input
+                  type="number"
+                  min={effectiveObjectiveMin}
+                  max={effectiveObjectiveMax}
+                  value={effectiveDrillSettings.numberOfObjectives}
+                  disabled={controlsLocked}
+                  onChange={(event) =>
+                    updateDrillSetting("numberOfObjectives", Number(event.target.value))
+                  }
+                />
+                <span className="field-hint">
+                  Capped by current available pool: {effectiveObjectiveMax}.
+                </span>
+              </label>
 
-          <div className="setup-grid setup-grid-single-column">
-            <label className="field">
-              <span>Number of squares</span>
-              <input
-                type="number"
-                min={effectiveObjectiveMin}
-                max={effectiveObjectiveMax}
-                value={effectiveDrillSettings.numberOfObjectives}
-                disabled={controlsLocked}
-                onChange={(event) =>
-                  updateDrillSetting("numberOfObjectives", Number(event.target.value))
-                }
-              />
-              <span className="field-hint">
-                The session ends after this many squares (capped by current available pool: {effectiveObjectiveMax}).
-                {isRouteMode ? " Route Mode keeps this at or above visible squares." : ""}
-              </span>
-            </label>
-            {isRouteMode ? (
-              <>
+              {isRouteMode ? (
                 <label className="field">
                   <span>Visible squares</span>
                   <input
@@ -442,10 +620,12 @@ export function SetupPanel({
                     }
                   />
                   <span className="field-hint">
-                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}, and maps them to the number keys `1-9`.
+                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}.
                   </span>
                 </label>
+              ) : null}
 
+              {isRouteMode ? (
                 <SegmentedChoice
                   label="Reveal mode"
                   value={effectiveDrillSettings.routeRevealMode}
@@ -463,69 +643,48 @@ export function SetupPanel({
                   hint={`${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]} refills each cleared slot immediately. ${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]} waits until the whole visible wave is cleared before revealing the next group.`}
                   onChange={(value) => updateDrillSetting("routeRevealMode", value)}
                 />
-              </>
-            ) : null}
-          </div>
+              ) : null}
+
+              <label className="setup-toggle-card setup-toggle-card-compact">
+                <div className="settings-row-copy">
+                  <strong>True random</strong>
+                  <p>Just pulls random squares for you. Might send you running across the map.</p>
+                </div>
+
+                <span className="toggle-shell">
+                  <input
+                    type="checkbox"
+                    checked={effectiveDrillSettings.trueRandom}
+                    disabled={controlsLocked}
+                    onChange={(event) => updateDrillSetting("trueRandom", event.target.checked)}
+                  />
+                  <span className="toggle-track" aria-hidden="true">
+                    <span className="toggle-thumb" />
+                  </span>
+                </span>
+              </label>
+            </div>
+          </SetupSection>
         </div>
 
-        <div className="setup-section">
-          <div className="setup-section-copy">
-            <h2>Excluded areas</h2>
-            <p>
-              Toggle individual areas, or by district.
-            </p>
-          </div>
+        <SetupSection
+          eyebrow="Objective pool"
+          title="Excluded areas"
+          description="Toggle individual areas, or by district."
+        >
+          <ExcludedAreasControl
+            drillSettings={effectiveDrillSettings}
+            disabled={controlsLocked}
+            onAreaToggle={handleAreaToggle}
+            onDistrictToggle={handleDistrictToggle}
+          />
+        </SetupSection>
 
-          <div className="district-table-shell">
-            <table className="district-table">
-              <tbody>
-                {areasByDistrict.map((districtGroup) => {
-                  const districtExcluded = isDistrictExcluded(
-                    effectiveDrillSettings,
-                    districtGroup.district
-                  );
-
-                  return (
-                    <tr key={districtGroup.district}>
-                      <th scope="row">
-                        <button
-                          className={`district-cell-button ${districtExcluded ? "is-excluded" : ""}`}
-                          type="button"
-                          disabled={controlsLocked}
-                          onClick={() => handleDistrictToggle(districtGroup.district)}
-                        >
-                          {districtGroup.label}
-                        </button>
-                      </th>
-                      {districtGroup.areas.map((area) => {
-                        const excluded = isAreaExcluded(effectiveDrillSettings, area);
-
-                        return (
-                          <td key={area}>
-                            <button
-                              className={`district-cell-button area-cell-button ${excluded ? "is-excluded" : ""}`}
-                              type="button"
-                              disabled={controlsLocked}
-                              onClick={() => handleAreaToggle(area)}
-                            >
-                              {areaLabels[area] ?? area}
-                            </button>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="setup-section">
-          <div className="setup-section-copy">
-            <h2>Square variance</h2>
-          </div>
-
+        <SetupSection
+          eyebrow="Tuning"
+          title="Square variance"
+          description={effectiveDrillSettings.trueRandom ? "Disabled while true random is active." : ""}
+        >
           <div className="drill-slider-list">
             {CATEGORY_VARIANCE_FIELDS.map((field) => (
               <VarianceSlider
@@ -540,13 +699,13 @@ export function SetupPanel({
               />
             ))}
           </div>
-        </div>
+        </SetupSection>
 
-        <div className="setup-section">
-          <div className="setup-section-copy">
-            <h2>Location Bias</h2>
-          </div>
-
+        <SetupSection
+          eyebrow="Level Flow"
+          title="Location bias"
+          description={effectiveDrillSettings.trueRandom ? "Disabled while true random is active." : "Adjust how often the generator asks you to move between levels and districts."}
+        >
           <div className="drill-slider-list">
             {DRILL_MOVEMENT_FIELDS.map((field) => (
               <VarianceSlider
@@ -563,8 +722,8 @@ export function SetupPanel({
             ))}
             <details className={`setup-advanced-panel ${advancedControlsDisabled ? "is-disabled" : ""}`}>
               <summary className="setup-advanced-summary">
-                <span className="setup-advanced-title">Advanced</span>
-                <span className="field-hint">Fine-tune shift distances.</span>
+                <span className="setup-advanced-title">Advanced shift distances</span>
+                <span className="field-hint">Tune shift depth.</span>
               </summary>
               <div className="setup-advanced-content">
                 <div className="drill-slider-list">
@@ -597,40 +756,22 @@ export function SetupPanel({
               </div>
             </details>
           </div>
-        </div>
+        </SetupSection>
 
-        <div className="setup-section">
-          <div className="setup-section-copy">
-            <h2>Resolved seed</h2>
-            <p>
-              {resolvedSeedMode === "manual"
-                ? "Generate or copy a reproducible exported seed for the current settings."
-                : `${formatSeedModeLabel(resolvedSeedMode)} is active. Manual generation controls are locked to the resolved session.`}
-            </p>
-          </div>
-
-          <div className="seed-display-shell">
-            <code className="seed-display">
-              {displayedExportSeed || "Seed will be generated when you start or copy the session."}
-            </code>
-          </div>
-          {resolvedSeedMode === "phrase" ? (
-            <p className="field-hint">
-              Copying exports the full reproducible session seed, not the original phrase.
-            </p>
-          ) : null}
-          {manualError ? <p className="setup-error">{manualError}</p> : null}
-          {copyStatus ? <p className="field-hint">{copyStatus}</p> : null}
-        </div>
-
-        <div className="setup-submit-row">
-          <button className="primary-button setup-submit-button" type="submit">
-            {submitLabel}
-          </button>
-          <button className="secondary-button" type="button" onClick={handleCopySeed}>
-            Copy Seed to Clipboard
-          </button>
-        </div>
+        <SetupActionBar
+          submitLabel={submitLabel}
+          seedModeLabel={formatSeedModeLabel(resolvedSeedMode)}
+          displayedExportSeed={displayedExportSeed}
+          copyStatus={copyStatus}
+          manualError={manualError}
+          seedFootnote={
+            resolvedSeedMode === "phrase"
+              ? "Copying exports the full reproducible session seed, not the original phrase."
+              : ""
+          }
+          sessionSummary={sessionSummary}
+          onCopySeed={handleCopySeed}
+        />
       </form>
     </section>
   );

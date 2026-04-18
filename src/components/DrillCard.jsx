@@ -1,5 +1,204 @@
+import { useLayoutEffect, useRef, useState } from "react";
+import { getAreaLabel } from "../data/areaMeta.js";
 import { formatDuration } from "../hooks/useTimer.js";
 import { TimerDisplay } from "./TimerDisplay.jsx";
+
+function formatDrillObjectiveLabel(objective) {
+  if (!objective) {
+    return "";
+  }
+
+  const areaLabel = objective.areaLabel ?? getAreaLabel(objective.area);
+  const areaPrefix = `${areaLabel} - `;
+
+  return objective.label.startsWith(areaPrefix)
+    ? objective.label.slice(areaPrefix.length)
+    : objective.label;
+}
+
+function fitSingleLineFontSize(value, {
+  minRem,
+  maxRem,
+  availableRem,
+  averageCharacterEm = 1
+}) {
+  const length = Math.max(1, value.length);
+  const size = Math.max(
+    minRem,
+    Math.min(maxRem, availableRem / (length * averageCharacterEm))
+  );
+
+  return `${size.toFixed(3)}rem`;
+}
+
+function fitMultiLineFontSize(value, {
+  minRem,
+  maxRem,
+  availableRem,
+  availableBlockRem,
+  averageCharacterEm = 1,
+  lineHeight = 1,
+  maxLines = 2
+}) {
+  const length = Math.max(1, value.length);
+  const estimatedLineCount = Math.max(
+    1,
+    Math.min(maxLines, Math.ceil((length * maxRem * averageCharacterEm) / availableRem))
+  );
+  const widthFit = (availableRem * maxLines) / (length * averageCharacterEm);
+  const heightFit = availableBlockRem / (estimatedLineCount * lineHeight);
+  const size = Math.max(minRem, Math.min(maxRem, widthFit, heightFit));
+
+  return `${size.toFixed(3)}rem`;
+}
+
+function useMultiLineFontFit(value, {
+  minRem,
+  maxRem,
+  popoutMinRem = minRem,
+  popoutMaxRem = maxRem,
+  availableRem,
+  availableBlockRem,
+  popoutAvailableBlockRem = availableBlockRem,
+  averageCharacterEm,
+  lineHeight = 1,
+  maxLines = 2
+}) {
+  const textRef = useRef(null);
+  const [fontSize, setFontSize] = useState(() => fitMultiLineFontSize(value, {
+    minRem,
+    maxRem,
+    availableRem,
+    availableBlockRem,
+    averageCharacterEm,
+    lineHeight,
+    maxLines
+  }));
+
+  useLayoutEffect(() => {
+    const element = textRef.current;
+
+    if (!element) {
+      return undefined;
+    }
+
+    let frameId = 0;
+    let disposed = false;
+
+    function getRootFontSize() {
+      return Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    }
+
+    function restoreInlineProperty(property, value) {
+      if (value) {
+        element.style.setProperty(property, value);
+      } else {
+        element.style.removeProperty(property);
+      }
+    }
+
+    function measureFitAt(fontSizePx, targetHeight) {
+      const previousFontSize = element.style.fontSize;
+      const previousDisplay = element.style.display;
+      const previousOverflow = element.style.overflow;
+      const previousWhiteSpace = element.style.whiteSpace;
+      const previousLineClamp = element.style.getPropertyValue("-webkit-line-clamp");
+      const previousBoxOrient = element.style.getPropertyValue("-webkit-box-orient");
+
+      element.style.fontSize = `${fontSizePx}px`;
+      element.style.display = "block";
+      element.style.overflow = "visible";
+      element.style.whiteSpace = "normal";
+      element.style.setProperty("-webkit-line-clamp", "unset");
+      element.style.setProperty("-webkit-box-orient", "initial");
+
+      const fits = element.scrollHeight <= targetHeight + 1
+        && element.scrollWidth <= element.clientWidth + 1;
+
+      element.style.fontSize = previousFontSize;
+      element.style.display = previousDisplay;
+      element.style.overflow = previousOverflow;
+      element.style.whiteSpace = previousWhiteSpace;
+      restoreInlineProperty("-webkit-line-clamp", previousLineClamp);
+      restoreInlineProperty("-webkit-box-orient", previousBoxOrient);
+
+      return fits;
+    }
+
+    function measureNow() {
+      if (disposed) {
+        return;
+      }
+
+      const isPopout = Boolean(element.closest(".popout-scale-target"));
+      const rootFontSize = getRootFontSize();
+      const activeMinPx = (isPopout ? popoutMinRem : minRem) * rootFontSize;
+      const activeMaxPx = (isPopout ? popoutMaxRem : maxRem) * rootFontSize;
+      const fallbackBlockRem = isPopout ? popoutAvailableBlockRem : availableBlockRem;
+      const computedStyle = getComputedStyle(element);
+      const targetHeight = element.clientHeight
+        || Number.parseFloat(computedStyle.maxHeight)
+        || fallbackBlockRem * rootFontSize;
+      let low = activeMinPx;
+      let high = activeMaxPx;
+
+      for (let index = 0; index < 9; index += 1) {
+        const midpoint = (low + high) / 2;
+
+        if (measureFitAt(midpoint, targetHeight)) {
+          low = midpoint;
+        } else {
+          high = midpoint;
+        }
+      }
+
+      setFontSize(`${(low / rootFontSize).toFixed(3)}rem`);
+    }
+
+    function scheduleMeasure() {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(measureNow);
+    }
+
+    measureNow();
+
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(scheduleMeasure)
+      : null;
+    resizeObserver?.observe(element);
+
+    if (element.parentElement) {
+      resizeObserver?.observe(element.parentElement);
+    }
+
+    window.addEventListener("resize", scheduleMeasure);
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleMeasure).catch(() => {});
+    }
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [
+    averageCharacterEm,
+    availableBlockRem,
+    availableRem,
+    lineHeight,
+    maxLines,
+    maxRem,
+    minRem,
+    popoutAvailableBlockRem,
+    popoutMaxRem,
+    popoutMinRem,
+    value
+  ]);
+
+  return [textRef, fontSize];
+}
 
 export function DrillCard({
   objective,
@@ -16,6 +215,20 @@ export function DrillCard({
   onSkip,
   onEndSession
 }) {
+  const objectiveTitle = formatDrillObjectiveLabel(objective);
+  const [objectiveTitleRef, objectiveTitleFontSize] = useMultiLineFontFit(objectiveTitle, {
+    minRem: 1.35,
+    maxRem: 3.55,
+    popoutMinRem: 1.55,
+    popoutMaxRem: 3.85,
+    availableRem: 33,
+    availableBlockRem: 4.35,
+    popoutAvailableBlockRem: 5.7,
+    averageCharacterEm: 0.58,
+    lineHeight: 0.98,
+    maxLines: 2
+  });
+
   if (!objective) {
     return (
       <section className="panel">
@@ -37,6 +250,19 @@ export function DrillCard({
   }
 
   const splitRows = [];
+  const objectiveAreaLabel = objective.areaLabel ?? getAreaLabel(objective.area);
+  const objectiveAreaLabelStyle = {
+    "--drill-location-font-size": fitSingleLineFontSize(objectiveAreaLabel, {
+      minRem: 0.58,
+      maxRem: 1.02,
+      availableRem: 16
+    }),
+    "--drill-location-popout-font-size": fitSingleLineFontSize(objectiveAreaLabel, {
+      minRem: 0.7,
+      maxRem: 1.16,
+      availableRem: 20
+    })
+  };
 
   if (phaseInfo?.needsTravel) {
     splitRows.push({
@@ -89,9 +315,22 @@ export function DrillCard({
 
   return (
     <section className="panel drill-panel">
-      <div className="drill-panel-header vertical">
-        <p className="eyebrow">Current Drill</p>
-        <h1>{objective.label}</h1>
+      <div
+        className="drill-panel-header vertical drill-objective-card"
+        key={objective.id ?? objective.label}
+      >
+        <p
+          className="eyebrow drill-objective-location"
+          data-district={objective.district ?? undefined}
+          style={objectiveAreaLabelStyle}
+        >
+          {objectiveAreaLabel}
+        </p>
+        <div className="drill-objective-copy">
+          <h1 ref={objectiveTitleRef} style={{ fontSize: objectiveTitleFontSize }}>
+            {objectiveTitle}
+          </h1>
+        </div>
       </div>
 
       <div
