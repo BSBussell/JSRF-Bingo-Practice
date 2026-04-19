@@ -179,6 +179,58 @@ test("normalizeAppState preserves route mode payloads", () => {
   });
 });
 
+test("normalizeAppState migrates legacy Jazz objective ids to 99th Street", () => {
+  const legacyObjectiveId = "sdpp_unlock_jazz";
+  const migratedObjectiveId = "99th_unlock_jazz";
+  const sessionSpec = {
+    version: 3,
+    sessionType: "practice",
+    rngSeed: "00112233445566778899aabbccddeeff",
+    config: buildSessionConfig("Garage", {
+      numberOfObjectives: 1
+    }),
+    objectiveIds: [legacyObjectiveId]
+  };
+  const state = normalizeAppState({
+    selectedMode: "practice",
+    currentSession: {
+      id: "jazz_session",
+      sessionType: "practice",
+      currentArea: "Garage",
+      currentObjectiveIndex: 0,
+      objectiveIds: [legacyObjectiveId],
+      sessionSpec
+    },
+    startCountdown: {
+      sessionSpec
+    },
+    pendingCompletion: {
+      sessionSpec
+    },
+    history: [
+      {
+        sessionId: "jazz_session",
+        objectiveId: legacyObjectiveId,
+        type: "unlock",
+        result: "complete"
+      }
+    ],
+    bestTimesByObjective: {
+      [legacyObjectiveId]: {
+        durationMs: 1000,
+        type: "unlock"
+      }
+    }
+  });
+
+  assert.equal(state.currentSession.currentObjectiveId, migratedObjectiveId);
+  assert.deepEqual(state.currentSession.sessionSpec.objectiveIds, [migratedObjectiveId]);
+  assert.deepEqual(state.startCountdown.sessionSpec.objectiveIds, [migratedObjectiveId]);
+  assert.deepEqual(state.pendingCompletion.sessionSpec.objectiveIds, [migratedObjectiveId]);
+  assert.equal(state.history[0].objectiveId, migratedObjectiveId);
+  assert.deepEqual(Object.keys(state.bestTimesByObjective), [migratedObjectiveId]);
+});
+
 test("normalizeAppState computes missing pendingCompletion export seed from sessionSpec", () => {
   const { sessionSpec } = buildSessionSpecFromConfig(
     buildSessionConfig("Garage", {

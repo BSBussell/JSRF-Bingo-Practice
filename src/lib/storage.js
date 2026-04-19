@@ -47,6 +47,13 @@ export const DEFAULT_SETTINGS = {
   themeId: DEFAULT_THEME_ID,
   customTheme: createDefaultCustomTheme()
 };
+const OBJECTIVE_ID_MIGRATIONS = {
+  sdpp_unlock_jazz: "99th_unlock_jazz"
+};
+
+function normalizeObjectiveId(objectiveId) {
+  return OBJECTIVE_ID_MIGRATIONS[objectiveId] ?? objectiveId;
+}
 
 function hotkeyBindingsMatch(left, right) {
   if (!left || !right) {
@@ -147,7 +154,9 @@ function normalizeCurrentSession(currentSession, settings) {
     currentSession.sessionType ?? currentSession.sessionSpec?.sessionType
   );
   const objectiveIds = Array.isArray(currentSession.objectiveIds)
-    ? currentSession.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    ? currentSession.objectiveIds
+        .filter((objectiveId) => typeof objectiveId === "string")
+        .map(normalizeObjectiveId)
     : [];
   if (objectiveIds.length === 0) {
     return null;
@@ -174,7 +183,7 @@ function normalizeCurrentSession(currentSession, settings) {
     const visibleObjectiveIds = Array.isArray(currentSession.visibleObjectiveIds)
       ? Array.from({ length: visibleCount }, (_, index) => {
           const objectiveId = currentSession.visibleObjectiveIds[index];
-          return typeof objectiveId === "string" ? objectiveId : null;
+          return typeof objectiveId === "string" ? normalizeObjectiveId(objectiveId) : null;
         })
       : Array.from({ length: visibleCount }, (_, index) => objectiveIds[index] ?? null);
     const nonNullVisibleCount = visibleObjectiveIds.filter(Boolean).length;
@@ -289,7 +298,11 @@ function normalizeHistoryEntry(entry) {
     objectiveCount:
       Number.isInteger(entry.objectiveCount) ? Math.max(0, entry.objectiveCount) : null,
     squaresCleared:
-      Number.isInteger(entry.squaresCleared) ? Math.max(0, entry.squaresCleared) : null
+      Number.isInteger(entry.squaresCleared) ? Math.max(0, entry.squaresCleared) : null,
+    objectiveId:
+      typeof entry.objectiveId === "string"
+        ? normalizeObjectiveId(entry.objectiveId)
+        : entry.objectiveId
   };
 }
 
@@ -300,7 +313,7 @@ function normalizeBestTimesByObjective(bestTimesByObjective) {
 
   return Object.fromEntries(
     Object.entries(bestTimesByObjective).map(([objectiveId, record]) => [
-      objectiveId,
+      normalizeObjectiveId(objectiveId),
       record && typeof record === "object"
         ? {
             ...record,
@@ -326,7 +339,9 @@ function normalizePendingCompletion(pendingCompletion) {
   }
 
   const objectiveIds = Array.isArray(sessionSpecInput.objectiveIds)
-    ? sessionSpecInput.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    ? sessionSpecInput.objectiveIds
+        .filter((objectiveId) => typeof objectiveId === "string")
+        .map(normalizeObjectiveId)
     : [];
 
   if (objectiveIds.length === 0) {
@@ -397,7 +412,9 @@ function normalizeStartCountdown(startCountdown) {
   }
 
   const objectiveIds = Array.isArray(sessionSpecInput.objectiveIds)
-    ? sessionSpecInput.objectiveIds.filter((objectiveId) => typeof objectiveId === "string")
+    ? sessionSpecInput.objectiveIds
+        .filter((objectiveId) => typeof objectiveId === "string")
+        .map(normalizeObjectiveId)
     : [];
 
   if (objectiveIds.length === 0) {

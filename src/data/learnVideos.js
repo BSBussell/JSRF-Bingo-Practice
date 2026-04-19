@@ -343,7 +343,7 @@ export const learningVideosByObjective = {
   sdpp_079: entry("-mkVe2NBc98", "SDPP - Tricks x65"),
   sdpp_107: entry("dyEJVRF_QMk", "SDPP - 110k Points"),
   sdpp_135: entry("QS4zd_zHYw4", "SDPP - Special"),
-  sdpp_unlock_jazz: entry("oEiWfbgAMmw", "99th Street - Jazz"),
+  "99th_unlock_jazz": entry("oEiWfbgAMmw", "99th Street - Jazz"),
 
   hwy0_023: entry("pRdU4sewLcE", "Highway Zero - Directly Under Entrance"),
   hwy0_051: entry("C1cxjDaHcko", "Highway Zero - Left Alley"),

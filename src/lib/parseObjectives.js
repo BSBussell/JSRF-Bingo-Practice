@@ -15,7 +15,7 @@ const aliasToArea = {
   HWY0: "HWY0",
   "Sky Dino": "Dino",
   FRZ: "FRZ",
-  Stadium: "SDPP"
+  Stadium: "_99th"
 };
 
 function slugify(value) {
