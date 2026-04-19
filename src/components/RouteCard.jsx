@@ -1,4 +1,5 @@
 import { getAreaLabel } from "../data/areaMeta.js";
+import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
 
 function formatRouteObjectiveLabel(objective) {
@@ -48,6 +49,8 @@ export function RouteCard({
   totalTimer,
   isPaused,
   useDistrictLocationColors = true,
+  sessionFeedback,
+  backdrop,
   onCompleteSlot,
   onTogglePause,
   onEndSession
@@ -66,43 +69,72 @@ export function RouteCard({
         className="route-grid"
         style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
       >
-        {routeSlots.map((slot) => (
-          <button
-            key={`${slot.slotIndex}-${slot.objectiveId ?? "empty"}`}
-            className={routeTileClassName(slot, useDistrictLocationColors)}
-            data-district={slot.objective?.district ?? undefined}
-            type="button"
-            onClick={() => onCompleteSlot(slot.slotIndex)}
-            disabled={isPaused || !slot.objective}
-            title={
-              slot.objective
-                ? `${formatRouteObjectiveLabel(slot.objective)} · ${getAreaLabel(slot.objective.area)}`
-                : "Cleared"
-            }
-          >
-            <span className="route-tile-key">{slot.slotLabel}</span>
-            {slot.objective ? (
-              <>
-                <div className="route-tile-body">
-                  <strong>{formatRouteObjectiveLabel(slot.objective)}</strong>
-                </div>
-                <div className="route-tile-footer">
-                  <span className="route-tile-area">{getAreaLabel(slot.objective.area)}</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="route-tile-body">
-                  <strong>Cleared</strong>
-                </div>
-                <div className="route-tile-footer">
-                  
-                  <span>Clear the Board to Continue</span>
-                </div>
-              </>
-            )}
-          </button>
-        ))}
+        {routeSlots.map((slot) => {
+          const tileReward =
+            sessionFeedback?.type === "route-square-complete" &&
+            sessionFeedback.slotIndex === slot.slotIndex
+              ? sessionFeedback
+              : null;
+
+          return (
+            <button
+              key={`${slot.slotIndex}-${slot.objectiveId ?? "empty"}`}
+              className={routeTileClassName(slot, useDistrictLocationColors)}
+              data-district={slot.objective?.district ?? undefined}
+              style={{ "--route-tile-delay": `${Math.min(slot.slotIndex, 8) * 18}ms` }}
+              type="button"
+              onClick={() => onCompleteSlot(slot.slotIndex)}
+              disabled={isPaused || !slot.objective}
+              title={
+                slot.objective
+                  ? `${formatRouteObjectiveLabel(slot.objective)} · ${getAreaLabel(slot.objective.area)}`
+                  : "Cleared"
+              }
+            >
+              {tileReward ? (
+                <>
+                  <span
+                    key={`${tileReward.id}_flash`}
+                    className="route-tile-reward-flash"
+                    aria-hidden="true"
+                  />
+                  <FireworkBurst
+                    key={tileReward.id}
+                    className="route-tile-reward"
+                    backdrop={backdrop}
+                    originTarget="parent"
+                    bursts={[
+                      { particleCount: 15, x: 0.5, y: 0.48, radiusScale: 1.34, speedScale: 0.94, gravityScale: 0.48 },
+                      { particleCount: 6, x: 0.24, y: 0.34, delayMs: 55, radiusScale: 1.02, speedScale: 0.78, gravityScale: 0.42 },
+                      { particleCount: 6, x: 0.76, y: 0.36, delayMs: 85, radiusScale: 1.02, speedScale: 0.78, gravityScale: 0.42 },
+                      { particleCount: 6, x: 0.5, y: 0.7, delayMs: 115, radiusScale: 0.94, speedScale: 0.72, gravityScale: 0.42 }
+                    ]}
+                  />
+                </>
+              ) : null}
+              <span className="route-tile-key">{slot.slotLabel}</span>
+              {slot.objective ? (
+                <>
+                  <div className="route-tile-body">
+                    <strong>{formatRouteObjectiveLabel(slot.objective)}</strong>
+                  </div>
+                  <div className="route-tile-footer">
+                    <span className="route-tile-area">{getAreaLabel(slot.objective.area)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="route-tile-body">
+                    <strong>Cleared</strong>
+                  </div>
+                  <div className="route-tile-footer">
+                    <span>Clear the Board to Continue</span>
+                  </div>
+                </>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <TimerDisplay

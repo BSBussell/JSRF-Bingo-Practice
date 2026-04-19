@@ -341,71 +341,186 @@ body {
     }
 }
 
-@keyframes drill-card-flip-in {
+@keyframes live-panel-settle-in {
     0% {
         opacity: 0;
-        transform: perspective(900px) rotateX(-7deg) translateY(0.28rem);
-        filter: brightness(0.94);
-    }
-
-    68% {
-        opacity: 1;
-        transform: perspective(900px) rotateX(1.5deg) translateY(0);
-        filter: brightness(1.03);
+        transform: translateY(0.55rem) scale(0.992);
+        filter: blur(2px) brightness(0.96);
     }
 
     100% {
         opacity: 1;
-        transform: perspective(900px) rotateX(0deg) translateY(0);
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1);
+    }
+}
+
+@keyframes drill-card-settle-in {
+    0% {
+        opacity: 0;
+        transform: translateY(0.42rem) scale(0.99);
+        filter: blur(1.5px) brightness(0.965);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1);
+    }
+}
+
+@keyframes route-tile-settle-in {
+    0% {
+        opacity: 0;
+        transform: translateY(0.38rem) scale(0.986);
+        filter: blur(1.25px) brightness(0.965) saturate(0.97);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1) saturate(1);
+    }
+}
+
+@keyframes route-tile-reward-flash {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+        filter: brightness(1);
+    }
+
+    18% {
+        opacity: 0.76;
+        transform: scale(1);
+        filter: brightness(1.22);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.08);
         filter: brightness(1);
     }
 }
 
-@keyframes route-card-flip-in {
+@keyframes drill-complete-flash {
     0% {
         opacity: 0;
-        transform: perspective(850px) rotateY(-8deg) translateY(0.2rem);
-        filter: brightness(0.92);
-    }
-
-    72% {
-        opacity: 1;
-        transform: perspective(850px) rotateY(1.5deg) translateY(0);
-        filter: brightness(1.04);
-    }
-
-    100% {
-        opacity: 1;
-        transform: perspective(850px) rotateY(0deg) translateY(0);
+        transform: scale(0.965);
         filter: brightness(1);
     }
-}
 
-@keyframes route-card-clear-flip {
-    0% {
-        opacity: 0.82;
-        transform: perspective(850px) rotateY(5deg) scale(0.992);
-        filter: brightness(1.08);
+    20% {
+        opacity: 0.58;
+        transform: scale(1);
+        filter: brightness(1.16);
     }
 
     100% {
-        opacity: 1;
-        transform: perspective(850px) rotateY(0deg) scale(1);
+        opacity: 0;
+        transform: scale(1.025);
         filter: brightness(1);
     }
 }
 
 @keyframes split-card-focus {
     0% {
-        filter: brightness(0.98);
+        filter: brightness(1);
+        box-shadow: inset 0 0 0 0 rgba(255, 216, 156, 0);
     }
 
-    60% {
+    55% {
+        filter: brightness(1.02);
+        box-shadow: inset 0 0 0 1px rgba(255, 216, 156, 0.06);
+    }
+
+    100% {
+        filter: brightness(1.01);
+        box-shadow: inset 0 0 0 1px rgba(255, 216, 156, 0.035);
+    }
+}
+
+@keyframes split-status-change {
+    0% {
+        opacity: 0;
+        transform: translateY(0.18rem);
+        filter: blur(1px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes learn-panel-settle-in {
+    0% {
+        opacity: 0;
+        transform: translateY(0.32rem) scale(0.992);
+        filter: blur(1.5px) brightness(0.96);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1);
+    }
+}
+
+@keyframes completion-panel-ta-da {
+    0% {
+        opacity: 0;
+        transform: translateY(0.55rem) scale(0.985);
+        filter: blur(2px) brightness(0.94);
+    }
+
+    58% {
+        opacity: 1;
+        transform: translateY(-0.04rem) scale(1.006);
+        filter: blur(0) brightness(1.05);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1);
+    }
+}
+
+@keyframes completion-shine-sweep {
+    0% {
+        opacity: 0;
+        transform: translateX(-120%) rotate(10deg);
+    }
+
+    24% {
+        opacity: 0.58;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(120%) rotate(10deg);
+    }
+}
+
+@keyframes completion-crest-pop {
+    0% {
+        opacity: 0;
+        transform: scaleX(0.72);
+        filter: brightness(0.94);
+    }
+
+    64% {
+        opacity: 1;
+        transform: scaleX(1.035);
         filter: brightness(1.08);
     }
 
     100% {
-        filter: brightness(1.04);
+        opacity: 1;
+        transform: scaleX(1);
+        filter: brightness(1);
     }
 }
 
@@ -496,6 +611,16 @@ select {
 
 button {
     cursor: pointer;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 .app-shell {
@@ -756,6 +881,8 @@ button {
 .panel::before {
     content: "";
     position: absolute;
+
+    border-radius: inherit;
     inset: 0;
     pointer-events: none;
     background: var(--panel-before-background);
@@ -1204,6 +1331,10 @@ button {
     justify-items: center;
 }
 
+.practice-drill-slot > .drill-panel {
+    animation: live-panel-settle-in 360ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
 .learn-panel {
     position: relative;
     isolation: isolate;
@@ -1211,6 +1342,8 @@ button {
     gap: 0.75rem;
     width: min(100%, 26rem);
     margin: 0 auto;
+    transform-origin: center top;
+    animation: learn-panel-settle-in 280ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .learn-panel.no-variants {
@@ -1345,6 +1478,10 @@ button {
 }
 
 .setup-panel {
+    --panel-before-background:
+        radial-gradient(circle at bottom right, rgba(214, 141, 125, 0.08), transparent 26%),
+        linear-gradient(300deg, rgba(103, 199, 189, 0.05), transparent 20%),
+        linear-gradient(180deg, rgba(255, 244, 226, 0.018), transparent 34%);
     overflow: visible;
 }
 
@@ -1385,13 +1522,51 @@ button {
     align-content: start;
     transform-origin: center top;
     backface-visibility: hidden;
-    overflow: hidden;
-    animation: drill-card-flip-in 260ms ease-out both;
+    overflow: visible;
+    animation: drill-card-settle-in 300ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .drill-objective-copy {
     display: grid;
     min-width: 0;
+}
+
+.firework-burst-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.drill-complete-burst {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.35rem;
+    z-index: 3;
+    width: calc(100% - 0.7rem);
+    height: calc(100% - 0.7rem);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 1;
+    filter: brightness(1.05) saturate(1.06);
+}
+
+.drill-complete-flash {
+    position: absolute;
+    inset: 0.35rem;
+    z-index: 2;
+    overflow: hidden;
+    border-radius: calc(var(--radius-card) - 0.1rem);
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 18%),
+        radial-gradient(circle at 50% 52%, var(--timer-pill-accent-border), transparent 52%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 62%);
+    box-shadow:
+        inset 0 0 0 1px var(--timer-pill-running-border),
+        inset 0 0 30px var(--timer-pill-accent-border);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: drill-complete-flash 620ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .drill-objective-location {
@@ -1456,7 +1631,12 @@ button {
     line-height: 0.98;
     overflow-wrap: anywhere;
     text-overflow: clip;
+    text-shadow: none;
     text-wrap: balance;
+    filter:
+        drop-shadow(0 0 1px var(--text-primary))
+        drop-shadow(0 0 7px var(--accent-strong))
+        drop-shadow(0 0 16px var(--accent));
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
@@ -2302,6 +2482,23 @@ button {
     box-shadow: var(--primary-button-shadow);
 }
 
+.primary-button.reward-button {
+    isolation: isolate;
+    box-shadow:
+        var(--primary-button-shadow),
+        0 0 0 1px rgba(255, 244, 224, 0.16),
+        0 0 22px rgba(255, 216, 156, 0.28),
+        0 0 46px rgba(214, 141, 125, 0.14),
+        inset 0 0 20px rgba(255, 250, 232, 0.12);
+}
+
+.primary-button.reward-button::before {
+    opacity: 0.42;
+    background:
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.28), rgba(255, 244, 224, 0.12) 34%, transparent 70%),
+        linear-gradient(110deg, transparent 8%, rgba(255, 255, 255, 0.18) 38%, rgba(255, 255, 255, 0.08) 48%, transparent 72%);
+}
+
 .primary-button::before {
     content: "";
     position: absolute;
@@ -2319,6 +2516,23 @@ button {
     transition:
         opacity 220ms ease,
         transform 320ms ease;
+}
+
+.primary-button.reward-button:hover,
+.primary-button.reward-button:focus-visible {
+    filter: brightness(1.1) saturate(1.1);
+    box-shadow:
+        var(--primary-button-shadow),
+        0 0 0 1px rgba(255, 250, 232, 0.24),
+        0 0 32px rgba(255, 216, 156, 0.44),
+        0 0 64px rgba(214, 141, 125, 0.22),
+        inset 0 0 28px rgba(255, 250, 232, 0.2);
+}
+
+.primary-button.reward-button:hover::before,
+.primary-button.reward-button:focus-visible::before {
+    opacity: 0.6;
+    transform: translateX(12%) rotate(8deg);
 }
 
 .secondary-button {
@@ -2639,6 +2853,12 @@ button {
 }
 
 .drill-panel .split-board {
+    --split-count: 3;
+    --split-active-index: 0;
+    --split-live-width: 33.333%;
+    --split-active-offset: 0%;
+    position: relative;
+    isolation: isolate;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
     align-items: stretch;
@@ -2649,6 +2869,26 @@ button {
     box-shadow: var(--split-board-shadow);
 }
 
+.drill-panel .split-board::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--split-live-width);
+    pointer-events: none;
+    background: var(--split-live-background);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 216, 156, 0.04),
+        0 0 18px rgba(230, 180, 87, 0.08);
+    transform: translateX(var(--split-active-offset));
+    transition:
+        transform 340ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        box-shadow 220ms ease,
+        filter 220ms ease;
+}
+
 .split-card {
     position: relative;
     padding: 0.65rem 0.85rem;
@@ -2656,12 +2896,14 @@ button {
     background: var(--split-card-background);
     border: 1px solid var(--split-card-border);
     transition:
-        background-color 180ms ease,
-        border-color 180ms ease,
-        filter 180ms ease;
+        background-color 220ms ease,
+        border-color 220ms ease,
+        box-shadow 220ms ease,
+        filter 220ms ease;
 }
 
 .drill-panel .split-card {
+    z-index: 1;
     padding: 0.5rem 0.66rem;
     min-height: 3.55rem;
     border: 0;
@@ -2683,7 +2925,7 @@ button {
 .split-live {
     border-color: var(--split-live-border);
     background: var(--split-live-background);
-    animation: split-card-focus 220ms ease-out both;
+    animation: split-card-focus 300ms ease-out both;
 }
 
 .split-done {
@@ -2691,8 +2933,9 @@ button {
 }
 
 .drill-panel .split-live {
-    background: var(--split-live-background);
-    filter: brightness(1.04);
+    background: transparent;
+    filter: brightness(1.015);
+    box-shadow: none;
 }
 
 .drill-panel .split-done {
@@ -2714,10 +2957,12 @@ button {
 }
 
 .split-status {
+    display: inline-block;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--muted);
+    animation: split-status-change 180ms ease-out both;
 }
 
 .drill-panel .split-status {
@@ -3025,18 +3270,74 @@ button {
     padding: 0.25rem 0.62rem 0.6rem;
     color: inherit;
     text-align: left;
+    isolation: isolate;
+    overflow: visible;
     transform-origin: center center;
     backface-visibility: hidden;
     --route-location-color: var(--text-muted);
     --route-location-glow: transparent;
+    --route-tile-delay: 0ms;
     transition:
-        transform 160ms ease,
-        border-color 160ms ease,
-        background 160ms ease,
-        box-shadow 160ms ease;
+        transform 260ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        border-color 260ms ease,
+        background 260ms ease,
+        box-shadow 260ms ease,
+        filter 260ms ease;
 }
 
-.route-tile:active {
+.route-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 18% 12%, rgba(255, 226, 176, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 58%);
+    opacity: 0;
+    transition: opacity 260ms ease;
+}
+
+.route-tile > * {
+    position: relative;
+    z-index: 1;
+}
+
+.route-tile-reward {
+    position: absolute;
+    top: -1rem;
+    left: -1rem;
+    z-index: 3;
+    width: calc(100% + 2rem);
+    height: calc(100% + 2rem);
+    overflow: visible;
+    border-radius: calc(var(--radius-card) + 1rem);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.78;
+}
+
+.route-tile-reward-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), transparent 21%),
+        radial-gradient(circle at 50% 54%, var(--timer-pill-accent-border), transparent 48%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 62%);
+    box-shadow:
+        inset 0 0 0 1px var(--timer-pill-running-border),
+        inset 0 0 24px var(--timer-pill-accent-border);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: route-tile-reward-flash 520ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
+.route-tile:active:not(:disabled) {
     transform: translateY(0) scale(0.99);
 }
 
@@ -3107,17 +3408,25 @@ button {
 
 .route-tile.is-active {
     border-color: var(--split-card-border);
-    animation: route-card-flip-in 260ms ease-out both;
+    animation: route-tile-settle-in 420ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+    animation-delay: var(--route-tile-delay);
 }
 
-.route-tile.is-active:hover,
+.route-tile.is-active:not(:disabled):hover,
 .route-tile.is-active:focus-visible {
-    transform: translateY(-1px);
+    transform: translateY(-0.08rem);
     border-color: var(--timer-pill-running-border);
-    background: var(--split-done-background);
+    background: var(--split-card-background);
     box-shadow:
-        var(--timer-pill-running-shadow),
+        0 0 0 1px rgba(255, 216, 156, 0.045),
+        0 10px 22px rgba(0, 0, 0, 0.18),
         var(--timer-pill-shadow);
+    filter: brightness(1.025);
+}
+
+.route-tile.is-active:not(:disabled):hover::before,
+.route-tile.is-active:focus-visible::before {
+    opacity: 1;
 }
 
 .route-tile.is-empty {
@@ -3125,7 +3434,6 @@ button {
     border-color: var(--surface-card-border);
     background: var(--surface-card-background);
     box-shadow: none;
-    animation: route-card-clear-flip 220ms ease-out both;
 }
 
 .route-tile.is-empty strong {
@@ -3154,12 +3462,12 @@ button {
     font-weight: 700;
     line-height: 1;
     box-shadow: var(--timer-pill-shadow);
-    z-index: 1;
+    z-index: 4;
     transition:
-        background-color 160ms ease,
-        border-color 160ms ease,
-        color 160ms ease,
-        transform 160ms ease;
+        background-color 240ms ease,
+        border-color 240ms ease,
+        color 240ms ease,
+        transform 240ms ease;
 }
 
 .route-tile.is-active:hover .route-tile-key,
@@ -3246,11 +3554,50 @@ button {
         radial-gradient(circle at 50% -12%, rgba(255, 214, 148, 0.22), transparent 56%),
         radial-gradient(circle at 84% 100%, rgba(103, 199, 189, 0.1), transparent 46%),
         var(--panel-background);
+    animation: completion-panel-ta-da 560ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .completion-panel.end-screen > * {
     position: relative;
     z-index: 1;
+}
+
+.completion-reward-sheen {
+    position: absolute;
+    inset: -20% auto -20% -38%;
+    z-index: 0;
+    width: 34%;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 246, 218, 0.12),
+        rgba(255, 216, 156, 0.14),
+        transparent
+    );
+    filter: blur(8px);
+    transform-origin: center;
+    animation: completion-shine-sweep 780ms ease-out 130ms both;
+}
+
+.completion-panel.end-screen > .completion-reward-burst-shell {
+    position: absolute;
+    top: -0.15rem;
+    right: 0.25rem;
+    bottom: 0.2rem;
+    left: 0.25rem;
+    z-index: 0;
+    display: block;
+    overflow: hidden;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.8;
+    filter: brightness(1.03) saturate(1.04);
+}
+
+.completion-reward-burst {
+    width: 100%;
+    height: 100%;
 }
 
 .completion-heading {
@@ -3283,6 +3630,8 @@ button {
     align-items: center;
     gap: 0.72rem;
     margin-bottom: calc(-1 * var(--completion-space-2));
+    transform-origin: center;
+    animation: completion-crest-pop 520ms ease-out both;
 }
 
 .completion-crest-line {
@@ -3763,11 +4112,23 @@ button {
     .mode-card,
     .settings-section,
     .settings-row,
+    .practice-drill-slot > .drill-panel,
+    .learn-panel,
     .drill-objective-card,
     .route-tile,
+    .route-tile-reward,
+    .route-tile-reward-flash,
     .split-live,
+    .split-status,
+    .drill-complete-burst,
+    .drill-complete-flash,
     .setup-advanced-panel[open] .setup-advanced-content,
     .segmented-control-indicator,
+    .completion-panel.end-screen,
+    .completion-crest,
+    .completion-reward-sheen,
+    .completion-reward-burst-shell,
+    .completion-reward-burst,
     .completion-total-stat strong,
     .completion-crest-particle,
     .completion-objective-meter > span {
@@ -3791,10 +4152,12 @@ button {
     .drill-action-menu-item,
     .timer-pill,
     .split-card,
+    .drill-panel .split-board::before,
     .stats-clean-row,
     .history-item,
     .stats-row,
     .route-tile,
+    .route-tile::before,
     .route-tile-key,
     .completion-stat,
     .completion-seed-card,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { formatDuration } from "../hooks/useTimer.js";
+import { FireworkBurst } from "./FireworkBurst.jsx";
 
 function clampNumber(value, min, max, fallback) {
   if (!Number.isFinite(value)) {
@@ -102,6 +103,18 @@ export function CompletionPanel({
 
   return (
     <section className="panel completion-panel end-screen" role="status" aria-live="polite">
+      <span className="completion-reward-sheen" aria-hidden="true" />
+      <span className="completion-reward-burst-shell" aria-hidden="true">
+        <FireworkBurst
+          className="completion-reward-burst"
+          backdrop={backdrop}
+          bursts={[
+            { particleCount: 22, x: 0.5, y: 0.24, radiusScale: 1.2, speedScale: 0.72, gravityScale: 0.3 },
+            { particleCount: 10, x: 0.22, y: 0.36, delayMs: 90, radiusScale: 0.9, speedScale: 0.56, gravityScale: 0.26 },
+            { particleCount: 10, x: 0.78, y: 0.36, delayMs: 130, radiusScale: 0.9, speedScale: 0.56, gravityScale: 0.26 }
+          ]}
+        />
+      </span>
       <div className="completion-crest" aria-hidden="true">
         <span className="completion-crest-line" />
         <span className="completion-crest-particle" style={crestParticleStyle} />
@@ -155,7 +168,7 @@ export function CompletionPanel({
         <button className="secondary-button" type="button" onClick={onNewExercise}>
           Do another one
         </button>
-        <button className="primary-button" type="button" onClick={onRunBack}>
+        <button className="primary-button reward-button" type="button" onClick={onRunBack}>
           Run that shi Back
         </button>
       </div>

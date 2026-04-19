@@ -157,7 +157,7 @@ function SetupActionBar({
       </div>
 
       <div className="setup-action-controls">
-        <button className="primary-button setup-launch-button" type="submit">
+        <button className="primary-button setup-launch-button reward-button" type="submit">
           {submitLabel}
         </button>
         <button className="secondary-button" type="button" onClick={onCopySeed}>
@@ -283,7 +283,6 @@ export function SetupPanel({
   defaultArea,
   defaultDrillSettings,
   onStartSession,
-  isLearnPanelDefaultVisible = false,
   sessionType = PRACTICE_SESSION_TYPE
 }) {
   const isRouteMode = sessionType === ROUTE_SESSION_TYPE;
@@ -508,9 +507,7 @@ export function SetupPanel({
         : "";
   const modeEyebrow = isRouteMode ? "Route Mode" : "Practice Mode";
   const sessionTitle = isRouteMode ? "Start a route session" : "Start a practice session";
-  const sessionNote = isRouteMode
-    ? "Pick a starting area, choose how many squares stay visible, or resolve a seed before the route begins."
-    : `Pick a starting area or enter a seed before the session starts. Route guide videos default to ${isLearnPanelDefaultVisible ? "visible" : "hidden"} and can be toggled mid-session.`;
+  const sessionNote = "Tune the generator, then start.";
   const submitLabel = isRouteMode ? "Start Route Session" : "Start Practice Session";
   const sessionSummary = [
     `${effectiveDrillSettings.numberOfObjectives} square${effectiveDrillSettings.numberOfObjectives === 1 ? "" : "s"}`,
@@ -543,20 +540,17 @@ export function SetupPanel({
           <SetupSection
             eyebrow=""
             title="Seed"
-            description="Paste a phrase or exported seed to replay a known setup. Leave it blank to generate from the controls below."
           >
             <label className="field">
-              <span>Seed input</span>
+              <span className="visually-hidden">Seed</span>
               <textarea
                 className="seed-textarea"
+                aria-label="Seed"
                 rows={1}
                 value={seedInput}
-                placeholder="Funny Seed Name Here"
+                placeholder="Phrase or exported seed"
                 onChange={(event) => handleSeedInputChange(event.target.value)}
               />
-              <span className="field-hint">
-                Active seeds lock manual controls so the exported session stays reproducible.
-              </span>
               {resolvedSeedState.warning ? (
                 <p className="setup-warning">{resolvedSeedState.warning}</p>
               ) : null}
@@ -566,7 +560,6 @@ export function SetupPanel({
           <SetupSection
             eyebrow=""
             title="Core settings"
-            description=""
           >
             <div className="setup-grid setup-grid-two-column setup-grid-run-profile">
               <label className="field">
@@ -584,9 +577,6 @@ export function SetupPanel({
                     </option>
                   ))}
                 </select>
-                <span className="field-hint">
-                  Where you are when you want to start
-                </span>
               </label>
 
               <label className="field">
@@ -602,7 +592,7 @@ export function SetupPanel({
                   }
                 />
                 <span className="field-hint">
-                  Capped by current available pool: {effectiveObjectiveMax}.
+                  Max available: {effectiveObjectiveMax}.
                 </span>
               </label>
 
@@ -620,7 +610,7 @@ export function SetupPanel({
                     }
                   />
                   <span className="field-hint">
-                    Route Mode shows this many live squares at once, from {ROUTE_VISIBLE_COUNT_MIN} to {effectiveRouteVisibleMax}.
+                    Live route squares at once. Max: {effectiveRouteVisibleMax}.
                   </span>
                 </label>
               ) : null}
@@ -640,7 +630,7 @@ export function SetupPanel({
                       label: ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]
                     }
                   ]}
-                  hint={`${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]} refills each cleared slot immediately. ${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]} waits until the whole visible wave is cleared before revealing the next group.`}
+                  hint={`${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]} refills cleared slots. ${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]} reveals after the visible wave is cleared.`}
                   onChange={(value) => updateDrillSetting("routeRevealMode", value)}
                 />
               ) : null}
@@ -648,7 +638,7 @@ export function SetupPanel({
               <label className="setup-toggle-card setup-toggle-card-compact">
                 <div className="settings-row-copy">
                   <strong>True random</strong>
-                  <p>Just pulls random squares for you. Might send you running across the map.</p>
+                  <p>Ignore weighting and pull from the legal pool.</p>
                 </div>
 
                 <span className="toggle-shell">
@@ -670,7 +660,7 @@ export function SetupPanel({
         <SetupSection
           eyebrow="Objective pool"
           title="Excluded areas"
-          description="Toggle individual areas, or by district."
+          description="Toggle areas or whole districts."
         >
           <ExcludedAreasControl
             drillSettings={effectiveDrillSettings}
@@ -704,7 +694,7 @@ export function SetupPanel({
         <SetupSection
           eyebrow="Level Flow"
           title="Location bias"
-          description={effectiveDrillSettings.trueRandom ? "Disabled while true random is active." : "Adjust how often the generator asks you to move between levels and districts."}
+          description={effectiveDrillSettings.trueRandom ? "Disabled while true random is active." : "Controls level and district movement frequency."}
         >
           <div className="drill-slider-list">
             {DRILL_MOVEMENT_FIELDS.map((field) => (
@@ -723,7 +713,6 @@ export function SetupPanel({
             <details className={`setup-advanced-panel ${advancedControlsDisabled ? "is-disabled" : ""}`}>
               <summary className="setup-advanced-summary">
                 <span className="setup-advanced-title">Advanced shift distances</span>
-                <span className="field-hint">Tune shift depth.</span>
               </summary>
               <div className="setup-advanced-content">
                 <div className="drill-slider-list">
@@ -766,7 +755,7 @@ export function SetupPanel({
           manualError={manualError}
           seedFootnote={
             resolvedSeedMode === "phrase"
-              ? "Copying exports the full reproducible session seed, not the original phrase."
+              ? "Copy exports a replay seed, not the phrase."
               : ""
           }
           sessionSummary={sessionSummary}

@@ -39,6 +39,7 @@ import { useEffect, useRef, useState } from "react";
 function CurrentDrillPanel({
   drillSession,
   settings,
+  backdrop,
   totalTimer,
   splitTimer,
   onToggleLearnPanel
@@ -54,6 +55,8 @@ function CurrentDrillPanel({
         totalTimer={totalTimer}
         isPaused={Boolean(drillSession.currentSession?.pausedAt)}
         useDistrictLocationColors={settings.routeDistrictColorsEnabled}
+        sessionFeedback={drillSession.sessionFeedback}
+        backdrop={backdrop}
         onCompleteSlot={drillSession.completeRouteSlot}
         onTogglePause={drillSession.togglePause}
         onEndSession={drillSession.endSession}
@@ -67,6 +70,7 @@ function CurrentDrillPanel({
       learnContent={
         learnPanelVisible ? (
           <LearnPanel
+            key={drillSession.currentObjective?.id ?? "unknown"}
             objective={drillSession.currentObjective}
             phaseInfo={drillSession.phaseInfo}
             autoplay={settings.learnVideoAutoplay}
@@ -78,6 +82,8 @@ function CurrentDrillPanel({
       phaseActionLabel={drillSession.phaseActionLabel}
       totalTimer={totalTimer}
       splitTimer={splitTimer}
+      sessionFeedback={drillSession.sessionFeedback}
+      backdrop={backdrop}
       onPhaseAction={drillSession.performPhaseAction}
       onSkipSplit={drillSession.skipCurrentSplit}
       onTogglePause={drillSession.togglePause}
@@ -131,6 +137,7 @@ function DrillStage({ learnPanelVisible = false, children }) {
 function ActiveSessionStage({
   drillSession,
   settings,
+  backdrop,
   totalTimer,
   splitTimer,
   learnPanelVisible = false,
@@ -142,6 +149,7 @@ function ActiveSessionStage({
         <CurrentDrillPanel
           drillSession={drillSession}
           settings={settings}
+          backdrop={backdrop}
           totalTimer={totalTimer}
           splitTimer={splitTimer}
           onToggleLearnPanel={onToggleLearnPanel}
@@ -191,6 +199,7 @@ function PracticeModeView({
         <ActiveSessionStage
           drillSession={drillSession}
           settings={settings}
+          backdrop={backdrop}
           totalTimer={totalTimer}
           splitTimer={splitTimer}
           learnPanelVisible={learnPanelVisible}
@@ -255,6 +264,7 @@ function RouteModeView({
         <ActiveSessionStage
           drillSession={drillSession}
           settings={settings}
+          backdrop={backdrop}
           totalTimer={totalTimer}
           splitTimer={splitTimer}
         />
@@ -492,6 +502,7 @@ export default function App() {
             <CurrentDrillPanel
               drillSession={drillSession}
               settings={settings}
+              backdrop={activeTheme.backdrop}
               totalTimer={totalTimer}
               splitTimer={splitTimer}
               onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}

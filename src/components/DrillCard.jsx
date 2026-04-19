@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { getAreaLabel } from "../data/areaMeta.js";
 import { formatDuration } from "../hooks/useTimer.js";
+import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
 
 function formatDrillObjectiveLabel(objective) {
@@ -207,6 +208,8 @@ export function DrillCard({
   phaseInfo,
   totalTimer,
   splitTimer,
+  sessionFeedback,
+  backdrop,
   phaseActionLabel,
   onPhaseAction,
   onSkipSplit,
@@ -313,8 +316,35 @@ export function DrillCard({
         : formatPbDetail(phaseInfo?.challengePbMs ?? null)
   });
 
+  const liveSplitIndex = Math.max(
+    0,
+    splitRows.findIndex((split) => split.status === "live")
+  );
+  const squareReward =
+    sessionFeedback?.type === "practice-square-complete" ? sessionFeedback : null;
+
   return (
     <section className="panel drill-panel">
+      {squareReward ? (
+        <>
+          <span
+            key={`${squareReward.id}_flash`}
+            className="drill-complete-flash"
+            aria-hidden="true"
+          />
+          <FireworkBurst
+            key={squareReward.id}
+            className="drill-complete-burst"
+            backdrop={backdrop}
+            bursts={[
+              { particleCount: 38, x: 0.5, y: 0.44, radiusScale: 1.18, speedScale: 0.96 },
+              { particleCount: 26, x: 0.28, y: 0.58, delayMs: 80, radiusScale: 0.9, speedScale: 0.82 },
+              { particleCount: 26, x: 0.72, y: 0.58, delayMs: 125, radiusScale: 0.9, speedScale: 0.82 }
+            ]}
+          />
+        </>
+      ) : null}
+
       <div
         className="drill-panel-header vertical drill-objective-card"
         key={objective.id ?? objective.label}
@@ -335,7 +365,13 @@ export function DrillCard({
 
       <div
         className="split-board"
-        style={{ gridTemplateColumns: `repeat(${splitRows.length}, minmax(0, 1fr))` }}
+        style={{
+          "--split-count": splitRows.length,
+          "--split-active-index": liveSplitIndex,
+          "--split-live-width": `${100 / splitRows.length}%`,
+          "--split-active-offset": `${liveSplitIndex * 100}%`,
+          gridTemplateColumns: `repeat(${splitRows.length}, minmax(0, 1fr))`
+        }}
       >
         {splitRows.map((split) => (
           <article
@@ -344,7 +380,10 @@ export function DrillCard({
           >
             <div className="split-heading">
               <span className="split-index">{split.label}</span>
-              <span className={`split-status split-status-${split.status}`}>
+              <span
+                key={`${split.key}-${split.status}-${split.detail}`}
+                className={`split-status split-status-${split.status}`}
+              >
                 {split.detail ?? split.status}
               </span>
             </div>

@@ -34,6 +34,7 @@ import {
 const START_COUNTDOWN_SEQUENCE = ["3", "2", "1", "GO!"];
 const START_COUNTDOWN_STEP_MS = 1000;
 const START_COUNTDOWN_DURATION_MS = START_COUNTDOWN_SEQUENCE.length * START_COUNTDOWN_STEP_MS;
+const SESSION_FEEDBACK_VISIBLE_MS = 1400;
 
 function buildSessionId() {
   return `session_${Date.now()}`;
@@ -93,6 +94,7 @@ function resolveSelectedMode(previousValue, requestedMode) {
 
 export function useDrillSession(appState, setAppState) {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
+  const [sessionFeedback, setSessionFeedback] = useState(null);
   const currentSession = appState.currentSession;
   const startCountdown = appState.startCountdown;
   const pendingCompletion = appState.pendingCompletion;
@@ -241,10 +243,38 @@ export function useDrillSession(appState, setAppState) {
     [startCountdown, setAppState]
   );
 
+  useEffect(
+    () => {
+      if (!sessionFeedback) {
+        return undefined;
+      }
+
+      const timeoutId = window.setTimeout(() => {
+        setSessionFeedback((currentFeedback) =>
+          currentFeedback?.id === sessionFeedback.id ? null : currentFeedback
+        );
+      }, SESSION_FEEDBACK_VISIBLE_MS);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    },
+    [sessionFeedback]
+  );
+
+  useEffect(
+    () => {
+      setSessionFeedback(null);
+    },
+    [appState.selectedMode]
+  );
+
   function startSession(sessionLaunch) {
     if (startCountdown) {
       return;
     }
+
+    setSessionFeedback(null);
 
     const sessionSpec = sessionLaunch?.sessionSpec;
     const exportSeed = sessionLaunch?.exportSeed ?? "";
@@ -391,6 +421,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function endSession() {
+    setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
       startCountdown: null,
@@ -399,6 +430,14 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function completeObjective() {
+    if (currentSession?.sessionType !== ROUTE_SESSION_TYPE && currentObjective) {
+      setSessionFeedback({
+        id: `practice_complete_${Date.now()}`,
+        type: "practice-square-complete",
+        objectiveId: currentObjective.id
+      });
+    }
+
     resolveObjective("complete");
   }
 
@@ -411,6 +450,21 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function completeRouteSlot(slotIndex) {
+    const completedSlot = routeSlots.find((slot) => slot.slotIndex === slotIndex);
+
+    if (
+      currentSession?.sessionType === ROUTE_SESSION_TYPE &&
+      !currentSession.pausedAt &&
+      completedSlot?.objective
+    ) {
+      setSessionFeedback({
+        id: `route_complete_${Date.now()}_${slotIndex}`,
+        type: "route-square-complete",
+        slotIndex,
+        objectiveId: completedSlot.objective.id
+      });
+    }
+
     updateState((previousValue) => {
       const session = previousValue.currentSession;
       if (!session || session.sessionType !== ROUTE_SESSION_TYPE) {
@@ -633,6 +687,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToModeSelect() {
+    setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
       selectedMode: null,
@@ -641,6 +696,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToPractice() {
+    setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
       selectedMode: resolveSelectedMode(previousValue, PRACTICE_SESSION_TYPE),
@@ -649,6 +705,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToRoute() {
+    setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
       selectedMode: resolveSelectedMode(previousValue, ROUTE_SESSION_TYPE),
@@ -657,6 +714,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToSettings() {
+    setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
       selectedMode: "settings",
@@ -835,6 +893,7 @@ export function useDrillSession(appState, setAppState) {
     stats,
     phaseInfo,
     pendingCompletion,
+    sessionFeedback,
     settings: appState.settings,
     startingArea: appState.settings.startingArea,
     selectedMode: appState.selectedMode,
