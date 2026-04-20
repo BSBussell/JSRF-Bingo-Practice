@@ -58,7 +58,7 @@ function renderRecapFactValue(fact) {
       return formatDuration(fact.pbDurationMs);
     }
 
-    return "No prior seed PB";
+    return "No prior attempts";
   }
 
   return "";
