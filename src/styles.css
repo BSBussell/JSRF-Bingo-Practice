@@ -383,6 +383,20 @@ body {
     }
 }
 
+@keyframes drill-complete-feedback-pop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 0.5rem)) scale(0.98);
+        filter: blur(1.5px) brightness(0.965);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: blur(0) brightness(1);
+    }
+}
+
 @keyframes route-tile-reward-flash {
     0% {
         opacity: 0;
@@ -1567,6 +1581,104 @@ button {
     mix-blend-mode: screen;
     opacity: 0;
     animation: drill-complete-flash 620ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
+.drill-complete-feedback {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 4;
+    display: grid;
+    justify-items: center;
+    gap: 0.42rem;
+    width: min(24rem, calc(100% - 2.1rem));
+    min-width: 0;
+    max-width: calc(100% - 2.1rem);
+    padding: 1.12rem 1.22rem;
+    border: 1px solid var(--completion-stat-border);
+    border-radius: var(--radius-card);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+        var(--panel-background);
+    box-shadow:
+        var(--shadow-panel),
+        var(--timer-pill-shadow);
+    pointer-events: none;
+    animation: drill-complete-feedback-pop 220ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
+.drill-complete-feedback.is-win {
+    border-color: color-mix(in srgb, var(--route-district-benten), transparent 44%);
+    background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--route-district-benten), transparent 72%), transparent 54%),
+        linear-gradient(180deg, rgba(255, 213, 146, 0.12), rgba(255, 255, 255, 0.024)),
+        var(--panel-background);
+    box-shadow:
+        var(--shadow-panel),
+        0 0 0 1px color-mix(in srgb, var(--route-district-benten), transparent 72%);
+}
+
+.drill-complete-feedback span {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 750;
+    letter-spacing: 0.075em;
+    line-height: 1.08;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.drill-complete-feedback strong {
+    color: var(--text-primary);
+    font-size: clamp(2.45rem, 8.8vw, 3.55rem);
+    line-height: 0.95;
+    text-align: center;
+}
+
+.drill-complete-feedback strong small {
+    color: var(--text-secondary);
+    font-size: 0.46em;
+}
+
+.drill-complete-feedback.is-win strong {
+    color: var(--route-district-benten);
+    text-shadow: 0 0 12px var(--route-district-benten-glow);
+}
+
+.drill-complete-feedback p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1.06rem;
+    line-height: 1.24;
+    text-align: center;
+}
+
+.drill-complete-feedback .drill-complete-seed-diff {
+    color: var(--text-muted);
+    font-size: 0.98rem;
+}
+
+.drill-complete-feedback .is-pb {
+    color: var(--route-district-benten);
+    text-shadow: 0 0 10px var(--route-district-benten-glow);
+}
+
+.drill-complete-feedback .is-faster {
+    color: var(--route-district-shibuya);
+    text-shadow: 0 0 10px var(--route-district-shibuya-glow);
+}
+
+.drill-complete-feedback .is-slower {
+    color: var(--route-district-kogane);
+    text-shadow: 0 0 10px var(--route-district-kogane-glow);
+}
+
+.drill-complete-feedback .is-neutral {
+    color: var(--text-muted);
+}
+
+.route-wave-feedback {
+    z-index: 6;
 }
 
 .drill-objective-location {
@@ -3662,6 +3774,111 @@ button {
     gap: 0.85rem;
 }
 
+.completion-recap {
+    display: grid;
+    gap: 0.68rem;
+}
+
+.completion-recap-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.62rem;
+}
+
+.completion-recap-item {
+    display: grid;
+    align-content: start;
+    gap: 0.24rem;
+    min-height: 4.9rem;
+    padding: 0.72rem 0.78rem;
+    border: 1px solid var(--completion-stat-border);
+    border-radius: var(--radius-card);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.012)),
+        var(--completion-stat-background);
+}
+
+.completion-recap-item.is-win {
+    border-color: var(--timer-pill-accent-border);
+    background:
+        radial-gradient(circle at top right, var(--timer-pill-accent-border), transparent 58%),
+        linear-gradient(180deg, rgba(255, 213, 146, 0.1), rgba(255, 255, 255, 0.02)),
+        var(--completion-stat-background);
+    box-shadow: var(--timer-pill-accent-shadow);
+}
+
+.completion-recap-item span {
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.completion-recap-item strong {
+    color: var(--text-primary);
+    font-size: clamp(1.08rem, 2.2vw, 1.42rem);
+    line-height: 1.02;
+}
+
+.completion-recap-item.is-win strong {
+    color: var(--accent-strong);
+    text-shadow: var(--primary-text-shadow);
+}
+
+.completion-recap-item p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.2;
+}
+
+.completion-recap-detail {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.22rem;
+}
+
+.completion-recap-detail-segment {
+    color: var(--text-secondary);
+    font-weight: 750;
+}
+
+.completion-recap-detail-separator {
+    color: var(--text-muted);
+    font-weight: 750;
+}
+
+.completion-recap-detail-segment[data-district="ShibuyaCho"] {
+    color: var(--route-district-shibuya);
+    text-shadow: 0 0 8px var(--route-district-shibuya-glow);
+}
+
+.completion-recap-detail-segment[data-district="Kogane"] {
+    color: var(--route-district-kogane);
+    text-shadow: 0 0 8px var(--route-district-kogane-glow);
+}
+
+.completion-recap-detail-segment[data-district="Benten"] {
+    color: var(--route-district-benten);
+    text-shadow: 0 0 8px var(--route-district-benten-glow);
+}
+
+.completion-attempts {
+    margin: calc(-1 * var(--completion-space-1)) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.completion-attempts strong {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
 .completion-stat {
     display: grid;
     align-content: start;
@@ -4065,6 +4282,10 @@ button {
     }
 
     .completion-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .completion-recap-grid {
         grid-template-columns: 1fr;
     }
 

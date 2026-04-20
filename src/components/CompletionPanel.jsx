@@ -29,13 +29,89 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
 }
 
+function formatDurationDelta(durationMs) {
+  const safeDurationMs = Number.isFinite(durationMs) ? durationMs : 0;
+  const prefix = safeDurationMs > 0 ? "+" : safeDurationMs < 0 ? "-" : "";
+
+  return `${prefix}${formatDuration(Math.abs(safeDurationMs))}`;
+}
+
+function renderRecapFactValue(fact) {
+  if (!fact) {
+    return "";
+  }
+
+  if (fact.valueType === "duration") {
+    return formatDuration(fact.durationMs);
+  }
+
+  if (fact.valueType === "count") {
+    return String(fact.count ?? 0);
+  }
+
+  if (fact.valueType === "text") {
+    return fact.value ?? "";
+  }
+
+  if (fact.valueType === "seed-pb-status") {
+    if (Number.isFinite(fact.pbDurationMs)) {
+      return formatDuration(fact.pbDurationMs);
+    }
+
+    return "No prior seed PB";
+  }
+
+  return "";
+}
+
+function renderRecapFactDetail(fact) {
+  if (!fact) {
+    return "";
+  }
+
+  if (fact.detail) {
+    return fact.detail;
+  }
+
+  if (
+    fact.valueType === "seed-pb-status" &&
+    Number.isFinite(fact.deltaMs)
+  ) {
+    return `${formatDurationDelta(fact.deltaMs)} vs PB`;
+  }
+
+  return "";
+}
+
+function renderRecapFactDetailNode(fact) {
+  if (Array.isArray(fact?.detailSegments) && fact.detailSegments.length > 0) {
+    return (
+      <p className="completion-recap-detail">
+        {fact.detailSegments.map((segment, index) => (
+          <span
+            className={segment.separator ? "completion-recap-detail-separator" : "completion-recap-detail-segment"}
+            data-district={segment.district || undefined}
+            key={`${segment.label}-${index}`}
+          >
+            {segment.label}
+          </span>
+        ))}
+      </p>
+    );
+  }
+
+  const detail = renderRecapFactDetail(fact);
+
+  return detail ? <p>{detail}</p> : null;
+}
+
 export function CompletionPanel({
   completionSummary,
+  completionRecap,
   onNewExercise,
   onRunBack,
   onCopySeed,
-  backdrop,
-  history = []
+  backdrop
 }) {
   const [copyStatus, setCopyStatus] = useState("");
   const exportSeed = completionSummary?.exportSeed ?? "";
@@ -50,27 +126,11 @@ export function CompletionPanel({
 
   const objectiveCount = completionSummary.objectiveCount ?? 0;
   const isRouteCompletion = completionSummary.sessionType === "route";
-  const sessionHistory = Array.isArray(history)
-    ? history.filter((entry) => entry?.sessionId === completionSummary.sessionId)
-    : [];
-  const inferredSquaresCleared = sessionHistory.reduce((count, entry) => {
-    if (entry?.result === "complete") {
-      return count + 1;
-    }
-
-    return count;
-  }, 0);
-  const squaresClearedRaw =
-    isRouteCompletion
-      ? Number.isInteger(completionSummary.squaresCleared)
-        ? completionSummary.squaresCleared
-        : 0
-      : sessionHistory.length > 0
-      ? inferredSquaresCleared
-      : Number.isInteger(completionSummary.squaresCleared)
-        ? completionSummary.squaresCleared
-        : 0;
-  const squaresCleared = Math.min(objectiveCount, Math.max(0, squaresClearedRaw));
+  const squaresCleared = Number.isInteger(completionSummary.squaresCleared)
+    ? Math.min(objectiveCount, Math.max(0, completionSummary.squaresCleared))
+    : objectiveCount;
+  const recapFacts = Array.isArray(completionRecap?.facts) ? completionRecap.facts : [];
+  const attemptsFact = completionRecap?.attempts ?? null;
   const particleSize = clampNumber(backdrop?.appearance?.size, 0.2, 2.5, 1.15);
   const particleGlow = clampNumber(backdrop?.appearance?.glow, 0, 5, 1.15);
   const particleFlicker = clampNumber(backdrop?.appearance?.flicker, 0, 3, 1);
@@ -128,26 +188,43 @@ export function CompletionPanel({
         </div>
       </div>
 
-      <div className="completion-summary-grid">
-        <article className="completion-stat completion-total-stat">
-          <span>Total Drill Time</span>
-          <strong>{formatDuration(completionSummary.totalDurationMs)}</strong>
-          <p className="completion-stat-note">Full run timer, pause-adjusted.</p>
-        </article>
-        <article className="completion-stat completion-objective-stat">
-          <span>Squares Cleared</span>
-          <strong>
-            {squaresCleared}
-            {isRouteCompletion ? null : <small> / {objectiveCount}</small>}
-          </strong>
-          <p className="completion-stat-note">Completed squares in this run.</p>
-          {isRouteCompletion ? null : (
-            <div className="completion-objective-meter" aria-hidden="true">
-              <span style={{ "--completion-objective-progress": `${Math.max(0, Math.min(1, objectiveCount > 0 ? squaresCleared / objectiveCount : 0))}` }} />
-            </div>
-          )}
-        </article>
-      </div>
+      {recapFacts.length > 0 ? (
+        <section className="completion-recap" aria-label="Completion recap">
+          <div className="completion-recap-grid">
+            {recapFacts.map((fact) => {
+              return (
+                <article
+                  className={`completion-recap-item ${fact.tone === "win" ? "is-win" : ""}`}
+                  key={fact.key}
+                >
+                  <span>{fact.label}</span>
+                  <strong>{renderRecapFactValue(fact)}</strong>
+                  {renderRecapFactDetailNode(fact)}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <div className="completion-summary-grid">
+          <article className="completion-stat completion-total-stat">
+            <span>{isRouteCompletion ? "Total Route Time" : "Total Drill Time"}</span>
+            <strong>{formatDuration(completionSummary.totalDurationMs)}</strong>
+            <p className="completion-stat-note">Full run timer, pause-adjusted.</p>
+          </article>
+          <article className="completion-stat completion-objective-stat">
+            <span>Squares Cleared</span>
+            <strong>{squaresCleared}</strong>
+            <p className="completion-stat-note">Completed squares in this run.</p>
+          </article>
+        </div>
+      )}
+
+      {attemptsFact ? (
+        <p className="completion-attempts">
+          Attempts: <strong>{renderRecapFactValue(attemptsFact)}</strong>
+        </p>
+      ) : null}
 
       <section className="completion-seed-card">
         <div className="completion-seed-heading">
@@ -166,7 +243,7 @@ export function CompletionPanel({
 
       <div className="action-row completion-primary-actions">
         <button className="secondary-button" type="button" onClick={onNewExercise}>
-          Do another one
+          Gimme a new seed
         </button>
         <button className="primary-button reward-button" type="button" onClick={onRunBack}>
           Run that shi Back

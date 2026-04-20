@@ -150,7 +150,21 @@ test("completeRouteSlot returns a completion summary on the final clear", () => 
     squaresCleared: 2,
     totalDurationMs: 1000,
     visibleCount: 2,
-    routeRevealMode: ROUTE_REVEAL_MODE_ROLLING
+    routeRevealMode: ROUTE_REVEAL_MODE_ROLLING,
+    routeClearEvents: [
+      {
+        objectiveId: "a",
+        slotIndex: 0,
+        endedAt: 1400,
+        elapsedMs: 200
+      },
+      {
+        objectiveId: "b",
+        slotIndex: 1,
+        endedAt: 2200,
+        elapsedMs: 1000
+      }
+    ]
   });
 });
 

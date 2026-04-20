@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { objectivesById } from "../data/objectives.js";
 import { normalizeHotkeyBinding } from "../lib/hotkeys.js";
@@ -34,7 +34,8 @@ import {
 const START_COUNTDOWN_SEQUENCE = ["3", "2", "1", "GO!"];
 const START_COUNTDOWN_STEP_MS = 1000;
 const START_COUNTDOWN_DURATION_MS = START_COUNTDOWN_SEQUENCE.length * START_COUNTDOWN_STEP_MS;
-const SESSION_FEEDBACK_VISIBLE_MS = 1400;
+const SESSION_FEEDBACK_VISIBLE_MS = 2850;
+const PRACTICE_COMPLETION_RECOGNITION_MS = 1700;
 
 function buildSessionId() {
   return `session_${Date.now()}`;
@@ -92,9 +93,257 @@ function resolveSelectedMode(previousValue, requestedMode) {
     : requestedMode;
 }
 
+function buildPracticeHistoryEntry({
+  session,
+  objective,
+  result,
+  endedAt,
+  previousBestMs,
+  completionSummary = null
+}) {
+  const travelStartedAt = session.objectiveStartedAt ?? endedAt;
+  const levelEnteredAt = session.enteredLevelAt;
+  const challengeStartedAt = session.challengeStartedAt;
+  const totalDurationMs = endedAt - travelStartedAt - session.totalPausedMs;
+  const travelDurationMs =
+    typeof levelEnteredAt === "number"
+      ? Math.max(0, levelEnteredAt - travelStartedAt - session.travelPausedMs)
+      : objective.area === session.currentArea
+        ? 0
+        : null;
+  const tapeDurationMs =
+    typeof session.tapeUnlockedAt === "number" && typeof session.tapeStartedAt === "number"
+      ? Math.max(0, session.tapeUnlockedAt - session.tapeStartedAt - session.tapePausedMs)
+      : null;
+  const challengeDurationMs =
+    typeof challengeStartedAt === "number"
+      ? Math.max(0, endedAt - challengeStartedAt - session.challengePausedMs)
+      : null;
+  const scoreDurationMs = challengeDurationMs ?? totalDurationMs;
+  const sessionElapsedAtCompleteMs = Math.max(
+    0,
+    endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
+  );
+
+  return {
+    sessionType: PRACTICE_SESSION_TYPE,
+    sessionId: session.id,
+    objectiveId: objective.id,
+    label: objective.label,
+    area: objective.area,
+    district: objective.district,
+    type: objective.type,
+    runClass: objective.runClass,
+    result,
+    durationMs: scoreDurationMs,
+    totalDurationMs,
+    travelDurationMs,
+    tapeDurationMs,
+    challengeDurationMs,
+    previousBestMs,
+    pbDiffMs:
+      previousBestMs !== null && challengeDurationMs !== null
+        ? challengeDurationMs - previousBestMs
+        : null,
+    exportSeed: session.exportSeed ?? "",
+    sessionObjectiveIndex: session.currentObjectiveIndex ?? 0,
+    sessionElapsedAtCompleteMs,
+    sessionCompleted: Boolean(completionSummary),
+    sessionObjectiveCount: Array.isArray(session.objectiveIds) ? session.objectiveIds.length : 0,
+    sessionTotalDurationMs: completionSummary?.totalDurationMs ?? null,
+    startedAt: travelStartedAt,
+    endedAt
+  };
+}
+
+function buildPracticeSeedPbFeedback({
+  history,
+  session,
+  currentElapsedMs
+}) {
+  const exportSeed = session.exportSeed ?? "";
+  const objectiveIndex = session.currentObjectiveIndex ?? 0;
+
+  if (!exportSeed || !Array.isArray(history)) {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  const bestSeedCompletion = history.reduce((bestEntry, entry) => {
+    if (
+      entry?.sessionType !== PRACTICE_SESSION_TYPE ||
+      entry.result !== "complete" ||
+      entry.exportSeed !== exportSeed ||
+      entry.sessionId === session.id ||
+      entry.sessionCompleted !== true ||
+      typeof entry.sessionTotalDurationMs !== "number"
+    ) {
+      return bestEntry;
+    }
+
+    if (!bestEntry || entry.sessionTotalDurationMs < bestEntry.sessionTotalDurationMs) {
+      return entry;
+    }
+
+    return bestEntry;
+  }, null);
+
+  if (!bestSeedCompletion) {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  const referenceEntry = history.find((entry) =>
+    entry?.sessionId === bestSeedCompletion.sessionId &&
+    entry.sessionObjectiveIndex === objectiveIndex &&
+    typeof entry.sessionElapsedAtCompleteMs === "number"
+  );
+
+  if (!referenceEntry) {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  return {
+    seedPbStatus: "delta",
+    seedPbDiffMs: currentElapsedMs - referenceEntry.sessionElapsedAtCompleteMs
+  };
+}
+
+function buildRouteWaveSeedPbFeedback({
+  history,
+  session,
+  completedCount,
+  currentElapsedMs
+}) {
+  const exportSeed = session.exportSeed ?? "";
+
+  if (!exportSeed || !Array.isArray(history)) {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  const bestSeedCompletion = history.reduce((bestEntry, entry) => {
+    if (
+      entry?.sessionType !== ROUTE_SESSION_TYPE ||
+      entry.result !== "complete" ||
+      entry.exportSeed !== exportSeed ||
+      entry.sessionId === session.id ||
+      typeof entry.totalDurationMs !== "number" ||
+      !Array.isArray(entry.routeClearEvents)
+    ) {
+      return bestEntry;
+    }
+
+    if (!bestEntry || entry.totalDurationMs < bestEntry.totalDurationMs) {
+      return entry;
+    }
+
+    return bestEntry;
+  }, null);
+
+  if (!bestSeedCompletion) {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  const referenceEvent = bestSeedCompletion.routeClearEvents[completedCount - 1];
+  if (!referenceEvent || typeof referenceEvent.elapsedMs !== "number") {
+    return {
+      seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  return {
+    seedPbStatus: "delta",
+    seedPbDiffMs: currentElapsedMs - referenceEvent.elapsedMs
+  };
+}
+
+function buildRouteSlotCompletionFeedback({
+  history,
+  session,
+  routeClearEvent,
+  eventIndex
+}) {
+  const completedCount = eventIndex + 1;
+  const visibleCount = Math.max(
+    1,
+    session.sessionSpec?.config?.routeVisibleCount ?? session.visibleCount ?? 1
+  );
+  const waveComplete = completedCount % visibleCount === 0;
+  const seedPbFeedback = waveComplete
+    ? buildRouteWaveSeedPbFeedback({
+        history,
+        session: {
+          ...session,
+          id: session.id ?? session.sessionId
+        },
+        completedCount,
+        currentElapsedMs: routeClearEvent.elapsedMs
+      })
+    : {};
+
+  return {
+    id: `route_complete_${routeClearEvent.endedAt}_${routeClearEvent.slotIndex}`,
+    type: "route-square-complete",
+    slotIndex: routeClearEvent.slotIndex,
+    objectiveId: routeClearEvent.objectiveId,
+    waveComplete,
+    visibleCount,
+    completedCount,
+    objectiveCount: session.objectiveIds?.length ?? session.objectiveCount ?? completedCount,
+    elapsedMs: routeClearEvent.elapsedMs,
+    ...seedPbFeedback
+  };
+}
+
+function buildPracticeCompletionFeedback(historyEntry) {
+  const durationMs = historyEntry.challengeDurationMs ?? historyEntry.durationMs ?? null;
+  const previousBestMs = historyEntry.previousBestMs;
+
+  if (previousBestMs === null || typeof previousBestMs !== "number") {
+    return {
+      durationMs,
+      pbStatus: "no-prior",
+      pbDiffMs: null
+    };
+  }
+
+  const pbDiffMs = typeof historyEntry.pbDiffMs === "number"
+    ? historyEntry.pbDiffMs
+    : null;
+
+  return {
+    durationMs,
+    pbStatus:
+      pbDiffMs === null
+        ? "no-prior"
+        : pbDiffMs < 0
+          ? "new-pb"
+          : pbDiffMs === 0
+            ? "tied-pb"
+            : "missed-pb",
+    pbDiffMs
+  };
+}
+
 export function useDrillSession(appState, setAppState) {
   const [countdownNow, setCountdownNow] = useState(() => Date.now());
   const [sessionFeedback, setSessionFeedback] = useState(null);
+  const pendingPracticeResolutionRef = useRef(null);
+  const pendingRouteFeedbackRef = useRef(null);
   const currentSession = appState.currentSession;
   const startCountdown = appState.startCountdown;
   const pendingCompletion = appState.pendingCompletion;
@@ -114,6 +363,65 @@ export function useDrillSession(appState, setAppState) {
           aggregateStats: appState.aggregateStats,
           bestTimesByObjective: appState.bestTimesByObjective
         });
+
+  function clearPendingPracticeResolution() {
+    if (pendingPracticeResolutionRef.current?.timeoutId) {
+      window.clearTimeout(pendingPracticeResolutionRef.current.timeoutId);
+    }
+
+    pendingPracticeResolutionRef.current = null;
+  }
+
+  useEffect(
+    () => () => {
+      clearPendingPracticeResolution();
+    },
+    []
+  );
+
+  useEffect(
+    () => {
+      const request = pendingRouteFeedbackRef.current;
+      if (!request) {
+        return;
+      }
+
+      const routeFeedbackSource =
+        currentSession?.sessionType === ROUTE_SESSION_TYPE &&
+        currentSession.id === request.sessionId
+          ? currentSession
+          : pendingCompletion?.sessionType === ROUTE_SESSION_TYPE &&
+              pendingCompletion.sessionId === request.sessionId
+            ? pendingCompletion
+            : null;
+
+      if (!routeFeedbackSource) {
+        return;
+      }
+
+      const routeClearEvents = Array.isArray(routeFeedbackSource.routeClearEvents)
+        ? routeFeedbackSource.routeClearEvents
+        : [];
+      const eventIndex = routeClearEvents.findIndex((event) =>
+        event.endedAt === request.endedAt &&
+        event.slotIndex === request.slotIndex
+      );
+
+      pendingRouteFeedbackRef.current = null;
+
+      if (eventIndex < 0) {
+        return;
+      }
+
+      setSessionFeedback(buildRouteSlotCompletionFeedback({
+        history: appState.history,
+        session: routeFeedbackSource,
+        routeClearEvent: routeClearEvents[eventIndex],
+        eventIndex
+      }));
+    },
+    [appState.history, currentSession, pendingCompletion]
+  );
 
   function updateState(updater) {
     setAppState((previousValue) => normalizeAppState(updater(previousValue)));
@@ -264,6 +572,7 @@ export function useDrillSession(appState, setAppState) {
 
   useEffect(
     () => {
+      pendingRouteFeedbackRef.current = null;
       setSessionFeedback(null);
     },
     [appState.selectedMode]
@@ -275,6 +584,7 @@ export function useDrillSession(appState, setAppState) {
     }
 
     setSessionFeedback(null);
+    pendingRouteFeedbackRef.current = null;
 
     const sessionSpec = sessionLaunch?.sessionSpec;
     const exportSeed = sessionLaunch?.exportSeed ?? "";
@@ -374,6 +684,10 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function togglePause() {
+    if (pendingPracticeResolutionRef.current) {
+      return;
+    }
+
     updateState((previousValue) => {
       const session = previousValue.currentSession;
       if (!session) {
@@ -421,6 +735,8 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function endSession() {
+    clearPendingPracticeResolution();
+    pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
@@ -430,19 +746,59 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function completeObjective() {
-    if (currentSession?.sessionType !== ROUTE_SESSION_TYPE && currentObjective) {
-      setSessionFeedback({
-        id: `practice_complete_${Date.now()}`,
-        type: "practice-square-complete",
-        objectiveId: currentObjective.id
-      });
+    if (
+      !currentSession ||
+      currentSession.sessionType === ROUTE_SESSION_TYPE ||
+      !currentObjective ||
+      pendingPracticeResolutionRef.current
+    ) {
+      return;
     }
 
-    resolveObjective("complete");
+    const endedAt = Date.now();
+    const previousBestMs = appState.bestTimesByObjective[currentObjective.id]?.durationMs ?? null;
+    const feedbackEntry = buildPracticeHistoryEntry({
+      session: currentSession,
+      objective: currentObjective,
+      result: "complete",
+      endedAt,
+      previousBestMs
+    });
+    const completionFeedback = buildPracticeCompletionFeedback(feedbackEntry);
+    const seedPbFeedback = buildPracticeSeedPbFeedback({
+      history: appState.history,
+      session: currentSession,
+      currentElapsedMs: feedbackEntry.sessionElapsedAtCompleteMs
+    });
+
+    setSessionFeedback({
+      id: `practice_complete_${endedAt}`,
+      type: "practice-square-complete",
+      objectiveId: currentObjective.id,
+      ...completionFeedback,
+      ...seedPbFeedback
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      const pendingResolution = pendingPracticeResolutionRef.current;
+      pendingPracticeResolutionRef.current = null;
+      resolveObjective("complete", {
+        endedAt,
+        transitionAt: Date.now(),
+        expectedSessionId: pendingResolution?.sessionId,
+        expectedObjectiveId: pendingResolution?.objectiveId
+      });
+    }, PRACTICE_COMPLETION_RECOGNITION_MS);
+
+    pendingPracticeResolutionRef.current = {
+      sessionId: currentSession.id,
+      objectiveId: currentObjective.id,
+      timeoutId
+    };
   }
 
   function skipObjective() {
-    if (currentSession?.sessionType === ROUTE_SESSION_TYPE) {
+    if (currentSession?.sessionType === ROUTE_SESSION_TYPE || pendingPracticeResolutionRef.current) {
       return;
     }
 
@@ -453,21 +809,28 @@ export function useDrillSession(appState, setAppState) {
     const completedSlot = routeSlots.find((slot) => slot.slotIndex === slotIndex);
 
     if (
-      currentSession?.sessionType === ROUTE_SESSION_TYPE &&
-      !currentSession.pausedAt &&
-      completedSlot?.objective
+      !currentSession ||
+      currentSession.sessionType !== ROUTE_SESSION_TYPE ||
+      currentSession.pausedAt ||
+      !completedSlot?.objective
     ) {
-      setSessionFeedback({
-        id: `route_complete_${Date.now()}_${slotIndex}`,
-        type: "route-square-complete",
-        slotIndex,
-        objectiveId: completedSlot.objective.id
-      });
+      return;
     }
+
+    const endedAt = Date.now();
+    pendingRouteFeedbackRef.current = {
+      sessionId: currentSession.id,
+      slotIndex,
+      endedAt
+    };
 
     updateState((previousValue) => {
       const session = previousValue.currentSession;
-      if (!session || session.sessionType !== ROUTE_SESSION_TYPE) {
+      if (
+        !session ||
+        session.sessionType !== ROUTE_SESSION_TYPE ||
+        session.id !== currentSession.id
+      ) {
         return previousValue;
       }
 
@@ -475,7 +838,6 @@ export function useDrillSession(appState, setAppState) {
         return previousValue;
       }
 
-      const endedAt = Date.now();
       const routeResolution = resolveRouteSlotCompletion({
         session,
         slotIndex,
@@ -523,7 +885,11 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function skipCurrentSplit() {
-    if (!currentSession || currentSession.sessionType === ROUTE_SESSION_TYPE) {
+    if (
+      !currentSession ||
+      currentSession.sessionType === ROUTE_SESSION_TYPE ||
+      pendingPracticeResolutionRef.current
+    ) {
       return;
     }
 
@@ -557,10 +923,14 @@ export function useDrillSession(appState, setAppState) {
     });
   }
 
-  function resolveObjective(result) {
+  function resolveObjective(result, options = {}) {
     updateState((previousValue) => {
       const session = previousValue.currentSession;
       if (!session || session.sessionType === ROUTE_SESSION_TYPE) {
+        return previousValue;
+      }
+
+      if (options.expectedSessionId && session.id !== options.expectedSessionId) {
         return previousValue;
       }
 
@@ -572,50 +942,16 @@ export function useDrillSession(appState, setAppState) {
         };
       }
 
-      const endedAt = Date.now();
-      const travelStartedAt = session.objectiveStartedAt ?? endedAt;
-      const levelEnteredAt = session.enteredLevelAt;
-      const challengeStartedAt = session.challengeStartedAt;
+      if (options.expectedObjectiveId && objective.id !== options.expectedObjectiveId) {
+        return previousValue;
+      }
+
+      const endedAt = options.endedAt ?? Date.now();
+      const transitionAt =
+        typeof options.transitionAt === "number" && Number.isFinite(options.transitionAt)
+          ? Math.max(endedAt, options.transitionAt)
+          : endedAt;
       const previousBestMs = previousValue.bestTimesByObjective[objective.id]?.durationMs ?? null;
-      const totalDurationMs = endedAt - travelStartedAt - session.totalPausedMs;
-      const travelDurationMs =
-        typeof levelEnteredAt === "number"
-          ? Math.max(0, levelEnteredAt - travelStartedAt - session.travelPausedMs)
-          : objective.area === session.currentArea
-            ? 0
-            : null;
-      const tapeDurationMs =
-        typeof session.tapeUnlockedAt === "number" && typeof session.tapeStartedAt === "number"
-          ? Math.max(0, session.tapeUnlockedAt - session.tapeStartedAt - session.tapePausedMs)
-          : null;
-      const challengeDurationMs =
-        typeof challengeStartedAt === "number"
-          ? Math.max(0, endedAt - challengeStartedAt - session.challengePausedMs)
-          : null;
-      const historyEntry = {
-        sessionType: PRACTICE_SESSION_TYPE,
-        sessionId: session.id,
-        objectiveId: objective.id,
-        label: objective.label,
-        area: objective.area,
-        district: objective.district,
-        type: objective.type,
-        runClass: objective.runClass,
-        result,
-        durationMs: challengeDurationMs ?? totalDurationMs,
-        totalDurationMs,
-        travelDurationMs,
-        tapeDurationMs,
-        challengeDurationMs,
-        previousBestMs,
-        pbDiffMs:
-          previousBestMs !== null && challengeDurationMs !== null
-            ? challengeDurationMs - previousBestMs
-            : null,
-        startedAt: travelStartedAt,
-        endedAt
-      };
-      const nextHistory = [...previousValue.history, historyEntry];
       const nextTransition = resolveSeededSessionTransition({
         session,
         currentObjective: objective,
@@ -623,6 +959,22 @@ export function useDrillSession(appState, setAppState) {
         endedAt,
         objectiveLookup: (objectiveId) => objectivesById[objectiveId]
       });
+      const completionSummary = nextTransition.completionSummary
+        ? {
+            ...nextTransition.completionSummary,
+            sessionType: PRACTICE_SESSION_TYPE,
+            exportSeed: session.exportSeed ?? nextTransition.completionSummary.exportSeed ?? ""
+          }
+        : null;
+      const historyEntry = buildPracticeHistoryEntry({
+        session,
+        objective,
+        result,
+        endedAt,
+        previousBestMs,
+        completionSummary
+      });
+      const nextHistory = [...previousValue.history, historyEntry];
 
       if (!nextTransition.nextObjective) {
         const squaresCleared = nextHistory.reduce((count, entry) => {
@@ -646,9 +998,7 @@ export function useDrillSession(appState, setAppState) {
           bestTimesByObjective: recordBestTime(previousValue.bestTimesByObjective, historyEntry),
           aggregateStats: recordCompletionStats(previousValue.aggregateStats, historyEntry),
           pendingCompletion: {
-            ...nextTransition.completionSummary,
-            sessionType: PRACTICE_SESSION_TYPE,
-            exportSeed: session.exportSeed ?? nextTransition.completionSummary.exportSeed ?? "",
+            ...completionSummary,
             squaresCleared,
             sessionSpec
           },
@@ -665,7 +1015,7 @@ export function useDrillSession(appState, setAppState) {
         currentSession: {
           ...buildSeededSessionState({
             sessionId: session.id,
-            now: endedAt,
+            now: transitionAt,
             currentArea: nextTransition.nextArea,
             objective: nextTransition.nextObjective,
             currentObjectiveIndex: nextTransition.nextObjectiveIndex,
@@ -673,7 +1023,8 @@ export function useDrillSession(appState, setAppState) {
             exportSeed: session.exportSeed,
             unlockedTapeAreas: session.unlockedTapeAreas,
             sessionStartedAt: session.sessionStartedAt,
-            sessionTotalPausedMs: session.sessionTotalPausedMs
+            sessionTotalPausedMs:
+              session.sessionTotalPausedMs + Math.max(0, transitionAt - endedAt)
           }),
           ui: {
             learnPanelVisible: resolveSessionLearnPanelVisible(
@@ -687,6 +1038,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToModeSelect() {
+    pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
@@ -696,6 +1048,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToPractice() {
+    pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
@@ -705,6 +1058,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToRoute() {
+    pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
@@ -714,6 +1068,7 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function goToSettings() {
+    pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
     updateState((previousValue) => ({
       ...previousValue,
@@ -783,6 +1138,8 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function resetAllData() {
+    clearPendingPracticeResolution();
+    pendingRouteFeedbackRef.current = null;
     setAppState(createDefaultAppState());
   }
 
@@ -862,7 +1219,11 @@ export function useDrillSession(appState, setAppState) {
   }
 
   function performPhaseAction() {
-    if (!currentSession || currentSession.sessionType === ROUTE_SESSION_TYPE) {
+    if (
+      !currentSession ||
+      currentSession.sessionType === ROUTE_SESSION_TYPE ||
+      pendingPracticeResolutionRef.current
+    ) {
       return;
     }
 

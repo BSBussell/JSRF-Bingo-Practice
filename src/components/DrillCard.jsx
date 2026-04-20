@@ -32,6 +32,85 @@ function fitSingleLineFontSize(value, {
   return `${size.toFixed(3)}rem`;
 }
 
+function formatDurationDelta(durationMs) {
+  const safeDurationMs = Number.isFinite(durationMs) ? durationMs : 0;
+  const prefix = safeDurationMs > 0 ? "+" : safeDurationMs < 0 ? "-" : "";
+
+  return `${prefix}${formatDuration(Math.abs(safeDurationMs))}`;
+}
+
+function formatCompletionFeedback(feedback) {
+  if (!feedback) {
+    return null;
+  }
+
+  if (feedback.pbStatus === "new-pb") {
+    return {
+      label: "New PB",
+      detail: `Beat PB by ${formatDuration(Math.abs(feedback.pbDiffMs ?? 0))}`
+    };
+  }
+
+  if (feedback.pbStatus === "missed-pb") {
+    return {
+      label: "Complete",
+      detail: `Missed PB by ${formatDuration(Math.max(0, feedback.pbDiffMs ?? 0))}`
+    };
+  }
+
+  if (feedback.pbStatus === "tied-pb") {
+    return {
+      label: "Complete",
+      detail: "Tied PB"
+    };
+  }
+
+  return {
+    label: "Complete",
+    detail: "No prior PB"
+  };
+}
+
+function formatSeedPbFeedback(feedback) {
+  if (!feedback || feedback.seedPbStatus === "no-prior") {
+    return "Seed PB: no prior";
+  }
+
+  if (!Number.isFinite(feedback.seedPbDiffMs)) {
+    return "";
+  }
+
+  return `Seed PB ${formatDurationDelta(feedback.seedPbDiffMs)}`;
+}
+
+function squarePbToneClass(feedback) {
+  if (feedback?.pbStatus === "new-pb") {
+    return "is-pb";
+  }
+
+  if (feedback?.pbStatus === "missed-pb") {
+    return "is-slower";
+  }
+
+  return "is-neutral";
+}
+
+function seedPbToneClass(feedback) {
+  if (!Number.isFinite(feedback?.seedPbDiffMs)) {
+    return "is-neutral";
+  }
+
+  if (feedback.seedPbDiffMs < 0) {
+    return "is-faster";
+  }
+
+  if (feedback.seedPbDiffMs > 0) {
+    return "is-slower";
+  }
+
+  return "is-neutral";
+}
+
 function fitMultiLineFontSize(value, {
   minRem,
   maxRem,
@@ -321,7 +400,12 @@ export function DrillCard({
     splitRows.findIndex((split) => split.status === "live")
   );
   const squareReward =
-    sessionFeedback?.type === "practice-square-complete" ? sessionFeedback : null;
+    sessionFeedback?.type === "practice-square-complete" &&
+    sessionFeedback.objectiveId === objective.id
+      ? sessionFeedback
+      : null;
+  const completionFeedback = formatCompletionFeedback(squareReward);
+  const seedPbFeedback = formatSeedPbFeedback(squareReward);
 
   return (
     <section className="panel drill-panel">
@@ -342,6 +426,20 @@ export function DrillCard({
               { particleCount: 26, x: 0.72, y: 0.58, delayMs: 125, radiusScale: 0.9, speedScale: 0.82 }
             ]}
           />
+          <div className={`drill-complete-feedback ${squareReward.pbStatus === "new-pb" ? "is-win" : ""}`}>
+            <span>{completionFeedback.label}</span>
+            {Number.isFinite(squareReward.durationMs) ? (
+              <strong>{formatDuration(squareReward.durationMs)}</strong>
+            ) : null}
+            <p className={`drill-complete-result-line ${squarePbToneClass(squareReward)}`}>
+              {completionFeedback.detail}
+            </p>
+            {seedPbFeedback ? (
+              <p className={`drill-complete-seed-diff ${seedPbToneClass(squareReward)}`}>
+                {seedPbFeedback}
+              </p>
+            ) : null}
+          </div>
         </>
       ) : null}
 
@@ -413,13 +511,13 @@ export function DrillCard({
 
       <div className="action-row drill-action-row">
         <div className="drill-action-main">
-          <button className="primary-button" type="button" onClick={onPhaseAction}>
+          <button className="primary-button" type="button" onClick={onPhaseAction} disabled={Boolean(squareReward)}>
             {phaseActionLabel}
           </button>
-          <button className="secondary-button" type="button" onClick={onSkip}>
+          <button className="secondary-button" type="button" onClick={onSkip} disabled={Boolean(squareReward)}>
             Skip Square
           </button>
-          <button className="secondary-button" type="button" onClick={onTogglePause}>
+          <button className="secondary-button" type="button" onClick={onTogglePause} disabled={Boolean(squareReward)}>
             {phaseInfo?.isPaused ? "Resume" : "Pause"}
           </button>
         </div>
@@ -434,7 +532,7 @@ export function DrillCard({
             ☰
           </button>
           <div className="drill-action-menu-list" role="menu" aria-label="Additional actions">
-            <button className="secondary-button drill-action-menu-item" type="button" onClick={onSkipSplit}>
+            <button className="secondary-button drill-action-menu-item" type="button" onClick={onSkipSplit} disabled={Boolean(squareReward)}>
               Skip Split
             </button>
             {onToggleLearnPanel ? (

@@ -548,7 +548,7 @@ export function SetupPanel({
                 aria-label="Seed"
                 rows={1}
                 value={seedInput}
-                placeholder="Phrase or exported seed"
+                placeholder="Funny Seed Name Here"
                 onChange={(event) => handleSeedInputChange(event.target.value)}
               />
               {resolvedSeedState.warning ? (

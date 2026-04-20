@@ -35,6 +35,7 @@ export function buildRouteSessionState({
     visibleObjectiveIds,
     nextRevealIndex: Math.min(sessionSpec.config.routeVisibleCount, objectiveIds.length),
     completedCount: 0,
+    routeClearEvents: [],
     sessionStartedAt,
     sessionTotalPausedMs,
     pausedAt: null,
@@ -66,7 +67,10 @@ export function buildRouteCompletionResult({
       endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
     ),
     visibleCount,
-    routeRevealMode
+    routeRevealMode,
+    routeClearEvents: Array.isArray(session.routeClearEvents)
+      ? session.routeClearEvents.slice()
+      : []
   };
 }
 
@@ -83,7 +87,10 @@ export function buildRouteHistoryEntry(routeResult) {
     totalDurationMs: routeResult.totalDurationMs,
     startedAt: routeResult.startedAt,
     endedAt: routeResult.endedAt,
-    exportSeed: routeResult.exportSeed ?? ""
+    exportSeed: routeResult.exportSeed ?? "",
+    routeClearEvents: Array.isArray(routeResult.routeClearEvents)
+      ? routeResult.routeClearEvents.slice()
+      : []
   };
 }
 
@@ -133,6 +140,18 @@ export function completeRouteSlot({
   visibleObjectiveIds[slotIndex] = null;
   const routeRevealMode = normalizeRouteRevealMode(session.sessionSpec?.config?.routeRevealMode);
   let nextRevealIndex = session.nextRevealIndex ?? 0;
+  const routeClearEvents = Array.isArray(session.routeClearEvents)
+    ? session.routeClearEvents.slice()
+    : [];
+  routeClearEvents.push({
+    objectiveId: completedObjectiveId,
+    slotIndex,
+    endedAt,
+    elapsedMs: Math.max(
+      0,
+      endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
+    )
+  });
 
   if (routeRevealMode === ROUTE_REVEAL_MODE_BURST) {
     if (!visibleObjectiveIds.some(Boolean) && nextRevealIndex < session.objectiveIds.length) {
@@ -158,7 +177,8 @@ export function completeRouteSlot({
     ...session,
     visibleObjectiveIds,
     nextRevealIndex,
-    completedCount: (session.completedCount ?? 0) + 1
+    completedCount: (session.completedCount ?? 0) + 1,
+    routeClearEvents
   };
   const hasVisibleObjectivesRemaining = visibleObjectiveIds.some(Boolean);
 

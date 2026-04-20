@@ -1,4 +1,5 @@
 import { getAreaLabel } from "../data/areaMeta.js";
+import { formatDuration } from "../hooks/useTimer.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
 
@@ -43,6 +44,41 @@ function routeTileClassName(slot, useDistrictLocationColors) {
     .join(" ");
 }
 
+function formatDurationDelta(durationMs) {
+  const safeDurationMs = Number.isFinite(durationMs) ? durationMs : 0;
+  const prefix = safeDurationMs > 0 ? "+" : safeDurationMs < 0 ? "-" : "";
+
+  return `${prefix}${formatDuration(Math.abs(safeDurationMs))}`;
+}
+
+function formatRouteSeedPbFeedback(feedback) {
+  if (!feedback || feedback.seedPbStatus === "no-prior") {
+    return "Seed PB: no prior";
+  }
+
+  if (!Number.isFinite(feedback.seedPbDiffMs)) {
+    return "";
+  }
+
+  return `Seed PB ${formatDurationDelta(feedback.seedPbDiffMs)}`;
+}
+
+function seedPbToneClass(feedback) {
+  if (!Number.isFinite(feedback?.seedPbDiffMs)) {
+    return "is-neutral";
+  }
+
+  if (feedback.seedPbDiffMs < 0) {
+    return "is-faster";
+  }
+
+  if (feedback.seedPbDiffMs > 0) {
+    return "is-slower";
+  }
+
+  return "is-neutral";
+}
+
 export function RouteCard({
   routeSlots,
   visibleCount,
@@ -57,9 +93,32 @@ export function RouteCard({
 }) {
   const slotCount = Math.max(visibleCount ?? 0, routeSlots.length);
   const gridColumns = resolveGridColumns(slotCount);
+  const waveReward =
+    sessionFeedback?.type === "route-square-complete" && sessionFeedback.waveComplete
+      ? sessionFeedback
+      : null;
+  const waveSeedPbFeedback = formatRouteSeedPbFeedback(waveReward);
 
   return (
     <section className="panel drill-panel route-panel">
+      {waveReward ? (
+        <div className="drill-complete-feedback route-wave-feedback">
+          <span>Wave Complete</span>
+          <strong>
+            {waveReward.completedCount}
+            <small> / {waveReward.objectiveCount}</small>
+          </strong>
+          {Number.isFinite(waveReward.elapsedMs) ? (
+            <p>{formatDuration(waveReward.elapsedMs)} route time</p>
+          ) : null}
+          {waveSeedPbFeedback ? (
+            <p className={`drill-complete-seed-diff ${seedPbToneClass(waveReward)}`}>
+              {waveSeedPbFeedback}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="drill-panel-header vertical">
         <p className="eyebrow">Current Route</p>
         <h1>{visibleCount} Squares</h1>

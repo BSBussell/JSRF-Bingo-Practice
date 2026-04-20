@@ -146,6 +146,14 @@ test("normalizeAppState preserves route mode payloads", () => {
       visibleObjectiveIds: [sessionSpec.objectiveIds[0], sessionSpec.objectiveIds[1]],
       nextRevealIndex: 2,
       completedCount: 0,
+      routeClearEvents: [
+        {
+          objectiveId: sessionSpec.objectiveIds[0],
+          slotIndex: 0,
+          endedAt: 1000,
+          elapsedMs: 877
+        }
+      ],
       sessionStartedAt: 123,
       sessionTotalPausedMs: 50
     },
@@ -158,6 +166,14 @@ test("normalizeAppState preserves route mode payloads", () => {
       totalDurationMs: 3900,
       visibleCount: 2,
       routeRevealMode: ROUTE_REVEAL_MODE_BURST,
+      routeClearEvents: [
+        {
+          objectiveId: sessionSpec.objectiveIds[0],
+          slotIndex: 0,
+          endedAt: 1000,
+          elapsedMs: 877
+        }
+      ],
       exportSeed,
       sessionSpec
     }
@@ -169,9 +185,25 @@ test("normalizeAppState preserves route mode payloads", () => {
     sessionSpec.objectiveIds[0],
     sessionSpec.objectiveIds[1]
   ]);
+  assert.deepEqual(state.currentSession.routeClearEvents, [
+    {
+      objectiveId: sessionSpec.objectiveIds[0],
+      slotIndex: 0,
+      endedAt: 1000,
+      elapsedMs: 877
+    }
+  ]);
   assert.equal(state.pendingCompletion.sessionType, "route");
   assert.equal(state.pendingCompletion.visibleCount, 2);
   assert.equal(state.pendingCompletion.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.deepEqual(state.pendingCompletion.routeClearEvents, [
+    {
+      objectiveId: sessionSpec.objectiveIds[0],
+      slotIndex: 0,
+      endedAt: 1000,
+      elapsedMs: 877
+    }
+  ]);
   assert.deepEqual(state.aggregateStats, {
     squareByArea: {},
     tapeByArea: {},
@@ -253,6 +285,32 @@ test("normalizeAppState computes missing pendingCompletion export seed from sess
   assert.ok(state.pendingCompletion);
   assert.equal(state.pendingCompletion.squaresCleared, 1);
   assert.equal(state.pendingCompletion.exportSeed, encodeSessionSeed(sessionSpec));
+});
+
+test("normalizeAppState preserves practice seed completion timing fields", () => {
+  const state = normalizeAppState({
+    history: [
+      {
+        sessionType: "practice",
+        sessionId: "practice_seed",
+        objectiveId: "dogen_005",
+        result: "complete",
+        exportSeed: "BNGSD3.practice",
+        sessionObjectiveIndex: 2,
+        sessionElapsedAtCompleteMs: 12345,
+        sessionCompleted: true,
+        sessionObjectiveCount: 3,
+        sessionTotalDurationMs: 23456
+      }
+    ]
+  });
+
+  assert.equal(state.history[0].exportSeed, "BNGSD3.practice");
+  assert.equal(state.history[0].sessionObjectiveIndex, 2);
+  assert.equal(state.history[0].sessionElapsedAtCompleteMs, 12345);
+  assert.equal(state.history[0].sessionCompleted, true);
+  assert.equal(state.history[0].sessionObjectiveCount, 3);
+  assert.equal(state.history[0].sessionTotalDurationMs, 23456);
 });
 
 test("normalizeAppState drops legacy route stats buckets", () => {

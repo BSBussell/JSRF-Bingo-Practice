@@ -207,6 +207,7 @@ function normalizeCurrentSession(currentSession, settings) {
       completedCount: Number.isInteger(currentSession.completedCount)
         ? Math.max(0, Math.min(objectiveIds.length, currentSession.completedCount))
         : derivedCompletedCount,
+      routeClearEvents: normalizeRouteClearEvents(currentSession.routeClearEvents),
       sessionStartedAt: currentSession.sessionStartedAt ?? Date.now(),
       sessionTotalPausedMs: currentSession.sessionTotalPausedMs ?? 0,
       pausedAt: currentSession.pausedAt ?? null,
@@ -277,6 +278,24 @@ function normalizeCurrentSession(currentSession, settings) {
       learnPanelVisible
     }
   };
+}
+
+function normalizeRouteClearEvents(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((event) => ({
+      objectiveId:
+        typeof event?.objectiveId === "string"
+          ? normalizeObjectiveId(event.objectiveId)
+          : null,
+      slotIndex: Number.isInteger(event?.slotIndex) ? Math.max(0, event.slotIndex) : null,
+      endedAt: Number.isFinite(event?.endedAt) ? Math.max(0, event.endedAt) : null,
+      elapsedMs: Number.isFinite(event?.elapsedMs) ? Math.max(0, event.elapsedMs) : null
+    }))
+    .filter((event) => event.objectiveId && event.endedAt !== null && event.elapsedMs !== null);
 }
 
 function normalizeHistoryEntry(entry) {
@@ -367,13 +386,14 @@ function normalizePendingCompletion(pendingCompletion) {
   const totalDurationMs = Number.isFinite(pendingCompletion.totalDurationMs)
     ? Math.max(0, pendingCompletion.totalDurationMs)
     : 0;
+  const sessionType = normalizeSessionType(
+    pendingCompletion.sessionType ?? sessionSpecInput.sessionType
+  );
 
   return {
     sessionId:
       typeof pendingCompletion.sessionId === "string" ? pendingCompletion.sessionId : "",
-    sessionType: normalizeSessionType(
-      pendingCompletion.sessionType ?? sessionSpecInput.sessionType
-    ),
+    sessionType,
     finishedAt,
     objectiveCount,
     squaresCleared,
@@ -383,12 +403,15 @@ function normalizePendingCompletion(pendingCompletion) {
         ? pendingCompletion.visibleCount
         : sessionSpec.config.routeVisibleCount,
     routeRevealMode:
-      normalizeSessionType(pendingCompletion.sessionType ?? sessionSpecInput.sessionType) ===
-      ROUTE_SESSION_TYPE
+      sessionType === ROUTE_SESSION_TYPE
         ? normalizeRouteRevealMode(
             pendingCompletion.routeRevealMode ?? sessionSpec.config.routeRevealMode
           )
         : null,
+    routeClearEvents:
+      sessionType === ROUTE_SESSION_TYPE
+        ? normalizeRouteClearEvents(pendingCompletion.routeClearEvents)
+        : [],
     exportSeed:
       typeof pendingCompletion.exportSeed === "string" && pendingCompletion.exportSeed
         ? pendingCompletion.exportSeed

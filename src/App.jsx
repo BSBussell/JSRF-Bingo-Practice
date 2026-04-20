@@ -22,6 +22,7 @@ import {
   openDrillPopoutWindow,
   syncDrillPopoutAlwaysOnTop
 } from "./lib/drill/drillPopout.js";
+import { buildCompletionRecap } from "./lib/session/completionRecap.js";
 import { getPhasePausedDuration } from "./lib/session/drillSession.js";
 import {
   PRACTICE_SESSION_TYPE,
@@ -162,15 +163,20 @@ function ActiveSessionStage({
 }
 
 function CompletionStage({ drillSession, backdrop }) {
+  const completionRecap = buildCompletionRecap({
+    completionSummary: drillSession.pendingCompletion,
+    history: drillSession.history
+  });
+
   return (
     <DrillStage>
       <CompletionPanel
         completionSummary={drillSession.pendingCompletion}
+        completionRecap={completionRecap}
         onNewExercise={drillSession.clearPendingCompletion}
         onRunBack={drillSession.replayPendingCompletion}
         onCopySeed={drillSession.copyPendingCompletionSeed}
         backdrop={backdrop}
-        history={drillSession.history}
       />
     </DrillStage>
   );
@@ -512,11 +518,14 @@ export default function App() {
           ) : drillSession.pendingCompletion ? (
             <CompletionPanel
               completionSummary={drillSession.pendingCompletion}
+              completionRecap={buildCompletionRecap({
+                completionSummary: drillSession.pendingCompletion,
+                history: drillSession.history
+              })}
               onNewExercise={drillSession.clearPendingCompletion}
               onRunBack={drillSession.replayPendingCompletion}
               onCopySeed={drillSession.copyPendingCompletionSeed}
               backdrop={activeTheme.backdrop}
-              history={drillSession.history}
             />
           ) : (
             <section className="panel drill-panel popout-empty-panel">
