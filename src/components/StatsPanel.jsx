@@ -333,7 +333,7 @@ function SeedRows({
                     ? formatDelta(-row.firstToBestDeltaMs)
                     : "n/a"}
                 </strong>
-                first to best
+                improvement
               </span>
             </div>
             {row.sessionType === ROUTE_SESSION_TYPE ? (
@@ -369,11 +369,6 @@ function SeedPbCard({
         <div>
           <h2>{title}</h2>
         </div>
-        {rows.length > 1 ? (
-          <button className="secondary-button analytics-show-more-button" type="button" onClick={onShowMore}>
-            Show More
-          </button>
-        ) : null}
       </div>
       <SeedRows
         rows={rows.slice(0, 1)}
@@ -383,7 +378,12 @@ function SeedPbCard({
         onRenameSeed={onRenameSeed}
       />
       {rows.length > 1 ? (
-        <p className="analytics-card-footnote">{rows.length} tracked seed PBs</p>
+        <div className="analytics-card-footer">
+          <p className="analytics-card-footnote">{rows.length} tracked seed PBs</p>
+          <button className="secondary-button analytics-show-more-button" type="button" onClick={onShowMore}>
+            Show More
+          </button>
+        </div>
       ) : null}
     </article>
   );
@@ -626,11 +626,6 @@ function HistoryPreviewCard({
         <div>
           <h2>History Manager</h2>
         </div>
-        {runs.length > 1 ? (
-          <button className="secondary-button analytics-show-more-button" type="button" onClick={onShowMore}>
-            Show More
-          </button>
-        ) : null}
       </div>
       <RunsList
         runs={runs.slice(0, 1)}
@@ -640,7 +635,12 @@ function HistoryPreviewCard({
         onRunSeed={onRunSeed}
       />
       {runs.length > 1 ? (
-        <p className="analytics-card-footnote">{runs.length} tracked runs</p>
+        <div className="analytics-card-footer">
+          <p className="analytics-card-footnote">{runs.length} tracked runs</p>
+          <button className="secondary-button analytics-show-more-button" type="button" onClick={onShowMore}>
+            Show More
+          </button>
+        </div>
       ) : null}
     </article>
   );

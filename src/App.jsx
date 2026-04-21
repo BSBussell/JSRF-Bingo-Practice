@@ -42,6 +42,7 @@ function CurrentDrillPanel({
   backdrop,
   totalTimer,
   splitTimer,
+  routePreferVerticalLayout = false,
   onToggleLearnPanel
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
@@ -55,6 +56,7 @@ function CurrentDrillPanel({
         totalTimer={totalTimer}
         isPaused={Boolean(drillSession.currentSession?.pausedAt)}
         useDistrictLocationColors={settings.routeDistrictColorsEnabled}
+        preferVerticalLayout={routePreferVerticalLayout}
         sessionFeedback={drillSession.sessionFeedback}
         backdrop={backdrop}
         onCompleteSlot={drillSession.completeRouteSlot}
@@ -520,6 +522,7 @@ export default function App() {
               backdrop={activeTheme.backdrop}
               totalTimer={totalTimer}
               splitTimer={splitTimer}
+              routePreferVerticalLayout={true}
               onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
             />
           ) : drillSession.isStartCountdownActive ? (

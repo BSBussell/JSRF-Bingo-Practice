@@ -14,9 +14,17 @@ function formatRouteObjectiveLabel(objective) {
     : objective.label;
 }
 
-function resolveGridColumns(slotCount) {
+function resolveGridColumns(slotCount, { preferVertical = false } = {}) {
   if (slotCount <= 1) {
     return 1;
+  }
+
+  if (preferVertical) {
+    if (slotCount <= 6) {
+      return 2;
+    }
+
+    return 3;
   }
 
   if (slotCount <= 4) {
@@ -53,14 +61,14 @@ function formatDurationDelta(durationMs) {
 
 function formatRouteSeedPbFeedback(feedback) {
   if (!feedback || feedback.seedPbStatus === "no-prior") {
-    return "Seed PB: no prior";
+    return "No prior";
   }
 
   if (!Number.isFinite(feedback.seedPbDiffMs)) {
     return "";
   }
 
-  return `Seed PB ${formatDurationDelta(feedback.seedPbDiffMs)}`;
+  return formatDurationDelta(feedback.seedPbDiffMs);
 }
 
 function seedPbToneClass(feedback) {
@@ -85,6 +93,7 @@ export function RouteCard({
   totalTimer,
   isPaused,
   useDistrictLocationColors = true,
+  preferVerticalLayout = false,
   sessionFeedback,
   backdrop,
   onCompleteSlot,
@@ -92,7 +101,9 @@ export function RouteCard({
   onEndSession
 }) {
   const slotCount = Math.max(visibleCount ?? 0, routeSlots.length);
-  const gridColumns = resolveGridColumns(slotCount);
+  const gridColumns = resolveGridColumns(slotCount, {
+    preferVertical: preferVerticalLayout
+  });
   const waveReward =
     sessionFeedback?.type === "route-square-complete" && sessionFeedback.waveComplete
       ? sessionFeedback
@@ -103,19 +114,25 @@ export function RouteCard({
     <section className="panel drill-panel route-panel">
       {waveReward ? (
         <div className="drill-complete-feedback route-wave-feedback">
-          <span>Wave Complete</span>
-          <strong>
+          <span className="drill-complete-feedback-label">Wave Complete</span>
+          <strong className="drill-complete-feedback-value">
             {waveReward.completedCount}
             <small> / {waveReward.objectiveCount}</small>
           </strong>
-          {Number.isFinite(waveReward.elapsedMs) ? (
-            <p>{formatDuration(waveReward.elapsedMs)} route time</p>
-          ) : null}
-          {waveSeedPbFeedback ? (
-            <p className={`drill-complete-seed-diff ${seedPbToneClass(waveReward)}`}>
-              {waveSeedPbFeedback}
-            </p>
-          ) : null}
+          <div className="drill-complete-feedback-details">
+            {Number.isFinite(waveReward.elapsedMs) ? (
+              <p className="drill-complete-detail-row">
+                <span>Route Time</span>
+                <strong>{formatDuration(waveReward.elapsedMs)}</strong>
+              </p>
+            ) : null}
+            {waveSeedPbFeedback ? (
+              <p className={`drill-complete-detail-row drill-complete-seed-diff ${seedPbToneClass(waveReward)}`}>
+                <span>Seed PB</span>
+                <strong>{waveSeedPbFeedback}</strong>
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

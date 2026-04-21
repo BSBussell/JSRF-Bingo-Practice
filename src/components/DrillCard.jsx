@@ -47,40 +47,40 @@ function formatCompletionFeedback(feedback) {
   if (feedback.pbStatus === "new-pb") {
     return {
       label: "New PB",
-      detail: `Beat PB by ${formatDuration(Math.abs(feedback.pbDiffMs ?? 0))}`
+      detail: `-${formatDuration(Math.abs(feedback.pbDiffMs ?? 0))}`
     };
   }
 
   if (feedback.pbStatus === "missed-pb") {
     return {
       label: "Complete",
-      detail: `Missed PB by ${formatDuration(Math.max(0, feedback.pbDiffMs ?? 0))}`
+      detail: `+${formatDuration(Math.max(0, feedback.pbDiffMs ?? 0))}`
     };
   }
 
   if (feedback.pbStatus === "tied-pb") {
     return {
       label: "Complete",
-      detail: "Tied PB"
+      detail: "Tied"
     };
   }
 
   return {
     label: "Complete",
-    detail: "No prior PB"
+    detail: "No prior"
   };
 }
 
 function formatSeedPbFeedback(feedback) {
   if (!feedback || feedback.seedPbStatus === "no-prior") {
-    return "Seed PB: no prior";
+    return "No prior";
   }
 
   if (!Number.isFinite(feedback.seedPbDiffMs)) {
     return "";
   }
 
-  return `Seed PB ${formatDurationDelta(feedback.seedPbDiffMs)}`;
+  return formatDurationDelta(feedback.seedPbDiffMs);
 }
 
 function squarePbToneClass(feedback) {
@@ -340,8 +340,8 @@ export function DrillCard({
       availableRem: 16
     }),
     "--drill-location-popout-font-size": fitSingleLineFontSize(objectiveAreaLabel, {
-      minRem: 0.7,
-      maxRem: 1.16,
+      minRem: 0.78,
+      maxRem: 1.28,
       availableRem: 20
     })
   };
@@ -427,18 +427,24 @@ export function DrillCard({
             ]}
           />
           <div className={`drill-complete-feedback ${squareReward.pbStatus === "new-pb" ? "is-win" : ""}`}>
-            <span>{completionFeedback.label}</span>
+            <span className="drill-complete-feedback-label">{completionFeedback.label}</span>
             {Number.isFinite(squareReward.durationMs) ? (
-              <strong>{formatDuration(squareReward.durationMs)}</strong>
+              <strong className="drill-complete-feedback-value">
+                {formatDuration(squareReward.durationMs)}
+              </strong>
             ) : null}
-            <p className={`drill-complete-result-line ${squarePbToneClass(squareReward)}`}>
-              {completionFeedback.detail}
-            </p>
-            {seedPbFeedback ? (
-              <p className={`drill-complete-seed-diff ${seedPbToneClass(squareReward)}`}>
-                {seedPbFeedback}
+            <div className="drill-complete-feedback-details">
+              <p className={`drill-complete-detail-row drill-complete-result-line ${squarePbToneClass(squareReward)}`}>
+                <span>Square PB</span>
+                <strong>{completionFeedback.detail}</strong>
               </p>
-            ) : null}
+              {seedPbFeedback ? (
+                <p className={`drill-complete-detail-row drill-complete-seed-diff ${seedPbToneClass(squareReward)}`}>
+                  <span>Seed PB</span>
+                  <strong>{seedPbFeedback}</strong>
+                </p>
+              ) : null}
+            </div>
           </div>
         </>
       ) : null}
