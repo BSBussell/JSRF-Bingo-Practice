@@ -20,9 +20,14 @@ struct DesktopPlatformInfo {
 #[tauri::command]
 async fn open_drill_popout(app: AppHandle, always_on_top: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(DRILL_POPOUT_LABEL) {
-        // Recreate the popout from a known-good URL to avoid getting stuck
-        // with a stale blank webview from a previous failed boot.
-        window.destroy().map_err(|error| error.to_string())?;
+        window
+            .set_always_on_top(always_on_top)
+            .map_err(|error| error.to_string())?;
+        window.show().map_err(|error| error.to_string())?;
+        window
+            .set_focus()
+            .map_err(|error| error.to_string())?;
+        return Ok(());
     }
 
     #[cfg(debug_assertions)]

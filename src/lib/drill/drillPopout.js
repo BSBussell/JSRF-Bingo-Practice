@@ -3,6 +3,8 @@ import { isTauriRuntime } from "../runtime.js";
 export const DRILL_POPOUT_LABEL = "drill-popout";
 export const DRILL_POPOUT_VIEW = "drill-popout";
 
+let browserDrillPopoutWindow = null;
+
 function resolveAppBaseUrl() {
   const configuredBase =
     typeof import.meta !== "undefined" && import.meta.env?.BASE_URL
@@ -17,12 +19,18 @@ function buildDrillPopoutUrl() {
 }
 
 function openBrowserDrillPopout(url) {
+  if (browserDrillPopoutWindow && !browserDrillPopoutWindow.closed) {
+    browserDrillPopoutWindow.focus();
+    return browserDrillPopoutWindow;
+  }
+
   const popupWindow = window.open(
     url,
     DRILL_POPOUT_LABEL,
     "popup=yes,resizable=yes,scrollbars=yes,width=760,height=920"
   );
 
+  browserDrillPopoutWindow = popupWindow;
   popupWindow?.focus();
   return popupWindow;
 }
