@@ -1,4 +1,5 @@
 import { CompletionPanel } from "./components/CompletionPanel.jsx";
+import { BingopediaPanel } from "./components/BingopediaPanel.jsx";
 import { Header } from "./components/Header.jsx";
 import { DrillCard } from "./components/DrillCard.jsx";
 import { DustyBackdrop } from "./components/DustyBackdrop.jsx";
@@ -345,6 +346,20 @@ function StatsModeView({ drillSession }) {
   );
 }
 
+function BingopediaModeView({ drillSession }) {
+  return (
+    <div className="content-stack">
+      <BingopediaPanel
+        history={drillSession.history}
+        bestTimesByObjective={drillSession.bestTimesByObjective}
+        aggregateStats={drillSession.aggregateStats}
+        settings={drillSession.settings}
+        onPracticeObjective={drillSession.practiceObjective}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   const popoutView = isDrillPopoutView();
   const appMainRef = useRef(null);
@@ -569,6 +584,7 @@ export default function App() {
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
         onSelectRoute={drillSession.goToRoute}
+        onSelectBingopedia={drillSession.goToBingopedia}
         onSelectStats={drillSession.goToStats}
         onSelectSettings={drillSession.goToSettings}
         currentSessionType={drillSession.currentSession?.sessionType ?? null}
@@ -603,6 +619,8 @@ export default function App() {
             onBeginHotkeyCapture={setCapturingAction}
             onCancelHotkeyCapture={() => setCapturingAction(null)}
           />
+        ) : activeMode === "bingopedia" ? (
+          <BingopediaModeView drillSession={drillSession} />
         ) : activeMode === "stats" ? (
           <StatsModeView drillSession={drillSession} />
         ) : (
@@ -610,6 +628,7 @@ export default function App() {
             hasActiveSession={Boolean(drillSession.currentSession)}
             onSelectPractice={drillSession.goToPractice}
             onSelectRoute={drillSession.goToRoute}
+            onSelectBingopedia={drillSession.goToBingopedia}
             onSelectStats={drillSession.goToStats}
             onSelectSettings={drillSession.goToSettings}
             currentSessionType={drillSession.currentSession?.sessionType ?? null}

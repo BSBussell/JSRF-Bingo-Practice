@@ -21,6 +21,14 @@ test("normalizeAppState preserves stats mode selection", () => {
   assert.equal(state.selectedMode, "stats");
 });
 
+test("normalizeAppState preserves bingopedia mode selection", () => {
+  const state = normalizeAppState({
+    selectedMode: "bingopedia"
+  });
+
+  assert.equal(state.selectedMode, "bingopedia");
+});
+
 test("normalizeAppState preserves trimmed custom seed names", () => {
   const state = normalizeAppState({
     seedNamesByExportSeed: {

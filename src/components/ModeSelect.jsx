@@ -6,6 +6,7 @@ import {
 export function ModeSelect({
   onSelectPractice,
   onSelectRoute,
+  onSelectBingopedia,
   onSelectStats,
   onSelectSettings,
   hasActiveSession,
@@ -53,6 +54,20 @@ export function ModeSelect({
           </div>
           <button className="primary-button" type="button" onClick={onSelectRoute}>
             {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? "Resume Route" : "Start Route"}
+          </button>
+        </article>
+        <article className="mode-card">
+          <div>
+            <p className="mode-label">Video Library!</p>
+            <h2>Bingopedia</h2>
+            <p>
+              Browse every square by district and area, watch mapped guide videos,
+              check your history, and select specific squares to practice. Built by
+              Naestrinus + others!
+            </p>
+          </div>
+          <button className="primary-button" type="button" onClick={onSelectBingopedia}>
+            Open Bingopedia
           </button>
         </article>
         <article className="mode-card">

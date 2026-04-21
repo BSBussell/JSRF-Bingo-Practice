@@ -522,6 +522,8 @@ export function normalizeAppState(value) {
       ? "settings"
       : rawSelectedMode === "stats"
         ? "stats"
+      : rawSelectedMode === "bingopedia"
+        ? "bingopedia"
       : rawSelectedMode === ROUTE_SESSION_TYPE
         ? ROUTE_SESSION_TYPE
       : rawSelectedMode === PRACTICE_SESSION_TYPE ||

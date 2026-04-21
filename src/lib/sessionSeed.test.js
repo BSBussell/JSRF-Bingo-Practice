@@ -18,6 +18,7 @@ import {
   ROUTE_SEED_IN_PRACTICE_WARNING,
   SESSION_SEED_PREFIX,
   buildSessionConfig,
+  buildSessionSpecFromObjectiveIds,
   buildSessionSpecFromConfig,
   buildSessionSpecFromPhrase,
   decodeSessionSeed,
@@ -134,6 +135,38 @@ test("route session specs keep objective count at least visible square count", (
 
   assert.equal(sessionSpec.config.routeVisibleCount, 10);
   assert.equal(sessionSpec.config.numberOfObjectives, 10);
+});
+
+test("explicit objective seeds round-trip a one-square practice session", () => {
+  const { sessionSpec, exportSeed } = buildSessionSpecFromObjectiveIds(
+    ["dogen_graffiti"],
+    {
+      startingArea: "Dogen",
+      numberOfObjectives: 25
+    },
+    "00112233445566778899aabbccddeeff"
+  );
+  const decoded = decodeSessionSeed(exportSeed);
+
+  assert.equal(sessionSpec.sessionType, "practice");
+  assert.equal(sessionSpec.config.startingArea, "Dogen");
+  assert.equal(sessionSpec.config.numberOfObjectives, 1);
+  assert.deepEqual(sessionSpec.objectiveIds, ["dogen_graffiti"]);
+  assert.deepEqual(decoded, sessionSpec);
+});
+
+test("explicit objective seeds reject unknown objective ids", () => {
+  assert.throws(
+    () =>
+      buildSessionSpecFromObjectiveIds(
+        ["not_real"],
+        {
+          startingArea: "Dogen"
+        },
+        "00112233445566778899aabbccddeeff"
+      ),
+    /unknown objective id/
+  );
 });
 
 test("phrase seeds can use the full available objective pool", () => {

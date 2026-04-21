@@ -12,6 +12,7 @@ export function Header({
   onOpenHome,
   onSelectPractice,
   onSelectRoute,
+  onSelectBingopedia,
   onSelectStats,
   onSelectSettings
 }) {
@@ -40,6 +41,13 @@ export function Header({
         >
           Route
           {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? <span className="nav-badge">Live</span> : null}
+        </button>
+        <button
+          className={`nav-link ${activeMode === "bingopedia" ? "is-active" : ""}`}
+          type="button"
+          onClick={onSelectBingopedia}
+        >
+          Bingopedia
         </button>
         <button
           className={`nav-link ${activeMode === "stats" ? "is-active" : ""}`}

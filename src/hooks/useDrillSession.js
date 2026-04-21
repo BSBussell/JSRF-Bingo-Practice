@@ -24,6 +24,7 @@ import {
 } from "../lib/session/drillSession.js";
 import { mergeSessionConfigIntoDrillSettings } from "../lib/session/sessionConfig.js";
 import { resolveSeedInput } from "../lib/seed/sessionSeed.js";
+import { buildObjectivePracticeLaunch } from "../lib/session/objectivePractice.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
   buildStatsViewModel,
@@ -1078,6 +1079,16 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
+  function goToBingopedia() {
+    pendingRouteFeedbackRef.current = null;
+    setSessionFeedback(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "bingopedia",
+      startCountdown: null
+    }));
+  }
+
   function goToSettings() {
     pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
@@ -1304,6 +1315,29 @@ export function useDrillSession(appState, setAppState) {
     }
   }
 
+  function practiceObjective(objectiveId) {
+    const objective = objectivesById[objectiveId];
+    if (!objective) {
+      return false;
+    }
+
+    try {
+      const launchState = buildObjectivePracticeLaunch(objective.id, {
+        drillSettings: appState.settings.drillSettings
+      });
+
+      if (!launchState) {
+        return false;
+      }
+
+      startSession(launchState);
+      return true;
+    } catch (error) {
+      console.warn("Failed to practice objective", error);
+      return false;
+    }
+  }
+
   function performPhaseAction() {
     if (
       !currentSession ||
@@ -1338,6 +1372,8 @@ export function useDrillSession(appState, setAppState) {
     routeSlots,
     history,
     seedNamesByExportSeed: appState.seedNamesByExportSeed,
+    bestTimesByObjective: appState.bestTimesByObjective,
+    aggregateStats: appState.aggregateStats,
     stats,
     phaseInfo,
     pendingCompletion,
@@ -1363,10 +1399,12 @@ export function useDrillSession(appState, setAppState) {
     copyPendingCompletionSeed,
     copySeed,
     runSeed,
+    practiceObjective,
     goToModeSelect,
     goToPractice,
     goToRoute,
     goToStats,
+    goToBingopedia,
     goToSettings,
     toggleLearnPanelVisibility,
     updateSettings,

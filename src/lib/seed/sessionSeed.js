@@ -701,6 +701,48 @@ export function buildSessionSpecFromConfig(
   };
 }
 
+export function buildSessionSpecFromObjectiveIds(
+  objectiveIdsInput,
+  configInput,
+  rngSeed,
+  sessionType = PRACTICE_SESSION_TYPE
+) {
+  const objectiveIds = Array.isArray(objectiveIdsInput)
+    ? objectiveIdsInput.slice()
+    : [];
+
+  if (objectiveIds.length === 0) {
+    throw new Error("Seed payload requires at least one objective id.");
+  }
+
+  for (const objectiveId of objectiveIds) {
+    if (!Object.prototype.hasOwnProperty.call(OBJECTIVE_INDEX_BY_ID, objectiveId)) {
+      throw new Error(`Seed payload contains an unknown objective id: ${objectiveId}`);
+    }
+  }
+
+  const config = normalizeSessionConfigForType({
+    ...configInput,
+    numberOfObjectives: objectiveIds.length
+  }, sessionType);
+
+  if (config.numberOfObjectives !== objectiveIds.length) {
+    throw new Error("Explicit objective seed config must match the objective list length.");
+  }
+
+  const sessionSpec = createSessionSeedPayload({
+    rngSeed,
+    config,
+    objectiveIds,
+    sessionType
+  });
+
+  return {
+    sessionSpec,
+    exportSeed: encodeSessionSeed(sessionSpec)
+  };
+}
+
 export function buildSessionSpecFromPhrase(seedPhrase, sessionType = PRACTICE_SESSION_TYPE) {
   const normalizedPhrase = normalizeSeedPhrase(seedPhrase);
   const rngSeed = hashSeedPhrase(normalizedPhrase);
