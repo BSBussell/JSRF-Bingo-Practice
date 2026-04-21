@@ -6,6 +6,7 @@ import {
 export function ModeSelect({
   onSelectPractice,
   onSelectRoute,
+  onSelectStats,
   onSelectSettings,
   hasActiveSession,
   currentSessionType
@@ -52,6 +53,19 @@ export function ModeSelect({
           </div>
           <button className="primary-button" type="button" onClick={onSelectRoute}>
             {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? "Resume Route" : "Start Route"}
+          </button>
+        </article>
+        <article className="mode-card">
+          <div>
+            <p className="mode-label">Progress Lab</p>
+            <h2>Stats</h2>
+            <p>
+              Review seed PBs, route runbacks, area split tables, and grouped run history.
+              Clean up old runs without resetting the rest of your progress.
+            </p>
+          </div>
+          <button className="primary-button" type="button" onClick={onSelectStats}>
+            Open Stats
           </button>
         </article>
         <article className="mode-card">

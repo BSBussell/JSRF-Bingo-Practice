@@ -12,6 +12,7 @@ export function Header({
   onOpenHome,
   onSelectPractice,
   onSelectRoute,
+  onSelectStats,
   onSelectSettings
 }) {
   const showReleaseSlot = Boolean(releaseAction) || releaseActionLoading;
@@ -39,6 +40,13 @@ export function Header({
         >
           Route
           {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? <span className="nav-badge">Live</span> : null}
+        </button>
+        <button
+          className={`nav-link ${activeMode === "stats" ? "is-active" : ""}`}
+          type="button"
+          onClick={onSelectStats}
+        >
+          Stats
         </button>
         <button
           className={`nav-link ${activeMode === "settings" ? "is-active" : ""}`}

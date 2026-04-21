@@ -13,6 +13,28 @@ test("createDefaultAppState initializes pendingCompletion as null", () => {
   assert.equal(state.pendingCompletion, null);
 });
 
+test("normalizeAppState preserves stats mode selection", () => {
+  const state = normalizeAppState({
+    selectedMode: "stats"
+  });
+
+  assert.equal(state.selectedMode, "stats");
+});
+
+test("normalizeAppState preserves trimmed custom seed names", () => {
+  const state = normalizeAppState({
+    seedNamesByExportSeed: {
+      "BNGSD3.abcdefg123": "  Route practice  ",
+      "BNGSD3.blank": "   ",
+      "": "Missing seed"
+    }
+  });
+
+  assert.deepEqual(state.seedNamesByExportSeed, {
+    "BNGSD3.abcdefg123": "Route practice"
+  });
+});
+
 test("normalizeAppState preserves autoOpenPopout setting", () => {
   const state = normalizeAppState({
     settings: {

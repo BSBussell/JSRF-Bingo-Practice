@@ -343,6 +343,21 @@ function normalizeBestTimesByObjective(bestTimesByObjective) {
   );
 }
 
+function normalizeSeedNamesByExportSeed(value) {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([exportSeed, name]) => [
+        typeof exportSeed === "string" ? exportSeed : "",
+        typeof name === "string" ? name.trim().slice(0, 60) : ""
+      ])
+      .filter(([exportSeed, name]) => exportSeed && name)
+  );
+}
+
 function normalizePendingCompletion(pendingCompletion) {
   if (!pendingCompletion || typeof pendingCompletion !== "object") {
     return null;
@@ -484,6 +499,7 @@ export function createDefaultAppState() {
     startCountdown: null,
     pendingCompletion: null,
     history: [],
+    seedNamesByExportSeed: {},
     bestTimesByObjective: {},
     aggregateStats: createEmptyAggregateStats()
   };
@@ -504,6 +520,8 @@ export function normalizeAppState(value) {
   const selectedMode =
     rawSelectedMode === "settings"
       ? "settings"
+      : rawSelectedMode === "stats"
+        ? "stats"
       : rawSelectedMode === ROUTE_SESSION_TYPE
         ? ROUTE_SESSION_TYPE
       : rawSelectedMode === PRACTICE_SESSION_TYPE ||
@@ -522,6 +540,7 @@ export function normalizeAppState(value) {
     startCountdown: normalizeStartCountdown(value.startCountdown),
     pendingCompletion: normalizePendingCompletion(value.pendingCompletion),
     history: Array.isArray(value.history) ? value.history.map(normalizeHistoryEntry) : [],
+    seedNamesByExportSeed: normalizeSeedNamesByExportSeed(value.seedNamesByExportSeed),
     bestTimesByObjective: normalizeBestTimesByObjective(value.bestTimesByObjective),
     aggregateStats: {
       squareByArea:

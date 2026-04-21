@@ -2,7 +2,6 @@ import { CompletionPanel } from "./components/CompletionPanel.jsx";
 import { Header } from "./components/Header.jsx";
 import { DrillCard } from "./components/DrillCard.jsx";
 import { DustyBackdrop } from "./components/DustyBackdrop.jsx";
-import { HistoryPanel } from "./components/HistoryPanel.jsx";
 import { LearnPanel } from "./components/LearnPanel.jsx";
 import { ModeSelect } from "./components/ModeSelect.jsx";
 import { PopoutViewport } from "./components/PopoutViewport.jsx";
@@ -118,11 +117,6 @@ function ModeShell({ drillSession, popoutControl, popoutError, children }) {
       {children}
       {popoutControl ? <div className="drill-popout-row">{popoutControl}</div> : null}
       {popoutError ? <p className="drill-popout-error">{popoutError}</p> : null}
-      <HistoryPanel
-        history={drillSession.history}
-        onDeleteEntry={drillSession.deleteHistoryEntry}
-      />
-      <StatsPanel stats={drillSession.stats} />
     </div>
   );
 }
@@ -331,6 +325,21 @@ function SettingsModeView({
         onResetAllData={drillSession.resetAllData}
       />
     </div>
+  );
+}
+
+function StatsModeView({ drillSession }) {
+  return (
+    <StatsPanel
+      stats={drillSession.stats}
+      history={drillSession.history}
+      seedNamesByExportSeed={drillSession.seedNamesByExportSeed}
+      onDeleteEntry={drillSession.deleteHistoryEntry}
+      onDeleteRun={drillSession.deleteHistoryRun}
+      onCopySeed={drillSession.copySeed}
+      onRunSeed={drillSession.runSeed}
+      onRenameSeed={drillSession.renameSeed}
+    />
   );
 }
 
@@ -557,6 +566,7 @@ export default function App() {
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
         onSelectRoute={drillSession.goToRoute}
+        onSelectStats={drillSession.goToStats}
         onSelectSettings={drillSession.goToSettings}
         currentSessionType={drillSession.currentSession?.sessionType ?? null}
       />
@@ -590,11 +600,14 @@ export default function App() {
             onBeginHotkeyCapture={setCapturingAction}
             onCancelHotkeyCapture={() => setCapturingAction(null)}
           />
+        ) : activeMode === "stats" ? (
+          <StatsModeView drillSession={drillSession} />
         ) : (
           <ModeSelect
             hasActiveSession={Boolean(drillSession.currentSession)}
             onSelectPractice={drillSession.goToPractice}
             onSelectRoute={drillSession.goToRoute}
+            onSelectStats={drillSession.goToStats}
             onSelectSettings={drillSession.goToSettings}
             currentSessionType={drillSession.currentSession?.sessionType ?? null}
           />

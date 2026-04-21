@@ -23,6 +23,7 @@ import {
   skipSessionSplit
 } from "../lib/session/drillSession.js";
 import { mergeSessionConfigIntoDrillSettings } from "../lib/session/sessionConfig.js";
+import { resolveSeedInput } from "../lib/seed/sessionSeed.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
   buildStatsViewModel,
@@ -1067,6 +1068,16 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
+  function goToStats() {
+    pendingRouteFeedbackRef.current = null;
+    setSessionFeedback(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: "stats",
+      startCountdown: null
+    }));
+  }
+
   function goToSettings() {
     pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
@@ -1164,6 +1175,51 @@ export function useDrillSession(appState, setAppState) {
     });
   }
 
+  function deleteHistoryRun(sessionId) {
+    updateState((previousValue) => {
+      if (typeof sessionId !== "string" || !sessionId) {
+        return previousValue;
+      }
+
+      const nextHistory = previousValue.history.filter((entry) => entry?.sessionId !== sessionId);
+      if (nextHistory.length === previousValue.history.length) {
+        return previousValue;
+      }
+
+      const rebuiltPerformance = rebuildPerformanceState(nextHistory);
+
+      return {
+        ...previousValue,
+        history: nextHistory,
+        ...rebuiltPerformance
+      };
+    });
+  }
+
+  function renameSeed(exportSeed, name) {
+    updateState((previousValue) => {
+      if (typeof exportSeed !== "string" || !exportSeed) {
+        return previousValue;
+      }
+
+      const normalizedName = typeof name === "string" ? name.trim().slice(0, 60) : "";
+      const nextSeedNames = {
+        ...previousValue.seedNamesByExportSeed
+      };
+
+      if (normalizedName) {
+        nextSeedNames[exportSeed] = normalizedName;
+      } else {
+        delete nextSeedNames[exportSeed];
+      }
+
+      return {
+        ...previousValue,
+        seedNamesByExportSeed: nextSeedNames
+      };
+    });
+  }
+
   function clearPendingCompletion() {
     updateState((previousValue) => ({
       ...previousValue,
@@ -1200,8 +1256,7 @@ export function useDrillSession(appState, setAppState) {
     }
   }
 
-  async function copyPendingCompletionSeed() {
-    const exportSeed = pendingCompletion?.exportSeed;
+  async function copySeed(exportSeed) {
     if (!exportSeed) {
       return false;
     }
@@ -1214,6 +1269,37 @@ export function useDrillSession(appState, setAppState) {
       await globalThis.navigator.clipboard.writeText(exportSeed);
       return true;
     } catch {
+      return false;
+    }
+  }
+
+  async function copyPendingCompletionSeed() {
+    return copySeed(pendingCompletion?.exportSeed);
+  }
+
+  function runSeed(exportSeed, sessionType = PRACTICE_SESSION_TYPE) {
+    if (typeof exportSeed !== "string" || !exportSeed) {
+      return false;
+    }
+
+    const resolvedSeed = resolveSeedInput(exportSeed, normalizeSessionType(sessionType));
+    if (!resolvedSeed.sessionSpec?.objectiveIds?.length) {
+      return false;
+    }
+
+    const firstObjectiveId = resolvedSeed.sessionSpec.objectiveIds[0];
+    if (!firstObjectiveId || !objectivesById[firstObjectiveId]) {
+      return false;
+    }
+
+    try {
+      startSession({
+        sessionSpec: resolvedSeed.sessionSpec,
+        exportSeed: resolvedSeed.exportSeed
+      });
+      return true;
+    } catch (error) {
+      console.warn("Failed to run seed", error);
       return false;
     }
   }
@@ -1251,6 +1337,7 @@ export function useDrillSession(appState, setAppState) {
     currentObjective,
     routeSlots,
     history,
+    seedNamesByExportSeed: appState.seedNamesByExportSeed,
     stats,
     phaseInfo,
     pendingCompletion,
@@ -1274,15 +1361,20 @@ export function useDrillSession(appState, setAppState) {
     clearPendingCompletion,
     replayPendingCompletion,
     copyPendingCompletionSeed,
+    copySeed,
+    runSeed,
     goToModeSelect,
     goToPractice,
     goToRoute,
+    goToStats,
     goToSettings,
     toggleLearnPanelVisibility,
     updateSettings,
     updateHotkey,
     clearHotkey,
     resetAllData,
-    deleteHistoryEntry
+    deleteHistoryEntry,
+    deleteHistoryRun,
+    renameSeed
   };
 }
