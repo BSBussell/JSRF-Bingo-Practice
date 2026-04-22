@@ -1,6 +1,12 @@
 import { useMemo, useState } from "react";
 
-import { resolveLearningVideoManifest, tapeVideosByArea } from "../data/learnVideos.js";
+import {
+  PRIMARY_LEARNING_VIDEO_PLAYLIST_URL,
+  buildBingopediaLearningVideoSources,
+  buildBingopediaMiscTechRows,
+  buildBingopediaTapeRow,
+  getLearningVideoEmptyLabel
+} from "../data/learnVideos.js";
 import { formatDuration } from "../hooks/useTimer.js";
 import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
 import {
@@ -10,9 +16,6 @@ import {
   groupBingopediaSquaresByArea
 } from "../lib/stats/bingopedia.js";
 import { LearningVideoPanel } from "./LearningVideoPanel.jsx";
-
-const NAESTRINUS_CATALOG_URL =
-  "https://youtube.com/playlist?list=PLDHncjR554MyBVGa7Z9WUU-fIC5d_BFrT&si=KjUa_90Cn3AkoNIK";
 
 const FILTER_OPTIONS = [
   {
@@ -177,12 +180,64 @@ function SquareRow({
   );
 }
 
+function MiscTechRow({
+  row,
+  selected,
+  onSelect
+}) {
+  return (
+    <button
+      className={`bingopedia-square-row bingopedia-misc-tech-row ${selected ? "is-active" : ""}`}
+      type="button"
+      onClick={() => onSelect(row)}
+    >
+      <span className="bingopedia-square-main">
+        <strong>{row.title}</strong>
+        <span className="bingopedia-square-tags">
+          <span>{row.groupLabel}</span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function TapeRow({
+  row,
+  selected,
+  onSelect
+}) {
+  return (
+    <button
+      className={`bingopedia-square-row bingopedia-tape-row ${selected ? "is-active" : ""}`}
+      type="button"
+      onClick={() => onSelect(row)}
+    >
+      <span className="bingopedia-square-main">
+        <strong>{row.title}</strong>
+        <span className="bingopedia-square-tags">
+          <span>Tape Guide</span>
+        </span>
+      </span>
+      <span className="bingopedia-square-metrics">
+        <span>{formatStatDuration(row.stats?.bestMs)} PB</span>
+        <span>{row.stats?.completions ?? 0} collected</span>
+      </span>
+    </button>
+  );
+}
+
 function SquareList({
   selectedAreaSummary,
   searchActive,
   groupedRows,
   selectedSquareId,
-  onSelectSquare
+  tapeRow,
+  selectedTapeId,
+  miscTechRows,
+  selectedMiscTechId,
+  onSelectSquare,
+  onSelectTape,
+  onSelectMiscTech
 }) {
   const heading = searchActive
     ? "Matching Squares"
@@ -228,6 +283,38 @@ function SquareList({
           ))}
         </div>
       )}
+
+      {!searchActive && tapeRow ? (
+        <section className="bingopedia-square-group bingopedia-tape-group">
+          <h3>Tape</h3>
+          <div className="bingopedia-square-list">
+            <TapeRow
+              row={tapeRow}
+              selected={tapeRow.id === selectedTapeId}
+              onSelect={onSelectTape}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {!searchActive && miscTechRows.length > 0 ? (
+        <section className="bingopedia-square-group bingopedia-misc-tech-group">
+          <h3>
+            Misc. Tech
+            <span>{miscTechRows.length}</span>
+          </h3>
+          <div className="bingopedia-square-list">
+            {miscTechRows.map((row) => (
+              <MiscTechRow
+                key={row.id}
+                row={row}
+                selected={row.id === selectedMiscTechId}
+                onSelect={onSelectMiscTech}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -296,31 +383,7 @@ function SquareDetail({
   onBack,
   onPractice
 }) {
-  const sources = useMemo(() => {
-    if (!row) {
-      return [];
-    }
-
-    const squareVideo = resolveLearningVideoManifest(row.objective);
-    const tapeVideo = row.needsTape ? tapeVideosByArea[row.area] ?? null : null;
-
-    return [
-      squareVideo
-        ? {
-            key: "square",
-            label: "Square Guide",
-            manifest: squareVideo
-          }
-        : null,
-      tapeVideo
-        ? {
-            key: "tape",
-            label: "Tape Guide",
-            manifest: tapeVideo
-          }
-        : null
-    ].filter(Boolean);
-  }, [row]);
+  const sources = useMemo(() => buildBingopediaLearningVideoSources(row), [row]);
 
   if (!row) {
     return <AreaSummary areaSummary={areaSummary} />;
@@ -349,7 +412,7 @@ function SquareDetail({
           sources={sources}
           autoplay={autoplay}
           muted={muted}
-          emptyLabel="No mapped video for this square."
+          emptyLabel={getLearningVideoEmptyLabel()}
           className="bingopedia-video-panel"
         />
       </section>
@@ -375,13 +438,102 @@ function SquareDetail({
           <MetricCard label="skips" value={row.skips} />
           <MetricCard label="average" value={formatStatDuration(row.averageMs)} />
           <MetricCard label="last clear" value={formatDate(row.lastClearAt)} />
-          {row.needsTape ? <MetricCard label="tape PB" value={formatStatDuration(row.tapePbMs)} /> : null}
         </div>
       </section>
 
       <section className="bingopedia-recent-section">
         <h3>Recent Attempts</h3>
         <RecentAttempts attempts={row.recentAttempts} />
+      </section>
+    </div>
+  );
+}
+
+function TapeDetail({
+  row,
+  areaSummary,
+  autoplay,
+  muted,
+  onBack
+}) {
+  const stats = row.stats ?? {};
+
+  return (
+    <div className="bingopedia-square-detail">
+      <button className="secondary-button bingopedia-mobile-back" type="button" onClick={onBack}>
+        Back to Squares
+      </button>
+
+      <div className="bingopedia-detail-heading">
+        <div>
+          <p className="eyebrow">Tape Guide</p>
+          <h2>{row.title}</h2>
+          <p className="bingopedia-detail-meta">
+            <span>{areaSummary?.label ?? row.area}</span>
+            <span>Tape</span>
+          </p>
+        </div>
+      </div>
+
+      <section className="bingopedia-detail-section">
+        <h3>Guide Video</h3>
+        <LearningVideoPanel
+          sources={row.sources}
+          autoplay={autoplay}
+          muted={muted}
+          emptyLabel={getLearningVideoEmptyLabel("No mapped tape video for this area.")}
+          className="bingopedia-video-panel"
+        />
+      </section>
+
+      <section className="bingopedia-detail-section">
+        <h3>Performance</h3>
+        <div className="bingopedia-metric-grid">
+          <MetricCard label="PB" value={formatStatDuration(stats.bestMs)} />
+          <MetricCard label="collected" value={stats.completions ?? 0} />
+          <MetricCard label="average" value={formatStatDuration(stats.averageMs)} />
+          <MetricCard label="last collected" value={formatDate(stats.lastCollectedAt)} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MiscTechDetail({
+  row,
+  areaSummary,
+  autoplay,
+  muted,
+  onBack
+}) {
+  const areaLabel = row.area ? areaSummary?.label ?? row.area : "Unrecognized";
+
+  return (
+    <div className="bingopedia-square-detail">
+      <button className="secondary-button bingopedia-mobile-back" type="button" onClick={onBack}>
+        Back to Squares
+      </button>
+
+      <div className="bingopedia-detail-heading">
+        <div>
+          <p className="eyebrow">Misc. Tech</p>
+          <h2>{row.title}</h2>
+          <p className="bingopedia-detail-meta">
+            <span>{areaLabel}</span>
+            <span>{row.groupLabel}</span>
+          </p>
+        </div>
+      </div>
+
+      <section className="bingopedia-detail-section">
+        <h3>Guide Video</h3>
+        <LearningVideoPanel
+          sources={row.sources}
+          autoplay={autoplay}
+          muted={muted}
+          emptyLabel={getLearningVideoEmptyLabel("No mapped video for this tech entry.")}
+          className="bingopedia-video-panel"
+        />
       </section>
     </div>
   );
@@ -406,6 +558,8 @@ export function BingopediaPanel({
   const firstArea = viewModel.districts[0]?.areas[0]?.area ?? "";
   const [selectedArea, setSelectedArea] = useState(firstArea);
   const [selectedSquareId, setSelectedSquareId] = useState("");
+  const [selectedTapeId, setSelectedTapeId] = useState("");
+  const [selectedMiscTechId, setSelectedMiscTechId] = useState("");
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState(BINGOPEDIA_FILTERS.ALL);
@@ -413,6 +567,26 @@ export function BingopediaPanel({
   const selectedAreaSummary = viewModel.areaSummaries[selectedArea] ?? null;
   const selectedSquare = viewModel.squares.find((row) => row.id === selectedSquareId) ?? null;
   const searchActive = search.trim().length > 0 || activeFilter !== BINGOPEDIA_FILTERS.ALL;
+  const tapeRow = useMemo(() => {
+    if (searchActive) {
+      return null;
+    }
+
+    const row = buildBingopediaTapeRow(selectedArea);
+    return row
+      ? {
+          ...row,
+          stats: selectedAreaSummary?.tapeStats ?? {}
+        }
+      : null;
+  }, [searchActive, selectedArea, selectedAreaSummary]);
+  const selectedTape = tapeRow?.id === selectedTapeId ? tapeRow : null;
+  const miscTechRows = useMemo(
+    () => (searchActive ? [] : buildBingopediaMiscTechRows(selectedArea)),
+    [searchActive, selectedArea]
+  );
+  const selectedMiscTech =
+    miscTechRows.find((row) => row.id === selectedMiscTechId) ?? null;
   const filteredRows = searchActive
     ? filterBingopediaSquares(viewModel.squares, {
         search,
@@ -436,6 +610,8 @@ export function BingopediaPanel({
   function selectArea(area) {
     setSelectedArea(area);
     setSelectedSquareId("");
+    setSelectedTapeId("");
+    setSelectedMiscTechId("");
     setDetailPanelOpen(false);
     setPracticeStatus("");
   }
@@ -443,6 +619,29 @@ export function BingopediaPanel({
   function selectSquare(row) {
     setSelectedArea(row.area);
     setSelectedSquareId(row.id);
+    setSelectedTapeId("");
+    setSelectedMiscTechId("");
+    setDetailPanelOpen(true);
+    setPracticeStatus("");
+  }
+
+  function selectTape(row) {
+    setSelectedArea(row.area);
+    setSelectedSquareId("");
+    setSelectedTapeId(row.id);
+    setSelectedMiscTechId("");
+    setDetailPanelOpen(true);
+    setPracticeStatus("");
+  }
+
+  function selectMiscTech(row) {
+    if (row.area) {
+      setSelectedArea(row.area);
+    }
+
+    setSelectedSquareId("");
+    setSelectedTapeId("");
+    setSelectedMiscTechId(row.id);
     setDetailPanelOpen(true);
     setPracticeStatus("");
   }
@@ -457,7 +656,7 @@ export function BingopediaPanel({
       <div className="panel-heading compact">
         <div>
           <p className="eyebrow bingopedia-catalog-eyebrow">
-            <a href={NAESTRINUS_CATALOG_URL} target="_blank" rel="noreferrer">
+            <a href={PRIMARY_LEARNING_VIDEO_PLAYLIST_URL} target="_blank" rel="noreferrer">
               Video Library Compiled by Naestrinus and others!
             </a>
           </p>
@@ -482,18 +681,42 @@ export function BingopediaPanel({
           searchActive={searchActive}
           groupedRows={groupedRows}
           selectedSquareId={selectedSquareId}
+          tapeRow={tapeRow}
+          selectedTapeId={selectedTapeId}
+          miscTechRows={miscTechRows}
+          selectedMiscTechId={selectedMiscTechId}
           onSelectSquare={selectSquare}
+          onSelectTape={selectTape}
+          onSelectMiscTech={selectMiscTech}
         />
-        <div className={`bingopedia-pane bingopedia-detail-pane ${selectedSquare ? "is-selected" : ""}`}>
-          <SquareDetail
-            row={selectedSquare}
-            areaSummary={selectedAreaSummary}
-            autoplay={settings.learnVideoAutoplay}
-            muted={settings.learnAudioMuted}
-            practiceStatus={practiceStatus}
-            onBack={() => setDetailPanelOpen(false)}
-            onPractice={practiceSquare}
-          />
+        <div className={`bingopedia-pane bingopedia-detail-pane ${selectedSquare || selectedTape || selectedMiscTech ? "is-selected" : ""}`}>
+          {selectedTape ? (
+            <TapeDetail
+              row={selectedTape}
+              areaSummary={selectedAreaSummary}
+              autoplay={settings.learnVideoAutoplay}
+              muted={settings.learnAudioMuted}
+              onBack={() => setDetailPanelOpen(false)}
+            />
+          ) : selectedMiscTech ? (
+            <MiscTechDetail
+              row={selectedMiscTech}
+              areaSummary={selectedAreaSummary}
+              autoplay={settings.learnVideoAutoplay}
+              muted={settings.learnAudioMuted}
+              onBack={() => setDetailPanelOpen(false)}
+            />
+          ) : (
+            <SquareDetail
+              row={selectedSquare}
+              areaSummary={selectedAreaSummary}
+              autoplay={settings.learnVideoAutoplay}
+              muted={settings.learnAudioMuted}
+              practiceStatus={practiceStatus}
+              onBack={() => setDetailPanelOpen(false)}
+              onPractice={practiceSquare}
+            />
+          )}
         </div>
       </div>
     </section>

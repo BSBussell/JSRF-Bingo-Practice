@@ -20,6 +20,7 @@ test("buildBingopediaViewModel groups squares by district and area with derived 
     {
       sessionType: "practice",
       objectiveId: dogenGraffiti.id,
+      area: "Dogen",
       result: "complete",
       durationMs: 12000,
       endedAt: 1000,
@@ -28,6 +29,7 @@ test("buildBingopediaViewModel groups squares by district and area with derived 
     {
       sessionType: "practice",
       objectiveId: dogenGraffiti.id,
+      area: "Dogen",
       result: "skip",
       durationMs: null,
       endedAt: 2000,
@@ -36,8 +38,10 @@ test("buildBingopediaViewModel groups squares by district and area with derived 
     {
       sessionType: "practice",
       objectiveId: dogenGraffiti.id,
+      area: "Dogen",
       result: "complete",
       durationMs: 9000,
+      tapeDurationMs: 3000,
       endedAt: 3000,
       sessionId: "new"
     },
@@ -57,6 +61,16 @@ test("buildBingopediaViewModel groups squares by district and area with derived 
       [dogenGraffiti.id]: {
         durationMs: 8000
       }
+    },
+    aggregateStats: {
+      tapeByArea: {
+        Dogen: {
+          attempts: 1,
+          completions: 1,
+          totalDurationMs: 3000,
+          bestMs: 3000
+        }
+      }
     }
   });
 
@@ -73,6 +87,12 @@ test("buildBingopediaViewModel groups squares by district and area with derived 
   assert.equal(row.averageMs, 10500);
   assert.equal(row.lastClearAt, 3000);
   assert.equal(row.recentAttempts.length, 3);
+  assert.deepEqual(dogenArea.tapeStats, {
+    completions: 1,
+    bestMs: 3000,
+    averageMs: 3000,
+    lastCollectedAt: 3000
+  });
 });
 
 test("filterBingopediaSquares applies search and chips", () => {

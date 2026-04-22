@@ -28,17 +28,43 @@ Thanks to the community that developed these resources and made building this to
    npm install
    ```
 
-2. Start the Vite dev server:
+2. Refresh learn-video data when the source playlists change:
+
+   ```bash
+   npm run learn-videos:generate
+   ```
+
+   This uses `yt-dlp` from your PATH to read playlist metadata only. The runtime
+   app does not fetch YouTube metadata, does not use API keys, and only consumes
+   `src/data/generated/learningVideoLibrary.json`.
+
+3. Start the Vite dev server:
 
    ```bash
    npm run dev
    ```
 
-3. Build the browser app:
+4. Build the browser app:
 
    ```bash
    npm run build
    ```
+
+## Learn video manifest
+
+Learn videos are manifest-first. `scripts/generate-learning-video-manifest.mjs`
+uses `yt-dlp` to ingest the community playlists and writes the generated runtime
+manifest to `src/data/generated/learningVideoLibrary.json`. The generated
+manifest owns square guides, tape guides, area misc. tech videos, and
+unrecognized misc. tech entries.
+
+Some unconventional playlist titles are matched through non-runtime title aliases
+in `scripts/data/learning-video-title-aliases.json`. These aliases are generator
+input only and should not include video IDs.
+
+Do not add hardcoded objective, square, area, or tape video maps back into
+runtime code. Runtime code should interpret the generated manifest and show an
+empty state when a manifest entry is absent.
 
 ## Tauri desktop development
 
@@ -71,4 +97,3 @@ All persistence currently lives in `localStorage` under the `jsrf-bingo-trainer`
 - Session history
 - Best times per objective
 - Aggregate completion stats by area and by type
-

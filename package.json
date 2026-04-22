@@ -9,6 +9,7 @@
     "test": "node --test",
     "preview": "vite preview",
     "drill:report": "node ./scripts/drill-generator-report.mjs",
+    "learn-videos:generate": "node ./scripts/generate-learning-video-manifest.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"

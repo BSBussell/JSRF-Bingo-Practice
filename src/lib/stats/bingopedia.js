@@ -66,6 +66,49 @@ function buildRecentAttempt(entry) {
   };
 }
 
+function buildTapeStats(area, {
+  history,
+  aggregateStats
+}) {
+  const entries = (Array.isArray(history) ? history : [])
+    .filter(
+      (entry) =>
+        normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
+        entry.area === area &&
+        entry.result === "complete" &&
+        isFiniteNumber(entry.tapeDurationMs)
+    )
+    .slice()
+    .sort((left, right) => {
+      const leftTime = isFiniteNumber(left?.endedAt) ? left.endedAt : 0;
+      const rightTime = isFiniteNumber(right?.endedAt) ? right.endedAt : 0;
+      return rightTime - leftTime;
+    });
+  const bucket = aggregateStats?.tapeByArea?.[area];
+  const completions = isFiniteNumber(bucket?.completions) ? bucket.completions : entries.length;
+  const bestMs = isFiniteNumber(bucket?.bestMs)
+    ? bucket.bestMs
+    : entries.length > 0
+      ? Math.min(...entries.map((entry) => entry.tapeDurationMs))
+      : null;
+  const averageMs =
+    completions > 0 && isFiniteNumber(bucket?.totalDurationMs)
+      ? Math.round(bucket.totalDurationMs / completions)
+      : entries.length > 0
+        ? Math.round(
+            entries.reduce((sum, entry) => sum + entry.tapeDurationMs, 0) / entries.length
+          )
+        : null;
+  const lastCollected = entries.find((entry) => isFiniteNumber(entry.endedAt));
+
+  return {
+    completions,
+    bestMs,
+    averageMs,
+    lastCollectedAt: lastCollected ? lastCollected.endedAt : null
+  };
+}
+
 function objectiveStats({
   objective,
   history,
@@ -129,7 +172,7 @@ function buildSquareRow(objective, options) {
   };
 }
 
-function summarizeArea(area, squareRows) {
+function summarizeArea(area, squareRows, options = {}) {
   const clearedCount = squareRows.filter((row) => row.clears > 0).length;
   const pbRows = squareRows.filter((row) => isFiniteNumber(row.pbMs));
   const bestPbMs = pbRows.length > 0 ? Math.min(...pbRows.map((row) => row.pbMs)) : null;
@@ -140,6 +183,10 @@ function summarizeArea(area, squareRows) {
     squareCount: squareRows.length,
     clearedCount,
     bestPbMs,
+    tapeStats: buildTapeStats(area, {
+      history: options.history,
+      aggregateStats: options.aggregateStats
+    }),
     squares: squareRows
   };
 }
@@ -173,7 +220,12 @@ export function buildBingopediaViewModel(options = {}) {
   const districts = areasByDistrict.map((district) => ({
     district: district.district,
     label: district.label,
-    areas: district.areas.map((area) => summarizeArea(area, squaresByArea[area] ?? []))
+    areas: district.areas.map((area) =>
+      summarizeArea(area, squaresByArea[area] ?? [], {
+        history,
+        aggregateStats
+      })
+    )
   }));
 
   return {

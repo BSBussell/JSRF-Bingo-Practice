@@ -143,7 +143,7 @@ export function LearningVideoPanel({
       {hasVariants ? (
         <div className="learn-variant-menu">
           <button className="secondary-button learn-variant-trigger" type="button">
-            Guide Options
+            Varients
           </button>
           <div className="learn-variant-list" role="menu" aria-label="Guide options">
             {options.map((option) => (

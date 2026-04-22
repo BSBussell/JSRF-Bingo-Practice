@@ -1,0 +1,12 @@
+{
+  "objectives": {
+    "chuo_037": ["Chuo - Canals"],
+    "sewers_071": ["Sewers - Special"],
+    "bp_129": ["Bottom Point - Halfpipe"],
+    "bp_017": ["Bottom Point - Special"],
+    "kibo_019": ["Kibogaoka - Water Tower"],
+    "kibo_unlock_boogie": ["Kibogaoka - Boogie"],
+    "kibo_133": ["Kibogaoka - Tape unlock to tricks", "Kibogaoka - Tape unlock to points"],
+    "sewers_graffiti": ["JSRF Bingo Sewers route"]
+  }
+}

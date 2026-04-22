@@ -1,0 +1,1446 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-22T21:02:34.384Z",
+  "sources": [
+    {
+      "key": "primary",
+      "label": "Naestrinus' Bingopedia",
+      "url": "https://youtube.com/playlist?list=PLDHncjR554MyBVGa7Z9WUU-fIC5d_BFrT",
+      "playlistId": "PLDHncjR554MyBVGa7Z9WUU-fIC5d_BFrT",
+      "entryCount": 176
+    },
+    {
+      "key": "fallback",
+      "label": "Crabbi's Route",
+      "url": "https://youtube.com/playlist?list=PLrqAmeXg8tekWV7QHQb5T3c8TbYxwb-ot",
+      "playlistId": "PLrqAmeXg8tekWV7QHQb5T3c8TbYxwb-ot",
+      "entryCount": 14
+    }
+  ],
+  "objectives": {
+    "dogen_005": {
+      "primary": {
+        "videoId": "k7MPN8ynz1Q",
+        "title": "Dogenzaka - Isolated Platform (faster pick-up, slower exit)",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "9mKRVjCJZI4",
+          "title": "Dogenzaka - Isolated Platform (standard)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dogen_034": {
+      "primary": {
+        "videoId": "uZwXzAH7zhA",
+        "title": "Dogenzaka - Right of Street",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "XoU7-zcfalY",
+          "title": "Dogenzaka - Right of Street into shibuya",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dogen_061": {
+      "primary": {
+        "videoId": "jIiXwCbzEIM",
+        "title": "Dogenzaka - Past Statue",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dogen_092": {
+      "primary": {
+        "videoId": "9Q46Z6wqgPo",
+        "title": "Dogenzaka - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dogen_117": {
+      "primary": {
+        "videoId": "IeU2j0bOgss",
+        "title": "Dogenzaka - Air x3",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dogen_006": {
+      "primary": {
+        "videoId": "u_Bj4QjVm4o",
+        "title": "Dogenzaka - Tricks x20",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dogen_035": {
+      "primary": {
+        "videoId": "KoHafSNvZzc",
+        "title": "Dogenzaka - 50k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dogen_062": {
+      "primary": {
+        "videoId": "t6RUsWb-7-8",
+        "title": "Dogenzaka - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "shibuya_007": {
+      "primary": {
+        "videoId": "Hs3SfUBxa8g",
+        "title": "Shibuya - Top of bus (bus jump version)",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "KTMSSQWsXVM",
+          "title": "Shibuya - Top of bus (hard version)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "7YIrTGH-GBk",
+          "title": "Shibuya - Easy jump for cubby and top of bus",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "shibuya_093": {
+      "primary": {
+        "videoId": "PMsup2HAqU0",
+        "title": "Shibuya - Cubby",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "7YIrTGH-GBk",
+          "title": "Shibuya - Easy jump for cubby and top of bus",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "shibuya_119": {
+      "primary": {
+        "videoId": "25-gtQRzMqo",
+        "title": "Shibuya - Platform (easy version)",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "8RHlcMRDGMs",
+          "title": "Shibuya - Platform (hard version)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "shibuya_036": {
+      "primary": {
+        "videoId": "V9by7NpnWEc",
+        "title": "Shibuya - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "oQdWNqFe50I",
+          "title": "Shibuya - Grind x10 (boosted variant)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "shibuya_063": {
+      "primary": {
+        "videoId": "RoKL7n-JCjk",
+        "title": "Shibuya - Air x3",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "shibuya_094": {
+      "primary": {
+        "videoId": "-0kKnI07KPY",
+        "title": "Shibuya - 25 Tricks",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "shibuya_121": {
+      "primary": {
+        "videoId": "lEaAXERJKMM",
+        "title": "Shibuya - 100k Points",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "4Fo1M3wlhfI",
+          "title": "Shibuya - 100k Points (boosted variant)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "shibuya_008": {
+      "primary": {
+        "videoId": "BRUcI5A9MNE",
+        "title": "Shibuya - Special (13 Platforms)",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "H3qOuBI7vnc",
+          "title": "Shibuya - Special (Easier)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "Znq5t6SzJwQ",
+          "title": "Shibuya - Special (boosted variant)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "chuo_037": {
+      "primary": {
+        "videoId": "RXAkh0a9eoA",
+        "title": "Chuo - Canals",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_064": {
+      "primary": {
+        "videoId": "Fs8dUnlUhC8",
+        "title": "Chuo - Cubby",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_095": {
+      "primary": {
+        "videoId": "xdEvqjVn4jg",
+        "title": "Chuo - South of Hayashi",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_122": {
+      "primary": {
+        "videoId": "U0597XfsLO4",
+        "title": "Chuo - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_009": {
+      "primary": {
+        "videoId": "rJ57-yy5P_0",
+        "title": "Chuo - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_038": {
+      "primary": {
+        "videoId": "MUZTMqbRrA0",
+        "title": "Chuo - Tricks x30",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "oJ2kv4Gi35g",
+          "title": "Chuo Street - Tricks x30 (Easier, but forces grind unlock)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "chuo_065": {
+      "primary": {
+        "videoId": "lV0EhH2NsyE",
+        "title": "Chuo - Points 60k",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "chuo_096": {
+      "primary": {
+        "videoId": "ikbNJDK2VCk",
+        "title": "Chuo - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_010": {
+      "primary": {
+        "videoId": "wUg5q-Je50U",
+        "title": "RDH - Top of Station (boostless)",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "ruFzt-jTL8A",
+          "title": "RDH - Top of Station (fastest)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "zEkbSCPSFA8",
+          "title": "RDH - Top of Station (easier)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "rdh_039": {
+      "primary": {
+        "videoId": "IAuok30QTDU",
+        "title": "RDH - Platform above Cops 2",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "Jp2QpC4y7Ds",
+          "title": "RDH - Platform above cops 2 (slower, to use if other souls are on the way)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "rdh_123": {
+      "primary": {
+        "videoId": "NL3wtsyqicM",
+        "title": "RDH - Sauna",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "uV5OPOAXeAA",
+          "title": "RDH - Sauna (Alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "rdh_067": {
+      "primary": {
+        "videoId": "SDJU1Hzgm0c",
+        "title": "RDH - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_097": {
+      "primary": {
+        "videoId": "JW-wyB92rMk",
+        "title": "RDH - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_124": {
+      "primary": {
+        "videoId": "mtrpTOJGtMw",
+        "title": "RDH - Tricks x35",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_011": {
+      "primary": {
+        "videoId": "bPI5txg08A0",
+        "title": "RDH - 40k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_040": {
+      "primary": {
+        "videoId": "Z7-RvFZnFOA",
+        "title": "RDH - Special",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "fiCAgHplqNk",
+          "title": "RDH - Special (boosted version)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "99th_068": {
+      "primary": {
+        "videoId": "ytwSCeHH1XE",
+        "title": "99th Street - Center of Dark",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_098": {
+      "primary": {
+        "videoId": "QhBmAitb4kI",
+        "title": "99th Street -  Light Wallride",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_126": {
+      "primary": {
+        "videoId": "5GLTdZbDujc",
+        "title": "99th Street - Dark Wallride",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_012": {
+      "primary": {
+        "videoId": "5zWmUvw17T0",
+        "title": "99th Street - Grind x15",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "EhJwY6t1Lhc",
+          "title": "99th Street - Grind x15 Exit",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "99th_041": {
+      "primary": {
+        "videoId": "jvsgLOUmzzc",
+        "title": "99th Street - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_069": {
+      "primary": {
+        "videoId": "Lae8bP0M0bc",
+        "title": "99th Street - Tricks x40",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_099": {
+      "primary": {
+        "videoId": "Jrs5x7RgCbU",
+        "title": "99th Street - 100k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_127": {
+      "primary": {
+        "videoId": "a9OLu34AvoU",
+        "title": "99th Street - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sewers_013": {
+      "primary": {
+        "videoId": "f5PiY9Vstl4",
+        "title": "Sewers - Entrance",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sewers_042": {
+      "primary": {
+        "videoId": "g2y0zDD5SPk",
+        "title": "Sewers - Center Structure",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sewers_070": {
+      "primary": {
+        "videoId": "HEY8iS7CueQ",
+        "title": "Sewers - Floor 1 to 2",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "PRHpJNwqOr4",
+          "title": "Sewers - Floor 1 to 2 (halfpipe jump)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "afu586begKA",
+          "title": "Sewers - Floor 1 to 2 (easy mode)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "sewers_100": {
+      "primary": {
+        "videoId": "C-X0oFBF_dI",
+        "title": "Sewers - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "_jdOLPXvLMo",
+          "title": "Sewers - Grind x10 (alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "sewers_128": {
+      "primary": {
+        "videoId": "hem1myZkFFU",
+        "title": "Sewers - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sewers_015": {
+      "primary": {
+        "videoId": "Mz1Ru5ocg08",
+        "title": "Sewers - Tricks x45",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "rMbba6y1SRc",
+          "title": "Sewers - Tricks x45 (Alternative unlock spot and boostless pickup)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "sewers_043": {
+      "primary": {
+        "videoId": "-VbRsEgV794",
+        "title": "Sewers - Points 100k",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sewers_071": {
+      "primary": {
+        "videoId": "Kk3K7j4smMc",
+        "title": "Sewers - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_016": {
+      "primary": {
+        "videoId": "bS58OTU2JZo",
+        "title": "Bottom Point - Catwalk PJ Room 3",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_101": {
+      "primary": {
+        "videoId": "vTtwDlCFNpY",
+        "title": "Bottom Point - Catwalk Near Cube",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_129": {
+      "primary": {
+        "videoId": "KBwOXvsfR0Y",
+        "title": "Bottom Point - Halfpipe",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_044": {
+      "primary": {
+        "videoId": "QVfF--mDnW8",
+        "title": "Bottom Point - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "OvVryErBt50",
+          "title": "Bottom Point - Grind x10 (easier jump)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "bp_072": {
+      "primary": {
+        "videoId": "6_ntyUCoNLY",
+        "title": "Bottom Point - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_102": {
+      "primary": {
+        "videoId": "4BJQgtRMRvo",
+        "title": "Bottom Point - Tricks x50",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_130": {
+      "primary": {
+        "videoId": "5Us_C_FTkQ4",
+        "title": "Bottom Point - 50k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_017": {
+      "primary": {
+        "videoId": "IJGMKZicF3o",
+        "title": "Bottom Point - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_045": {
+      "primary": {
+        "videoId": "kKWArXi9Wr0",
+        "title": "Hikage - Cubby",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_073": {
+      "primary": {
+        "videoId": "zw3iE6Do6Ik",
+        "title": "Hikage - Crane",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_103": {
+      "primary": {
+        "videoId": "hj4ikEPXFXc",
+        "title": "Hikage - Center Floating",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_131": {
+      "primary": {
+        "videoId": "qVZ0lzBoJXk",
+        "title": "Hikage - Grind x20",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "ifftfidu18Y",
+          "title": "Hikage - Grind x20 (Alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "hikage_018": {
+      "primary": {
+        "videoId": "a0cscV0gFXQ",
+        "title": "Hikage - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_046": {
+      "primary": {
+        "videoId": "7HIRVehcw2k",
+        "title": "Hikage - Tricks x55",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_074": {
+      "primary": {
+        "videoId": "OLe1DKnb_To",
+        "title": "Hikage - 300k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hikage_104": {
+      "primary": {
+        "videoId": "8nBC_-OiNJQ",
+        "title": "Hikage - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_019": {
+      "primary": {
+        "videoId": "xTC7y3iSRYQ",
+        "title": "Kibogaoka - Water Tower",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_047": {
+      "primary": {
+        "videoId": "HFtSNVOYYks",
+        "title": "Kibogaoka - Lower Platform",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_132": {
+      "primary": {
+        "videoId": "SaFmyTVP54A",
+        "title": "Kibogaoka - Upper Platform",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_076": {
+      "primary": {
+        "videoId": "W9ejAMQGB5g",
+        "title": "Kibogaoka - Grind x20",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_105": {
+      "primary": {
+        "videoId": "E4M-ZhFaVq0",
+        "title": "Kibogaoka - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_133": {
+      "primary": {
+        "videoId": "Xdizhopu6ZE",
+        "title": "Kibogaoka - Tape unlock to tricks",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "HYQxCueOsm4",
+          "title": "Kibogaoka - Tape unlock to points",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "kibo_021": {
+      "primary": {
+        "videoId": "pi2n38dol-4",
+        "title": "Kibogaoka - 250k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_049": {
+      "primary": {
+        "videoId": "X_k9LnOkMTk",
+        "title": "Kibogaoka - Special",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "-_yUh-sx61k",
+          "title": "Kibogaoka - Special (alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "sdpp_077": {
+      "primary": {
+        "videoId": "_p5tCdsqoeY",
+        "title": "SDPP - Top of Observatory",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_106": {
+      "primary": {
+        "videoId": "l2aGKPcDyRA",
+        "title": "SDPP - Pink Halfpipes",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "gUUPqE_c4d8",
+          "title": "SDPP - Pink Halfpipes (out of map version)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "sdpp_134": {
+      "primary": {
+        "videoId": "ileMluK_Uoo",
+        "title": "SDPP - Entrance Pillar",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_022": {
+      "primary": {
+        "videoId": "1LSk_hJLFaw",
+        "title": "SDPP - Grind x20",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_050": {
+      "primary": {
+        "videoId": "Qoc9Tbw0v-I",
+        "title": "SDPP - Air x4",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_079": {
+      "primary": {
+        "videoId": "-mkVe2NBc98",
+        "title": "SDPP - Tricks x65",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_107": {
+      "primary": {
+        "videoId": "dyEJVRF_QMk",
+        "title": "SDPP - 110k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "sdpp_135": {
+      "primary": {
+        "videoId": "QS4zd_zHYw4",
+        "title": "SDPP - Special",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "dO-nIcg8GUE",
+          "title": "SDPP - Special (Alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "hwy0_023": {
+      "primary": {
+        "videoId": "pRdU4sewLcE",
+        "title": "Highway Zero - Directly Under Entrance",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_051": {
+      "primary": {
+        "videoId": "C1cxjDaHcko",
+        "title": "Highway Zero - Left Alley",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_080": {
+      "primary": {
+        "videoId": "SqBbYdweEb0",
+        "title": "Highway Zero - Trash Pit",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_108": {
+      "primary": {
+        "videoId": "glOlpjZI6x0",
+        "title": "Highway Zero - Grind x15",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_136": {
+      "primary": {
+        "videoId": "DWg87OD8SLE",
+        "title": "Highway Zero -  Air x5",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "bFwpQzp6ZpQ",
+          "title": "Highway Zero -  Air x5 (backup)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "hwy0_024": {
+      "primary": {
+        "videoId": "QbByxbx5Ouo",
+        "title": "Highway Zero - Tricks x70",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_052": {
+      "primary": {
+        "videoId": "HcD5BfpkLCc",
+        "title": "Highway Zero - 90k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_081": {
+      "primary": {
+        "videoId": "GvNp1vCbDuo",
+        "title": "Highway Zero - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_026": {
+      "primary": {
+        "videoId": "lTBdEJ0g5rc",
+        "title": "Sky Dino - Top of T-Rex",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_054": {
+      "primary": {
+        "videoId": "5w9OETILuyQ",
+        "title": "Sky Dino - Under Brontosaurus",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_109": {
+      "primary": {
+        "videoId": "7c9HHy-uRyQ",
+        "title": "Sky Dino - Starting Spiral",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "nI6MQ3URQXA",
+          "title": "Sky Dino - Starting Spiral (alternative)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dino_137": {
+      "primary": {
+        "videoId": "iLDcM061IiI",
+        "title": "Sky Dino - Under First Swing",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_082": {
+      "primary": {
+        "videoId": "8KyR1hrSlTc",
+        "title": "Sky Dino - Grind x50",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_110": {
+      "primary": {
+        "videoId": "4IqxrtbbcZY",
+        "title": "Sky Dino - Air x6",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "dino_138": {
+      "primary": {
+        "videoId": "Up0uasnuo4w",
+        "title": "Sky Dino - Tricks x100",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "9Eg3nqtInbs",
+          "title": "Sky Dino - Tricks x100 (Easy)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "r0lp5nK6zEk",
+          "title": "Sky Dino - Tricks x100 (Alternative unlock spot)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dino_027": {
+      "primary": {
+        "videoId": "jpAqMTrApts",
+        "title": "Sky Dino - 10k Points",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "NXqM3aYH0KE",
+          "title": "Sky Dino - 10k Points (alternative death warp)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dino_055": {
+      "primary": {
+        "videoId": "fayKWRAv7VY",
+        "title": "Sky Dino - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_083": {
+      "primary": {
+        "videoId": "iUB-Knjasuc",
+        "title": "FRZ - Clip Soul",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "G8iY5fePeKA",
+          "title": "FRZ - Clip Soul (actual clip version)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "frz_111": {
+      "primary": {
+        "videoId": "JLFh5rWMPlQ",
+        "title": "FRZ - Down Tube",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_139": {
+      "primary": {
+        "videoId": "h5D59xWa-Mw",
+        "title": "FRZ - End of first maze",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_028": {
+      "primary": {
+        "videoId": "K_H8CDyTTkc",
+        "title": "FRZ - Grind x10",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_056": {
+      "primary": {
+        "videoId": "BwxmwHkv0xE",
+        "title": "FRZ - Air x8",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "EhUr88haGM4",
+          "title": "FRZ - Air x8 (harder, faster, stronger)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "frz_084": {
+      "primary": {
+        "videoId": "ZQFFLP3xhjc",
+        "title": "FRZ - Tricks x100",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_112": {
+      "primary": {
+        "videoId": "rhsk5r9U-Ys",
+        "title": "FRZ - 50k Points",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "frz_140": {
+      "primary": {
+        "videoId": "DWbQDINqOc4",
+        "title": "FRZ - Special",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "rdh_unlock_rhyth": {
+      "primary": {
+        "videoId": "SxoOSJPlleY",
+        "title": "RDH - Rhyth Unlock",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "kibo_unlock_boogie": {
+      "primary": {
+        "videoId": "ozODNoI5d6A",
+        "title": "Kibogaoka - Boogie",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "hwy0_unlock_soda": {
+      "primary": {
+        "videoId": "3mW82kFoJRI",
+        "title": "Highway Zero - Soda",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "99th_unlock_jazz": {
+      "primary": {
+        "videoId": "oEiWfbgAMmw",
+        "title": "99th Street - Jazz",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_unlock_cube": {
+      "primary": {
+        "videoId": "vTtwDlCFNpY",
+        "title": "Bottom Point - Catwalk Near Cube",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "fuZiPl7D6zY",
+          "title": "Bottom Point - Cube Race",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "dogen_graffiti": {
+      "primary": {
+        "videoId": "FtzmNK2Tig4",
+        "title": "Dogenzaka - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "shibuya_graffiti": {
+      "primary": {
+        "videoId": "gu4VwQW3744",
+        "title": "Shibuya - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "0_-S4sDePck",
+          "title": "Shibuya Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "chuo_graffiti": {
+      "primary": {
+        "videoId": "73wyJq6Veqg",
+        "title": "Chuo Street - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "X7Zt7X0eS3g",
+          "title": "Chuo Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "rdh_graffiti": {
+      "primary": {
+        "videoId": "Fyd15BpzMmU",
+        "title": "RDH - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "i3S0R1KJeL0",
+          "title": "RDH Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "99th_graffiti": {
+      "primary": {
+        "videoId": "u9I9bYdmBvs",
+        "title": "99th Street Bingo Graffiti Route",
+        "sourceKey": "fallback"
+      },
+      "variants": []
+    },
+    "sewers_graffiti": {
+      "primary": {
+        "videoId": "lG9NGpofsBc",
+        "title": "JSRF bingo sewers route",
+        "sourceKey": "primary"
+      },
+      "variants": []
+    },
+    "bp_graffiti": {
+      "primary": {
+        "videoId": "A7xT85Q2qlo",
+        "title": "BP Bingo Graffiti Route",
+        "sourceKey": "fallback"
+      },
+      "variants": []
+    },
+    "hikage_graffiti": {
+      "primary": {
+        "videoId": "1opuWvaC3M8",
+        "title": "Hikage - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "HZnV78p4z0s",
+          "title": "Hikage Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "kibo_graffiti": {
+      "primary": {
+        "videoId": "KM7Wvb8TXD8",
+        "title": "Kibo Bingo Graffiti Route",
+        "sourceKey": "fallback"
+      },
+      "variants": []
+    },
+    "sdpp_graffiti": {
+      "primary": {
+        "videoId": "-EeF9qmuB9E",
+        "title": "SDPP Bingo Graffiti Route",
+        "sourceKey": "fallback"
+      },
+      "variants": []
+    },
+    "hwy0_graffiti": {
+      "primary": {
+        "videoId": "Iz0eBbWVBWg",
+        "title": "Hw0 Bingo Graffiti Route",
+        "sourceKey": "fallback"
+      },
+      "variants": []
+    },
+    "dino_graffiti": {
+      "primary": {
+        "videoId": "KKco2ni8ZEU",
+        "title": "Sky Dino - Graffiti Route",
+        "sourceKey": "primary"
+      },
+      "variants": [
+        {
+          "videoId": "wuPrqNDGIDA",
+          "title": "Sky Dino Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "frz_graffiti": {
+      "primary": {
+        "videoId": "jTs81NmqAZY",
+        "title": "FRZ Bingo Graffiti Route | JG route - maze - blue device areas",
+        "sourceKey": "fallback"
+      },
+      "variants": [
+        {
+          "videoId": "37nqn0DsHeo",
+          "title": "FRZ bingo graffiti update #2 - saves a few sec, much better canage",
+          "sourceKey": "fallback"
+        }
+      ]
+    }
+  },
+  "areas": {
+    "Dogen": {
+      "tape": {
+        "videoId": "10_haRdEiMQ",
+        "title": "Dogenzaka - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "-Jo75GZJA9Y",
+          "title": "Dogenzaka - Triple Soul Unlock",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "Shibuya": {
+      "tape": {
+        "videoId": "f7-GfBu1NyE",
+        "title": "Shibuya - Tape",
+        "sourceKey": "primary"
+      }
+    },
+    "Chuo": {
+      "tape": {
+        "videoId": "9V2hUpCW4qc",
+        "title": "Chuo - Tape (from game start)",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "oKvJHofsrTI",
+          "title": "Chuo - Slolumn Skip (back alley skip oob)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "Hikage": {
+      "tape": {
+        "videoId": "oJxyMfIj1hE",
+        "title": "Hikage - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "PGcZo2WFn1g",
+          "title": "Hikage - Entering from game start",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "RDH": {
+      "tape": {
+        "videoId": "qxFSOMaM7b0",
+        "title": "RDH - Tape",
+        "sourceKey": "primary"
+      }
+    },
+    "Kibo": {
+      "tape": {
+        "videoId": "J6H_JukieAk",
+        "title": "Kibogaoka - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "O0ngvdhp38c",
+          "title": "Kibogaoka - Kigobaka",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "c8Q6IitIVaQ",
+          "title": "Kibogaoka - Fence Jump",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "vsZyb-1_HLE",
+          "title": "Kibogaoka - Stall Launch (Pylon Warp)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "C-Yald2fHP4",
+          "title": "Kibogaoka - Stall Launch (Boogie Warp)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "MeEXO5OeM9o",
+          "title": "Kibogaoka - Stall Launch (PUMA warp)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "NmXJCAvtdK0",
+          "title": "Kibogaoka - Tricks + Points + Tape Unlock",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "XBnIt7-norM",
+          "title": "Kibogaoka - Tricks x65",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "FRZ": {
+      "tape": {
+        "videoId": "mi8uoKkNJ4U",
+        "title": "FRZ - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "OhX2vGtiRI0",
+          "title": "FRZ Bingo route update - Mazes and lower area (work in progress)",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "_99th": {
+      "tape": {
+        "videoId": "z6yvg87Daj0",
+        "title": "99th Street - Tape",
+        "sourceKey": "primary"
+      }
+    },
+    "SDPP": {
+      "tape": {
+        "videoId": "d8XoeQ36dUU",
+        "title": "SDPP - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "RLOE-itFTaM",
+          "title": "SDPP - Air to Observatory Route",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "HWY0": {
+      "tape": {
+        "videoId": "M6Hj-PVQfs0",
+        "title": "Highway Zero - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "U-JFy_9ZM8s",
+          "title": "Highway Zero - Tricks + Tape unlock",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "Dino": {
+      "tape": {
+        "videoId": "N8dbV888NNo",
+        "title": "Sky Dino - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "47tYLhAQav8",
+          "title": "Sky Dino - Tricks + Points + Tape unlock",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "EVEj_S539IQ",
+          "title": "Dino Bingo route update (work in progress)",
+          "sourceKey": "fallback"
+        }
+      ]
+    },
+    "Sewers": {
+      "miscTech": [
+        {
+          "videoId": "VB0doRshmDc",
+          "title": "Sewers - Moon Jump (Boostplant setup)",
+          "sourceKey": "primary"
+        }
+      ]
+    },
+    "BP": {
+      "miscTech": [
+        {
+          "videoId": "MecVUXsYXKI",
+          "title": "Bottom Point - Tricks Unlock Backup",
+          "sourceKey": "primary"
+        }
+      ]
+    }
+  },
+  "miscTech": {
+    "unrecognized": []
+  },
+  "diagnostics": {
+    "unmatchedObjectiveIds": [],
+    "areasMissingTape": [
+      "Sewers",
+      "BP"
+    ],
+    "unrecognizedMiscTechVideoIds": []
+  }
+}

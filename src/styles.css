@@ -1497,6 +1497,10 @@ button {
     width: min(100%, 28rem);
 }
 
+.learn-panel.has-variants {
+    z-index: 20;
+}
+
 .learn-source-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -1598,6 +1602,7 @@ button {
 .learn-variant-menu {
     position: relative;
     justify-self: center;
+    z-index: 30;
 }
 
 .learn-variant-trigger {
@@ -1611,7 +1616,7 @@ button {
     min-width: 14rem;
     display: grid;
     gap: 0.25rem;
-    z-index: 2;
+    z-index: 40;
     padding: 0.35rem;
     border-radius: var(--radius-control);
     background: var(--dropdown-background);
@@ -1620,11 +1625,13 @@ button {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
-    transform: translate(-50%, 0.25rem);
+    transform: translate(-50%, -0.28rem) scale(0.96);
+    transform-origin: top center;
+    will-change: opacity, transform;
     transition:
-        opacity 140ms ease,
-        transform 140ms ease,
-        visibility 140ms ease;
+        opacity 170ms ease,
+        transform 190ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        visibility 170ms ease;
 }
 
 .learn-variant-menu:hover .learn-variant-list,
@@ -1632,7 +1639,7 @@ button {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 0) scale(1);
 }
 
 .learn-variant-option {
@@ -1981,6 +1988,7 @@ button {
         drop-shadow(0 0 16px var(--accent));
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 .panel-heading.compact h2 {
@@ -2981,12 +2989,14 @@ button {
     box-shadow: var(--dropdown-shadow);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(0.25rem);
+    transform: translateY(0.32rem) scale(0.96);
+    transform-origin: bottom right;
     visibility: hidden;
+    will-change: opacity, transform;
     transition:
-        opacity 140ms ease,
-        transform 140ms ease,
-        visibility 140ms ease;
+        opacity 170ms ease,
+        transform 190ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        visibility 170ms ease;
 }
 
 .drill-action-menu-list::after {
@@ -3002,7 +3012,7 @@ button {
 .drill-action-menu:focus-within .drill-action-menu-list {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     visibility: visible;
 }
 
@@ -4233,6 +4243,7 @@ button {
     hyphens: auto;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
 }
 
 .route-tile-footer {
@@ -5040,6 +5051,10 @@ button {
 .bingopedia-square-row {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+}
+
+.bingopedia-misc-tech-row {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .bingopedia-square-main strong {

@@ -34,6 +34,7 @@ import {
   createDefaultAppState,
   normalizeAppState
 } from "./lib/storage.js";
+import { buildLearningVideoSources } from "./data/learnVideos.js";
 import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
 
@@ -48,6 +49,10 @@ function CurrentDrillPanel({
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
   const currentSessionType = drillSession.currentSession?.sessionType ?? PRACTICE_SESSION_TYPE;
+  const learnVideoSources = buildLearningVideoSources({
+    objective: drillSession.currentObjective,
+    phaseInfo: drillSession.phaseInfo
+  });
 
   if (currentSessionType === ROUTE_SESSION_TYPE) {
     return (
@@ -74,8 +79,7 @@ function CurrentDrillPanel({
         learnPanelVisible ? (
           <LearnPanel
             key={drillSession.currentObjective?.id ?? "unknown"}
-            objective={drillSession.currentObjective}
-            phaseInfo={drillSession.phaseInfo}
+            sources={learnVideoSources}
             autoplay={settings.learnVideoAutoplay}
             muted={settings.learnAudioMuted}
           />
