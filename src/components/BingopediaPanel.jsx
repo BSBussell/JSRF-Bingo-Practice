@@ -40,7 +40,7 @@ const FILTER_OPTIONS = [
   },
   {
     value: BINGOPEDIA_FILTERS.NEVER_PRACTICED,
-    label: "Never Practiced"
+    label: "Unpracticed"
   }
 ];
 
@@ -84,9 +84,9 @@ function AreaIndex({
   return (
     <div className="bingopedia-pane bingopedia-area-index">
       <div className="bingopedia-pane-heading">
-        <p className="eyebrow">Location Navigation</p>
-        <h2>Districts & Areas</h2>
-        <p>Choose a location to load its squares.</p>
+        <p className="eyebrow">Districts</p>
+        <h2>Levels</h2>
+        <p>Choose a level to load its squares and tech.</p>
       </div>
 
       <div className="bingopedia-district-list">

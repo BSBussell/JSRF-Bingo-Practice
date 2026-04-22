@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-22T21:02:34.384Z",
+  "generatedAt": "2026-04-22T22:10:33.389Z",
   "sources": [
     {
       "key": "primary",
       "label": "Naestrinus' Bingopedia",
       "url": "https://youtube.com/playlist?list=PLDHncjR554MyBVGa7Z9WUU-fIC5d_BFrT",
       "playlistId": "PLDHncjR554MyBVGa7Z9WUU-fIC5d_BFrT",
-      "entryCount": 176
+      "entryCount": 179
     },
     {
       "key": "fallback",
@@ -1171,11 +1171,22 @@
     },
     "bp_graffiti": {
       "primary": {
-        "videoId": "A7xT85Q2qlo",
-        "title": "BP Bingo Graffiti Route",
-        "sourceKey": "fallback"
+        "videoId": "VHJK9QoKt5E",
+        "title": "Bottom Point - Graffiti Route",
+        "sourceKey": "primary"
       },
-      "variants": []
+      "variants": [
+        {
+          "videoId": "FV5pDfPUdzw",
+          "title": "Bottom Point - Graffiti Route (Reverse)",
+          "sourceKey": "primary"
+        },
+        {
+          "videoId": "A7xT85Q2qlo",
+          "title": "BP Bingo Graffiti Route",
+          "sourceKey": "fallback"
+        }
+      ]
     },
     "hikage_graffiti": {
       "primary": {
@@ -1301,6 +1312,20 @@
         "sourceKey": "primary"
       }
     },
+    "BP": {
+      "tape": {
+        "videoId": "2j6koT5cOsw",
+        "title": "Bottom Point - Tape",
+        "sourceKey": "primary"
+      },
+      "miscTech": [
+        {
+          "videoId": "MecVUXsYXKI",
+          "title": "Bottom Point - Tricks Unlock Backup",
+          "sourceKey": "primary"
+        }
+      ]
+    },
     "Kibo": {
       "tape": {
         "videoId": "J6H_JukieAk",
@@ -1421,15 +1446,6 @@
           "sourceKey": "primary"
         }
       ]
-    },
-    "BP": {
-      "miscTech": [
-        {
-          "videoId": "MecVUXsYXKI",
-          "title": "Bottom Point - Tricks Unlock Backup",
-          "sourceKey": "primary"
-        }
-      ]
     }
   },
   "miscTech": {
@@ -1438,8 +1454,7 @@
   "diagnostics": {
     "unmatchedObjectiveIds": [],
     "areasMissingTape": [
-      "Sewers",
-      "BP"
+      "Sewers"
     ],
     "unrecognizedMiscTechVideoIds": []
   }

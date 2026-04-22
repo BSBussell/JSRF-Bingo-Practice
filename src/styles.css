@@ -4854,49 +4854,132 @@ button {
 }
 
 .bingopedia-browser {
+    --bingopedia-pane-overlap: 0.58rem;
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(13rem, 0.78fr) minmax(19rem, 1.18fr) minmax(20rem, 1.24fr);
-    gap: 0.85rem;
-    align-items: start;
+    grid-template-columns: minmax(8.25rem, 0.46fr) minmax(19rem, 1.2fr) minmax(20rem, 1.3fr);
+    gap: 0;
+    align-items: stretch;
+    
+    border-radius: calc(var(--radius-card-lg) + 0.22rem);
+    border: 1px solid rgba(255, 230, 201, 0.08);
+    background:
+        linear-gradient(90deg, rgba(255, 244, 226, 0.018), rgba(255, 255, 255, 0.006) 44%, rgba(230, 180, 87, 0.024)),
+        rgba(255, 255, 255, 0.012);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 239, 217, 0.04),
+        inset 0 0 30px rgba(255, 200, 136, 0.028);
+}
+
+
+.bingopedia-browser::after {
+    content: "";
+    position: absolute;
+    top: 0.34rem;
+    bottom: 0.34rem;
+    grid-row: 1;
+    pointer-events: none;
+}
+
+
+.bingopedia-browser::after {
+    z-index: 1;
+    grid-column: 2 / -1;
+    left: calc(-1 * var(--bingopedia-pane-overlap));
+    top: 0;
+    right: 0;
+    height: 100%;
+    border: 1px solid rgba(255, 230, 201, 0.09);
+    border-radius: calc(var(--radius-card) + 0.08rem);
+    background:
+        linear-gradient(180deg, rgba(255, 223, 182, 0.052), rgba(255, 255, 255, 0.014)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.034), rgba(255, 255, 255, 0.012)),
+        rgba(255, 255, 255, 0.02);
+    box-shadow:
+        -0.9rem 0 1.5rem rgba(0, 0, 0, 0.13),
+        var(--panel-inner-shadow);
 }
 
 .bingopedia-pane {
+    position: relative;
     min-width: 0;
     display: grid;
     gap: 0.8rem;
     align-content: start;
-    padding: 0.88rem;
-    border-radius: var(--radius-card);
-    border: 1px solid var(--surface-card-border);
-    background:
-        linear-gradient(180deg, rgba(255, 223, 182, 0.04), rgba(255, 255, 255, 0.012)),
-        rgba(255, 255, 255, 0.018);
-    box-shadow: var(--panel-inner-shadow);
+    height: 100%;
+    padding: 0.92rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius-card) + 0.08rem);
+    background: transparent;
+    box-shadow: none;
 }
 
 .bingopedia-area-index {
-    background:
-        linear-gradient(180deg, rgba(255, 223, 182, 0.025), rgba(255, 255, 255, 0.01)),
-        rgba(255, 255, 255, 0.012);
+    z-index: 2;
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0.62rem;
+    padding-right: calc(0.92rem + var(--bingopedia-pane-overlap));
+    border-color: transparent;
+    border-top-right-radius: 0.82rem;
+    border-bottom-right-radius: 0.82rem;
+    background: transparent;
+}
+
+.bingopedia-area-index .bingopedia-pane-heading {
+    gap: 0.1rem;
+}
+
+.bingopedia-area-index .bingopedia-pane-heading h2 {
+    font-size: 1.08rem;
+}
+
+.bingopedia-area-index .bingopedia-pane-heading > p:not(.eyebrow) {
+    font-size: 0.78rem;
+}
+
+.bingopedia-area-index .bingopedia-district-list {
+    gap: 0.46rem;
+}
+
+.bingopedia-area-index .bingopedia-area-list {
+    gap: 0.38rem;
 }
 
 .bingopedia-square-list-pane {
-    border-color: rgba(255, 230, 201, 0.09);
-    background:
-        linear-gradient(180deg, rgba(255, 223, 182, 0.052), rgba(255, 255, 255, 0.014)),
-        rgba(255, 255, 255, 0.024);
+    z-index: 3;
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: calc(-1 * var(--bingopedia-pane-overlap));
+    padding-left: calc(0.92rem + var(--bingopedia-pane-overlap));
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
 }
 
 .bingopedia-detail-pane {
+    z-index: 4;
+    grid-column: 3;
+    grid-row: 1;
+    position: relative;
+    margin-left: calc(-1 * var(--bingopedia-pane-overlap));
+    padding-left: calc(0.92rem + var(--bingopedia-pane-overlap));
     border-color: rgba(230, 180, 87, 0.12);
     background:
-        linear-gradient(180deg, rgba(230, 180, 87, 0.05), rgba(255, 255, 255, 0.012)),
+        linear-gradient(180deg, rgba(230, 180, 87, 0.052), rgba(255, 255, 255, 0.012)),
+        linear-gradient(90deg, rgba(230, 180, 87, 0.032), rgba(255, 255, 255, 0.008)),
         rgba(255, 255, 255, 0.018);
+    box-shadow:
+        -1rem 0 1.65rem rgba(0, 0, 0, 0.16),
+        var(--panel-inner-shadow);
 }
 
 .bingopedia-detail-pane.is-selected {
     border-color: rgba(230, 180, 87, 0.24);
 }
+
+
+
 
 .bingopedia-pane-heading {
     display: grid;
@@ -4980,7 +5063,8 @@ button {
 .bingopedia-area-button {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    padding-block: 0.54rem;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.86rem;
 }
 
 .bingopedia-area-button span:first-child,
@@ -5065,11 +5149,6 @@ button {
     justify-items: end;
     text-align: right;
     white-space: nowrap;
-}
-
-.bingopedia-detail-pane {
-    position: sticky;
-    top: 5.25rem;
 }
 
 .bingopedia-mobile-back {
@@ -5253,7 +5332,35 @@ button {
 @media (max-width: 980px) {
     .bingopedia-browser {
         grid-template-columns: 1fr;
+        gap: 0.78rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
     }
+
+    .bingopedia-browser::before,
+    .bingopedia-browser::after {
+        display: none;
+    }
+
+    .bingopedia-pane,
+    .bingopedia-area-index,
+    .bingopedia-square-list-pane,
+    .bingopedia-detail-pane {
+        min-height: auto;
+        grid-column: auto;
+        grid-row: auto;
+        margin-left: 0;
+        padding: 0.88rem;
+        border-radius: var(--radius-card);
+        border-color: var(--surface-card-border);
+        background:
+            linear-gradient(180deg, rgba(255, 223, 182, 0.04), rgba(255, 255, 255, 0.012)),
+            rgba(255, 255, 255, 0.018);
+        box-shadow: var(--panel-inner-shadow);
+    }
+
 
     .bingopedia-detail-pane {
         display: none;
