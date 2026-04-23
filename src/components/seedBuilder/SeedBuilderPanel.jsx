@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -100,6 +100,31 @@ function objectiveDragData(kind, objective, index = null) {
   };
 }
 
+function resolveTimelineInsertIndex(activeData, over, objectiveCount) {
+  if (!activeData || activeData.kind !== "picker") {
+    return null;
+  }
+
+  const overData = over?.data.current;
+  const overId = over?.id;
+
+  if (overData?.kind === "timeline" && Number.isInteger(overData.index)) {
+    return overData.index;
+  }
+
+  const isTimelineTarget =
+    overData?.kind === "timeline-container" ||
+    overData?.kind === "timeline-end" ||
+    overId === TIMELINE_CONTAINER_ID ||
+    overId === TIMELINE_END_ID;
+
+  if (isTimelineTarget) {
+    return objectiveCount;
+  }
+
+  return null;
+}
+
 function SeedBuilderCardMeta({ objective, dragData = null }) {
   const district = objective?.district ?? dragData?.district;
   const areaLabel =
@@ -124,7 +149,11 @@ function SeedBuilderTilePreview({ dragData }) {
   }
 
   return (
-    <article className={`seed-builder-drag-preview ${districtToneClassName(dragData.district)}`}>
+    <article
+      className={`seed-builder-drag-preview ${districtToneClassName(dragData.district)} ${
+        dragData.kind === "picker" ? "is-picker" : "is-timeline"
+      }`}
+    >
       <div className="seed-builder-card-copy">
         <strong>{dragData.label}</strong>
         <SeedBuilderCardMeta dragData={dragData} />
@@ -214,6 +243,8 @@ function PickerTile({
 }
 
 function SeedBuilderTimeline({
+  activeDragKind,
+  insertPreviewIndex,
   objectives
 }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -229,6 +260,8 @@ function SeedBuilderTimeline({
     }
   });
   const showEmptyState = objectives.length === 0;
+  const showInsertPreview = activeDragKind === "picker" && Number.isInteger(insertPreviewIndex);
+  const showEndInsertPreview = showInsertPreview && insertPreviewIndex === objectives.length;
 
   return (
     <div
@@ -248,12 +281,16 @@ function SeedBuilderTimeline({
           strategy={horizontalListSortingStrategy}
         >
           {objectives.map((objective, index) => (
-            <TimelineTile
-              key={objective.id}
-              objective={objective}
-              index={index}
-            />
+            <Fragment key={objective.id}>
+              {showInsertPreview && insertPreviewIndex === index ? (
+                <div className="seed-builder-timeline-insert-preview" aria-hidden="true" />
+              ) : null}
+              <TimelineTile objective={objective} index={index} />
+            </Fragment>
           ))}
+          {showEndInsertPreview ? (
+            <div className="seed-builder-timeline-insert-preview is-end" aria-hidden="true" />
+          ) : null}
           <div
             className={`seed-builder-timeline-end-drop ${isOverEnd ? "is-over" : ""}`}
             ref={setEndNodeRef}
@@ -446,6 +483,7 @@ export function SeedBuilderPanel({
   const [statusTone, setStatusTone] = useState("");
   const [seedFieldValue, setSeedFieldValue] = useState("");
   const [activeDragData, setActiveDragData] = useState(null);
+  const [timelineInsertIndex, setTimelineInsertIndex] = useState(null);
   const [isClearOpen, setIsClearOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -485,15 +523,6 @@ export function SeedBuilderPanel({
     ROUTE_VISIBLE_COUNT_MIN,
     Math.min(timelineObjectives.length || ROUTE_VISIBLE_COUNT_MIN, ROUTE_VISIBLE_COUNT_MAX)
   );
-  const overlayModifier = useMemo(
-    () => ({ transform }) => ({
-      ...transform,
-      x: transform.x - 12,
-      y: transform.y - 58
-    }),
-    []
-  );
-
   useEffect(() => {
     setSeedFieldValue(currentSeed);
   }, [currentSeed]);
@@ -601,10 +630,28 @@ export function SeedBuilderPanel({
 
   function handleDragStart(event) {
     setActiveDragData(event.active.data.current ?? null);
+    setTimelineInsertIndex(
+      resolveTimelineInsertIndex(
+        event.active.data.current,
+        event.over,
+        normalizedDraft.objectiveIds.length
+      )
+    );
+  }
+
+  function handleDragOver(event) {
+    setTimelineInsertIndex(
+      resolveTimelineInsertIndex(
+        event.active.data.current,
+        event.over,
+        normalizedDraft.objectiveIds.length
+      )
+    );
   }
 
   function handleDragCancel() {
     setActiveDragData(null);
+    setTimelineInsertIndex(null);
   }
 
   function handleDragEnd(event) {
@@ -612,6 +659,7 @@ export function SeedBuilderPanel({
     const overData = event.over?.data.current;
     const overId = event.over?.id;
     setActiveDragData(null);
+    setTimelineInsertIndex(null);
 
     if (!activeData) {
       return;
@@ -686,12 +734,10 @@ export function SeedBuilderPanel({
     <section className="panel seed-builder-panel">
       <div className="panel-heading seed-builder-heading">
         <div>
-          <p className="eyebrow">Seed Builder</p>
-          <h1>Build a custom seed</h1>
+          <p className="eyebrow">Exercise Builder</p>
+          <h1>Build a custom seed!</h1>
         </div>
-        <p className="panel-note">
-          Arrange squares into a normal replayable seed, then run it as practice or route.
-        </p>
+        
       </div>
 
       <div className="seed-builder-workbench">
@@ -741,10 +787,15 @@ export function SeedBuilderPanel({
           sensors={sensors}
           collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
-          <SeedBuilderTimeline objectives={timelineObjectives} />
+          <SeedBuilderTimeline
+            activeDragKind={activeDragData?.kind ?? ""}
+            insertPreviewIndex={timelineInsertIndex}
+            objectives={timelineObjectives}
+          />
           <SeedBuilderPicker
             activeDragKind={activeDragData?.kind ?? ""}
             selectedArea={normalizedDraft.selectedArea}
@@ -753,7 +804,7 @@ export function SeedBuilderPanel({
             onSelectArea={selectArea}
             onAdd={addObjective}
           />
-          <DragOverlay modifiers={[overlayModifier]}>
+          <DragOverlay>
             <SeedBuilderTilePreview dragData={activeDragData} />
           </DragOverlay>
         </DndContext>

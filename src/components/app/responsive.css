@@ -682,12 +682,26 @@
     .seed-builder-workbench {
         min-height: 0;
         grid-template-rows: auto auto auto minmax(13rem, auto);
+        padding: 0.34rem;
     }
 
     .seed-builder-seed-row,
     .seed-builder-route-row {
         grid-template-columns: 1fr;
         align-items: stretch;
+    }
+
+    .seed-builder-seed-bar {
+        padding: 0.64rem 0.66rem 0.58rem;
+    }
+
+    .seed-builder-status-row {
+        padding: 0.44rem 0.66rem 0.5rem;
+    }
+
+    .seed-builder-timeline {
+        margin: 0.4rem 0.34rem 0.58rem;
+        padding: 0.58rem;
     }
 
     .seed-builder-route-row {
@@ -711,7 +725,7 @@
         flex-wrap: nowrap;
         gap: 0.5rem;
         overflow-x: auto;
-        padding: 0.58rem 0.65rem;
+        padding: 0.58rem 0.66rem;
     }
 
     .seed-builder-level-tab {
