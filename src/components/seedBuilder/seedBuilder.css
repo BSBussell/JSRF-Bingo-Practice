@@ -2,6 +2,7 @@
     --seed-builder-timeline-square: clamp(6.4rem, 8.8vw, 7.6rem);
     --seed-builder-shelf-square: clamp(5.7rem, 12vw, 9.8rem);
     overflow: visible;
+    animation: seed-builder-panel-enter 320ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .seed-builder-heading {
@@ -183,6 +184,20 @@
 .seed-builder-empty-timeline h2,
 .seed-builder-empty-timeline p {
     margin: 0;
+}
+
+@keyframes seed-builder-panel-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(0.55rem) scale(0.995);
+        filter: blur(2px) brightness(0.965);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) brightness(1);
+    }
 }
 
 .seed-builder-timeline-card,
