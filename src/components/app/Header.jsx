@@ -4,6 +4,14 @@ import {
 } from "../../lib/session/sessionTypes.js";
 import { SEED_BUILDER_MODE } from "../../lib/seedBuilder.js";
 
+function SettingsGearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M19.43 12.98a7.76 7.76 0 0 0 .05-.98 7.76 7.76 0 0 0-.05-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.32 7.32 0 0 0-1.7-.98l-.38-2.65a.5.5 0 0 0-.5-.42h-4a.5.5 0 0 0-.5.42L9.11 5.07a7.32 7.32 0 0 0-1.7.98l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65a7.76 7.76 0 0 0-.05.98 7.76 7.76 0 0 0 .05.98L2.44 14.63a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .6.22l2.49-1a7.32 7.32 0 0 0 1.7.98l.38 2.65a.5.5 0 0 0 .5.42h4a.5.5 0 0 0 .5-.42l.38-2.65a7.32 7.32 0 0 0 1.7-.98l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z" />
+    </svg>
+  );
+}
+
 export function Header({
   activeMode,
   hasActiveSession,
@@ -101,11 +109,15 @@ export function Header({
         </div>
 
         <button
-          className={`nav-link ${activeMode === "settings" ? "is-active" : ""}`}
+          className={`nav-link nav-link-icon ${activeMode === "settings" ? "is-active" : ""}`}
           type="button"
+          aria-label="Settings"
+          title="Settings"
           onClick={onSelectSettings}
         >
-          Settings
+          <span className="nav-link-icon-glyph">
+            <SettingsGearIcon />
+          </span>
         </button>
         {showReleaseSlot ? (
           <span className="header-release-slot">

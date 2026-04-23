@@ -2,13 +2,25 @@
     .stats-layout {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
-    .mode-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
 }
 
 @media (max-width: 980px) {
+    .mode-feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-secondary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mode-select-copy .hero-copy {
+        max-width: 40rem;
+    }
+
+    .mode-tile-copy p {
+        font-size: 0.79rem;
+    }
+
     .stats-page {
         --stats-panel-padding: 1.1rem;
     }
@@ -127,6 +139,12 @@
     }
 }
 
+@media (max-width: 820px) {
+    .mode-secondary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 720px) {
     .app-header,
     .panel-heading,
@@ -166,6 +184,12 @@
         padding: 0.65rem 0.7rem;
     }
 
+    .nav-link-icon {
+        width: 100%;
+        height: auto;
+        min-height: 2.52rem;
+    }
+
     .nav-group {
         min-width: 0;
     }
@@ -190,6 +214,49 @@
 
     .panel {
         padding: 1.15rem;
+    }
+
+    .mode-select-copy {
+        gap: 0.58rem;
+    }
+
+    .mode-select-copy-centered {
+        justify-items: start;
+        text-align: left;
+    }
+
+    .mode-secondary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-tile {
+        padding: 0.72rem;
+    }
+
+    .mode-tile-copy h2 {
+        font-size: 1.2rem;
+    }
+
+    .mode-tile-copy p {
+        font-size: 0.8rem;
+    }
+
+    .mode-tile-action {
+        min-height: 2.5rem;
+    }
+
+    .mode-settings-footer {
+        justify-content: center;
+    }
+
+    .mode-settings-gear-button {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+
+    .mode-settings-gear-button .mode-gear-icon {
+        width: 1.74rem;
+        height: 1.74rem;
     }
 
     .stats-page {
@@ -692,7 +759,7 @@
     .learn-video-frame::before,
     .setup-section,
     .setup-toggle-card,
-    .mode-card,
+    .mode-tile,
     .settings-section,
     .settings-row,
     .practice-drill-slot > .drill-panel,
@@ -737,7 +804,7 @@
     .setup-action-bar,
     .setup-section,
     .setup-toggle-card,
-    .mode-card,
+    .mode-tile,
     .settings-section,
     .settings-row,
     .theme-control,
@@ -786,8 +853,8 @@
     .setup-section:focus-within,
     .setup-toggle-card:hover,
     .setup-toggle-card:focus-within,
-    .mode-card:hover,
-    .mode-card:focus-within,
+    .mode-tile:hover,
+    .mode-tile:focus-within,
     .primary-button:hover::before,
     .primary-button:focus-visible::before,
     .learn-variant-option:hover,
