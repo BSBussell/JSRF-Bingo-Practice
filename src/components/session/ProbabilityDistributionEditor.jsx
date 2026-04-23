@@ -13,7 +13,7 @@ import {
   buildLevelShiftDistributionFromBoundaries,
   normalizeDistrictJumpDistribution,
   normalizeLevelShiftDistribution
-} from "../lib/drill/drillSettings.js";
+} from "../../lib/drill/drillSettings.js";
 
 function formatProfilePercent(value) {
   return `${value}%`;

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
-import { areaMeta, getAreaLabel } from "../data/areaMeta.js";
-import { formatDuration } from "../hooks/useTimer.js";
-import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
-import { getRouteRevealModeLabel } from "../lib/session/routeRevealMode.js";
+import { areaMeta, getAreaLabel } from "../../data/areaMeta.js";
+import { formatDuration } from "../../hooks/useTimer.js";
+import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
+import { getRouteRevealModeLabel } from "../../lib/session/routeRevealMode.js";
 import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
-} from "../lib/session/sessionTypes.js";
-import { buildAnalyticsViewModel } from "../lib/stats/analytics.js";
+} from "../../lib/session/sessionTypes.js";
+import { buildAnalyticsViewModel } from "../../lib/stats/analytics.js";
 
 const HISTORY_RUNS_PAGE_SIZE = 5;
 const SEED_PB_SORT_OPTIONS = [

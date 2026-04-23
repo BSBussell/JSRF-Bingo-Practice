@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { getAreaLabel } from "../data/areaMeta.js";
-import { formatDuration } from "../hooks/useTimer.js";
+import { getAreaLabel } from "../../data/areaMeta.js";
+import { formatDuration } from "../../hooks/useTimer.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
 

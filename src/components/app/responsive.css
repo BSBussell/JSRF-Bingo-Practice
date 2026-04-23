@@ -1,0 +1,770 @@
+@media (min-width: 900px) {
+    .stats-layout {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mode-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 980px) {
+    .stats-page {
+        --stats-panel-padding: 1.1rem;
+    }
+
+    .analytics-run-card {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-run-metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .analytics-run-actions {
+        min-width: 0;
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .analytics-run-actions .analytics-seed-actions {
+        flex: 1 1 15rem;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    .analytics-run-actions .analytics-seed-actions span {
+        grid-column: 1 / -1;
+    }
+
+    .analytics-run-actions .analytics-delete-run {
+        flex: 0 1 8.8rem;
+        min-width: 0;
+    }
+
+    .bingopedia-browser {
+        grid-template-columns: 1fr;
+        gap: 0.78rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .bingopedia-browser::after {
+        display: none;
+    }
+
+    .bingopedia-pane,
+    .bingopedia-area-index,
+    .bingopedia-square-list-pane,
+    .bingopedia-detail-pane {
+        min-height: auto;
+        grid-column: auto;
+        grid-row: auto;
+        margin-left: 0;
+        padding: 0.88rem;
+        border-radius: var(--radius-card);
+        border-color: var(--surface-card-border);
+        background:
+            linear-gradient(180deg, rgba(255, 223, 182, 0.04), rgba(255, 255, 255, 0.012)),
+            rgba(255, 255, 255, 0.018);
+        box-shadow: var(--panel-inner-shadow);
+    }
+
+
+    .bingopedia-detail-pane {
+        display: none;
+        position: static;
+        grid-column: auto;
+    }
+
+    .bingopedia-browser.is-mobile-areas .bingopedia-square-list-pane,
+    .bingopedia-browser.is-mobile-areas .bingopedia-detail-pane,
+    .bingopedia-browser.is-mobile-squares .bingopedia-area-index,
+    .bingopedia-browser.is-mobile-squares .bingopedia-detail-pane {
+        display: none;
+    }
+
+    .bingopedia-browser.is-mobile-areas .bingopedia-area-index,
+    .bingopedia-browser.is-mobile-squares .bingopedia-square-list-pane {
+        display: grid;
+    }
+
+    .bingopedia-browser.is-detail-open .bingopedia-area-index,
+    .bingopedia-browser.is-detail-open .bingopedia-square-list-pane {
+        display: none;
+    }
+
+    .bingopedia-browser.is-detail-open .bingopedia-detail-pane {
+        display: grid;
+    }
+
+    .bingopedia-mobile-back {
+        display: inline-flex;
+    }
+
+    .bingopedia-filter-row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.18rem;
+        scrollbar-width: none;
+    }
+
+    .bingopedia-filter-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .bingopedia-filter-chip {
+        flex: 0 0 auto;
+    }
+
+    .bingopedia-area-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8.4rem, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .app-header,
+    .panel-heading,
+    .drill-panel-header,
+    .settings-row,
+    .setup-toggle-card,
+    .history-item,
+    .stats-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .app-main {
+        width: min(100% - 1rem, 100%);
+        padding-top: 1rem;
+    }
+
+    .app-header {
+        gap: 0.8rem;
+        padding: 0.8rem 0.85rem;
+    }
+
+    .main-nav,
+    .header-release-slot {
+        width: 100%;
+    }
+
+    .main-nav {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(5.8rem, 1fr));
+        gap: 0.45rem;
+    }
+
+    .nav-link {
+        min-width: 0;
+        justify-content: center;
+        padding: 0.65rem 0.7rem;
+    }
+
+    .header-release-slot {
+        min-width: 0;
+    }
+
+    .release-nav-link {
+        justify-content: flex-start;
+    }
+
+    .panel {
+        padding: 1.15rem;
+    }
+
+    .stats-page {
+        --stats-section-gap: 0.72rem;
+        --stats-card-gap: 0.5rem;
+        --stats-card-padding: 0.72rem;
+        --stats-panel-padding: 0.9rem;
+    }
+
+    .stats-hero-panel {
+        padding: 0.92rem;
+    }
+
+    .analytics-panel {
+        padding: var(--stats-panel-padding);
+    }
+
+    .analytics-overview-grid {
+        gap: 0.48rem;
+    }
+
+    .analytics-overview-grid strong {
+        font-size: 1.55rem;
+    }
+
+    .analytics-overview-grid span {
+        font-size: 0.66rem;
+        letter-spacing: 0.06em;
+    }
+
+    .analytics-area-panel > .stats-clean-table,
+    .analytics-area-panel > .analytics-empty-state {
+        margin-right: 0;
+        width: 100%;
+    }
+
+    .analytics-area-panel > .stats-clean-table > .stats-clean-row,
+    .analytics-area-panel > .analytics-empty-state {
+        border-radius: var(--radius-card);
+    }
+
+    .analytics-area-panel > .stats-clean-table > .stats-area-header,
+    .analytics-area-panel > .stats-clean-table > .stats-clean-row,
+    .analytics-area-panel > .analytics-empty-state {
+        padding-right: 0.72rem;
+    }
+
+    .stats-area-header {
+        display: none;
+    }
+
+    .stats-area-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.48rem;
+        align-items: stretch;
+    }
+
+    .stats-clean-table.no-best .stats-area-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-area-row > strong {
+        grid-column: 1 / -1;
+        font-size: 0.94rem;
+    }
+
+    .stats-area-metric {
+        min-width: 0;
+        justify-items: start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .stats-area-metric::before {
+        content: attr(data-label);
+        color: var(--text-muted);
+        font-size: 0.58rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .setup-panel {
+        gap: 1rem;
+    }
+
+    .setup-panel > .panel-heading {
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+    }
+
+    .setup-panel > .panel-heading h1 {
+        margin-bottom: 0.25rem;
+    }
+
+    .setup-panel > .panel-heading .panel-note {
+        justify-self: stretch;
+        max-width: none;
+        margin: 0;
+    }
+
+    .timer-pill {
+        justify-items: start;
+        width: 100%;
+    }
+
+    .setup-action-bar {
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+        padding: 0.72rem;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 0.55rem);
+        border-radius: var(--radius-card);
+    }
+
+    .setup-action-status {
+        gap: 0.38rem;
+    }
+
+    .setup-action-heading {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .setup-action-meta {
+        gap: 0.32rem;
+    }
+
+    .setup-action-meta .badge,
+    .setup-action-meta .result-chip {
+        padding: 0.16rem 0.45rem;
+        font-size: 0.72rem;
+    }
+
+    .setup-action-seed {
+        padding: 0.45rem 0.55rem;
+        font-size: 0.76rem;
+    }
+
+    .setup-action-message {
+        font-size: 0.76rem;
+        line-height: 1.3;
+    }
+
+    .setup-action-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
+        gap: 0.5rem;
+        justify-content: stretch;
+    }
+
+    .setup-action-controls .primary-button,
+    .setup-action-controls .secondary-button {
+        min-height: 3rem;
+        min-width: 0;
+        padding: 0.72rem 0.75rem;
+        line-height: 1.15;
+    }
+
+    .setup-action-controls .primary-button {
+        width: 100%;
+    }
+
+    .setup-action-controls .secondary-button {
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .district-table-shell {
+        display: none;
+    }
+
+    .excluded-area-mobile {
+        display: grid;
+        gap: 0;
+    }
+
+    .action-row {
+        flex-wrap: wrap;
+    }
+
+    .drill-action-row {
+        flex-wrap: nowrap;
+    }
+
+    .drill-popout-row {
+        justify-content: stretch;
+    }
+
+    .drill-popout-button {
+        width: 100%;
+    }
+
+    .settings-row-actions,
+    .modal-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .history-actions,
+    .history-meta {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .history-delete-button {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
+    .theme-reset-row {
+        justify-content: flex-start;
+    }
+
+    .drill-slider-row {
+        grid-template-columns: 1fr;
+    }
+
+    .setup-grid-two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-two-column,
+    .analytics-three-column,
+    .bingopedia-browser {
+        grid-template-columns: 1fr;
+    }
+
+    .bingopedia-panel > .panel-heading,
+    .bingopedia-detail-heading {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bingopedia-panel {
+        gap: 0.78rem;
+    }
+
+    .bingopedia-search-stack,
+    .bingopedia-detail-heading .primary-button,
+    .bingopedia-practice-callout .primary-button {
+        width: 100%;
+    }
+
+    .bingopedia-search-stack {
+        gap: 0.42rem;
+    }
+
+    .bingopedia-search-field input {
+        min-height: 2.62rem;
+    }
+
+    .bingopedia-search-field .field-hint {
+        display: none;
+    }
+
+    .bingopedia-filter-row {
+        margin-right: -1.15rem;
+        padding-right: 1.15rem;
+    }
+
+    .bingopedia-filter-chip {
+        min-height: 2rem;
+        padding: 0.3rem 0.56rem;
+        font-size: 0.82rem;
+    }
+
+    .bingopedia-pane,
+    .bingopedia-area-index,
+    .bingopedia-square-list-pane,
+    .bingopedia-detail-pane {
+        padding: 0.78rem;
+    }
+
+    .bingopedia-area-index .bingopedia-pane-heading > p:not(.eyebrow) {
+        display: none;
+    }
+
+    .bingopedia-area-list {
+        grid-template-columns: repeat(auto-fit, minmax(7.9rem, 1fr));
+        gap: 0.34rem;
+    }
+
+    .bingopedia-area-button {
+        padding: 0.44rem 0.5rem;
+    }
+
+    .bingopedia-practice-callout {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+        padding: 0.65rem;
+    }
+
+    .bingopedia-square-row,
+    .bingopedia-attempt-row {
+        grid-template-columns: 1fr;
+    }
+
+    .bingopedia-square-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        justify-items: start;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .bingopedia-square-tags span {
+        padding: 0.08rem 0.28rem;
+    }
+
+    .bingopedia-mobile-back {
+        justify-self: stretch;
+    }
+
+    .bingopedia-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analytics-seed-row,
+    .analytics-run-card {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-seed-row > .analytics-seed-actions {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .analytics-seed-main {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .analytics-seed-reference {
+        max-width: 100%;
+    }
+
+    .analytics-seed-reference code {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .analytics-seed-metrics,
+    .analytics-run-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analytics-delete-run {
+        width: 100%;
+    }
+
+    .analytics-seed-actions,
+    .analytics-run-actions,
+    .analytics-run-pager,
+    .analytics-run-pager div,
+    .analytics-seed-actions .primary-button,
+    .analytics-seed-actions .secondary-button {
+        width: 100%;
+    }
+
+    .analytics-seed-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    .analytics-seed-actions span {
+        grid-column: 1 / -1;
+    }
+
+    .analytics-run-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-width: 0;
+    }
+
+    .analytics-run-pager,
+    .analytics-run-pager div,
+    .analytics-card-footer,
+    .analytics-detail-toolbar,
+    .analytics-detail-toolbar label {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .analytics-show-more-button,
+    .analytics-detail-heading .secondary-button,
+    .analytics-detail-toolbar select {
+        width: 100%;
+    }
+
+    .analytics-run-entry {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-entry-delete {
+        justify-self: stretch;
+    }
+
+    .completion-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .completion-recap-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .completion-seed-heading {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .completion-seed-copy-button,
+    .completion-primary-actions .primary-button,
+    .completion-primary-actions .secondary-button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .drill-slider-value {
+        justify-self: start;
+    }
+
+}
+
+@media (max-width: 430px) {
+    .analytics-seed-metrics,
+    .analytics-run-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .drill-complete-feedback {
+        width: calc(100% - 0.9rem);
+        max-width: calc(100% - 0.9rem);
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .drill-complete-detail-row {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
+
+    .drill-complete-detail-row strong {
+        text-align: center;
+    }
+
+    .setup-action-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .setup-action-controls .secondary-button {
+        width: 100%;
+    }
+}
+
+@media (hover: none) {
+    .history-delete-button {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .learn-video-frame,
+    .learn-video-frame::before,
+    .setup-section,
+    .setup-toggle-card,
+    .mode-card,
+    .settings-section,
+    .settings-row,
+    .practice-drill-slot > .drill-panel,
+    .learn-panel,
+    .drill-objective-card,
+    .route-tile,
+    .route-tile-reward,
+    .route-tile-reward-flash,
+    .split-live,
+    .split-status,
+    .drill-complete-burst,
+    .drill-complete-flash,
+    .setup-advanced-panel[open] .setup-advanced-content,
+    .segmented-control-indicator,
+    .completion-panel.end-screen,
+    .completion-crest,
+    .completion-reward-sheen,
+    .completion-reward-burst-shell,
+    .completion-reward-burst,
+    .completion-total-stat strong,
+    .completion-crest-particle,
+    .completion-objective-meter > span,
+    .bingopedia-browser,
+    .bingopedia-pane,
+    .bingopedia-square-list-pane .bingopedia-square-group,
+    .bingopedia-square-list-pane .bingopedia-tape-group,
+    .bingopedia-square-list-pane .bingopedia-misc-tech-group,
+    .bingopedia-detail-pane.is-selected .bingopedia-square-detail,
+    .bingopedia-detail-pane .bingopedia-detail-empty,
+    .stats-dashboard-page .stats-hero-panel,
+    .analytics-detail-page .stats-hero-panel,
+    .stats-dashboard-page .analytics-section,
+    .analytics-detail-page .analytics-section {
+        animation: none;
+    }
+
+    .segmented-control-indicator {
+        transition: none;
+    }
+
+    .setup-action-bar,
+    .setup-section,
+    .setup-toggle-card,
+    .mode-card,
+    .settings-section,
+    .settings-row,
+    .theme-control,
+    .learn-variant-list,
+    .learn-variant-option,
+    .drill-action-menu-list,
+    .drill-action-menu-item,
+    .timer-pill,
+    .split-card,
+    .drill-panel .split-board::before,
+    .stats-clean-row,
+    .analytics-overview-grid article,
+    .analytics-seed-row,
+    .analytics-run-card,
+    .history-item,
+    .stats-row,
+    .route-tile,
+    .route-tile::before,
+    .route-tile-key,
+    .completion-stat,
+    .completion-seed-card,
+    .district-cell-button,
+    .excluded-area-mobile-district,
+    .excluded-area-mobile-chip,
+    .drill-slider-row,
+    .primary-button,
+    .primary-button::before,
+    .secondary-button,
+    .ghost-button,
+    .nav-link,
+    .bingopedia-filter-chip,
+    .bingopedia-area-button,
+    .bingopedia-square-row,
+    .bingopedia-attempt-row {
+        transition: none;
+    }
+
+    .setup-action-bar:hover,
+    .setup-action-bar:focus-within,
+    .setup-section:hover,
+    .setup-section:focus-within,
+    .setup-toggle-card:hover,
+    .setup-toggle-card:focus-within,
+    .mode-card:hover,
+    .mode-card:focus-within,
+    .primary-button:hover::before,
+    .primary-button:focus-visible::before,
+    .learn-variant-option:hover,
+    .learn-variant-option.is-active,
+    .drill-action-menu-item:hover,
+    .drill-action-menu-item:focus-visible,
+    .route-tile:active,
+    .route-tile.is-active:hover,
+    .route-tile.is-active:focus-visible,
+    .route-tile.is-active:hover .route-tile-key,
+    .route-tile.is-active:focus-visible .route-tile-key,
+    .district-cell-button:hover,
+    .district-cell-button:focus-visible,
+    .excluded-area-mobile-district:hover,
+    .excluded-area-mobile-chip:hover,
+    .drill-slider-row:not(.is-disabled):hover,
+    .drill-slider-row:not(.is-disabled):focus-within,
+    .analytics-overview-grid article:hover,
+    .analytics-overview-grid article:focus-within,
+    .analytics-seed-row:hover,
+    .analytics-seed-row:focus-within,
+    .analytics-run-card:hover,
+    .analytics-run-card:focus-within,
+    .bingopedia-area-button:hover,
+    .bingopedia-area-button:focus-visible,
+    .bingopedia-square-row:hover,
+    .bingopedia-square-row:focus-visible,
+    .bingopedia-attempt-row.is-clickable:hover,
+    .bingopedia-attempt-row.is-clickable:focus-visible {
+        transform: none;
+    }
+}

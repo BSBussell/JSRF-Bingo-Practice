@@ -1,7 +1,7 @@
-import { getAreaLabel } from "../data/areaMeta.js";
-import { formatDuration } from "../hooks/useTimer.js";
-import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
-import { getRouteRevealModeLabel } from "../lib/session/routeRevealMode.js";
+import { getAreaLabel } from "../../data/areaMeta.js";
+import { formatDuration } from "../../hooks/useTimer.js";
+import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
+import { getRouteRevealModeLabel } from "../../lib/session/routeRevealMode.js";
 
 function formatResult(result) {
   return result[0].toUpperCase() + result.slice(1);

@@ -1,15 +1,17 @@
-import { CompletionPanel } from "./components/CompletionPanel.jsx";
-import { BingopediaPanel } from "./components/BingopediaPanel.jsx";
-import { Header } from "./components/Header.jsx";
-import { DrillCard } from "./components/DrillCard.jsx";
-import { DustyBackdrop } from "./components/DustyBackdrop.jsx";
-import { LearnPanel } from "./components/LearnPanel.jsx";
-import { ModeSelect } from "./components/ModeSelect.jsx";
-import { PopoutViewport } from "./components/PopoutViewport.jsx";
-import { RouteCard } from "./components/RouteCard.jsx";
-import { SettingsPanel } from "./components/SettingsPanel.jsx";
-import { SetupPanel } from "./components/SetupPanel.jsx";
-import { StatsPanel } from "./components/StatsPanel.jsx";
+import {
+  BingopediaPanel,
+  CompletionPanel,
+  DrillCard,
+  DustyBackdrop,
+  Header,
+  LearnPanel,
+  ModeSelect,
+  PopoutViewport,
+  RouteCard,
+  SettingsPanel,
+  SetupPanel,
+  StatsPanel
+} from "./components/index.js";
 import { useDrillSession } from "./hooks/useDrillSession.js";
 import { useDesktopGlobalShortcuts } from "./hooks/useDesktopGlobalShortcuts.js";
 import { useDesktopUpdate } from "./hooks/useDesktopUpdate.js";

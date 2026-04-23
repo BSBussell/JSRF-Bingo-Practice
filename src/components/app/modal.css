@@ -1,0 +1,36 @@
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: var(--modal-backdrop-background);
+    backdrop-filter: blur(18px);
+}
+
+.modal-card {
+    width: min(100%, 32rem);
+    display: grid;
+    gap: 0.95rem;
+}
+
+.danger-modal {
+    border-color: var(--danger-modal-border);
+    box-shadow: var(--danger-modal-shadow);
+}
+
+.modal-warning {
+    padding: 0.8rem 0.9rem;
+    border-radius: var(--radius-control);
+    background: var(--modal-warning-background);
+    border: 1px solid var(--modal-warning-border);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+

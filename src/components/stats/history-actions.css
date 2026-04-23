@@ -1,0 +1,58 @@
+.history-item strong,
+.stats-row strong {
+    display: block;
+}
+
+.history-copy {
+    min-width: 0;
+}
+
+.history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.history-meta,
+.stats-row {
+    color: var(--history-row-text);
+}
+
+.history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.history-delete-button {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.2rem);
+    transition:
+        opacity 160ms ease,
+        transform 160ms ease;
+}
+
+.history-item:hover .history-delete-button,
+.history-item:focus-within .history-delete-button {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.diff-good {
+    color: var(--success);
+}
+
+.diff-bad {
+    color: var(--accent-strong);
+}
+
+.result-complete {
+    background: var(--result-complete-background);
+}
+

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { formatDuration } from "../hooks/useTimer.js";
+import { formatDuration } from "../../hooks/useTimer.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 
 function clampNumber(value, min, max, fallback) {

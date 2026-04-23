@@ -1,0 +1,227 @@
+.route-grid {
+    display: grid;
+    gap: 1.1rem;
+    margin-bottom: 1.55rem;
+}
+
+.route-tile {
+    position: relative;
+    display: grid;
+    min-height: 7rem;
+    grid-template-rows: 1fr auto;
+    gap: 0.65rem;
+    border: 1px solid var(--surface-card-border);
+    border-radius: var(--radius-card);
+    background: var(--split-card-background);
+    box-shadow: var(--timer-pill-shadow);
+    padding: 0.25rem 0.62rem 0.6rem;
+    color: inherit;
+    text-align: left;
+    isolation: isolate;
+    overflow: visible;
+    transform-origin: center center;
+    backface-visibility: hidden;
+    --route-location-color: var(--text-muted);
+    --route-location-glow: transparent;
+    --route-tile-delay: 0ms;
+    transition:
+        transform 260ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        border-color 260ms ease,
+        background 260ms ease,
+        box-shadow 260ms ease,
+        filter 260ms ease;
+}
+
+.route-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 18% 12%, rgba(255, 226, 176, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 58%);
+    opacity: 0;
+    transition: opacity 260ms ease;
+}
+
+.route-tile > * {
+    position: relative;
+    z-index: 1;
+}
+
+.route-tile-reward {
+    position: absolute;
+    top: -1rem;
+    left: -1rem;
+    z-index: 3;
+    width: calc(100% + 2rem);
+    height: calc(100% + 2rem);
+    overflow: visible;
+    border-radius: calc(var(--radius-card) + 1rem);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.78;
+}
+
+.route-tile-reward-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), transparent 21%),
+        radial-gradient(circle at 50% 54%, var(--timer-pill-accent-border), transparent 48%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 62%);
+    box-shadow:
+        inset 0 0 0 1px var(--timer-pill-running-border),
+        inset 0 0 24px var(--timer-pill-accent-border);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: route-tile-reward-flash 520ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
+.route-tile:active:not(:disabled) {
+    transform: translateY(0) scale(0.99);
+}
+
+.route-tile[data-district="ShibuyaCho"] {
+    --route-location-color: var(--route-district-shibuya);
+    --route-location-glow: var(--route-district-shibuya-glow);
+}
+
+.route-tile[data-district="Kogane"] {
+    --route-location-color: var(--route-district-kogane);
+    --route-location-glow: var(--route-district-kogane-glow);
+}
+
+.route-tile[data-district="Benten"] {
+    --route-location-color: var(--route-district-benten);
+    --route-location-glow: var(--route-district-benten-glow);
+}
+
+.route-tile-body {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    min-width: 0;
+    padding: 0.3rem 0.35rem 0.1rem 0;
+}
+
+.route-tile strong {
+    display: -webkit-box;
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--text-primary);
+    font-size: 0.94rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.24;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+
+.route-tile-footer {
+    display: flex;
+    align-items: center;
+    min-height: 1.15rem;
+    min-width: 0;
+    padding: 0 0.05rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.route-tile-area {
+    color: inherit;
+}
+
+.route-tile.uses-district-location-color .route-tile-area {
+    color: var(--route-location-color);
+    font-size: 0.74rem;
+    font-weight: 750;
+    text-shadow: 0 0 8px var(--route-location-glow);
+}
+
+.route-tile.is-active {
+    border-color: var(--split-card-border);
+    animation: route-tile-settle-in 420ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+    animation-delay: var(--route-tile-delay);
+}
+
+.route-tile.is-active:not(:disabled):hover,
+.route-tile.is-active:focus-visible {
+    transform: translateY(-0.08rem);
+    border-color: var(--timer-pill-running-border);
+    background: var(--split-card-background);
+    box-shadow:
+        0 0 0 1px rgba(255, 216, 156, 0.045),
+        0 10px 22px rgba(0, 0, 0, 0.18),
+        var(--timer-pill-shadow);
+    filter: brightness(1.025);
+}
+
+.route-tile.is-active:not(:disabled):hover::before,
+.route-tile.is-active:focus-visible::before {
+    opacity: 1;
+}
+
+.route-tile.is-empty {
+    border-style: dashed;
+    border-color: var(--surface-card-border);
+    background: var(--surface-card-background);
+    box-shadow: none;
+}
+
+.route-tile.is-empty strong {
+    color: var(--text-secondary);
+}
+
+.route-tile.is-empty .route-tile-footer {
+    color: var(--text-muted);
+}
+
+.route-tile-key {
+    position: absolute;
+    top: -0.42rem;
+    right: -0.32rem;
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--secondary-button-border);
+    background: var(--button-hotkey-background);
+    color: var(--text-secondary);
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: var(--timer-pill-shadow);
+    z-index: 4;
+    transition:
+        background-color 240ms ease,
+        border-color 240ms ease,
+        color 240ms ease,
+        transform 240ms ease;
+}
+
+.route-tile.is-active:hover .route-tile-key,
+.route-tile.is-active:focus-visible .route-tile-key {
+    border-color: var(--timer-pill-running-border);
+    color: var(--timer-pill-text);
+    transform: translateY(-0.05rem);
+}
+

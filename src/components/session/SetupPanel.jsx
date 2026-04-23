@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { areaLabels, areasByDistrict } from "../data/areaMeta.js";
-import { areaOptions } from "../data/objectives.js";
+import { areaLabels, areasByDistrict } from "../../data/areaMeta.js";
+import { areaOptions } from "../../data/objectives.js";
 import {
   DistrictJumpDistributionEditor,
   LevelShiftDistributionEditor
@@ -26,27 +26,27 @@ import {
   isDistrictExcluded,
   setDistrictExclusion,
   toggleAreaExclusion
-} from "../lib/drill/drillSettings.js";
+} from "../../lib/drill/drillSettings.js";
 import {
   buildSessionSpecFromConfig,
   createRandomSeed,
   resolveSeedInput
-} from "../lib/seed/sessionSeed.js";
+} from "../../lib/seed/sessionSeed.js";
 import {
   buildSessionConfig,
   getSessionObjectiveMax,
   mergeSessionConfigIntoDrillSettings,
   normalizeDrillSettingsForSessionType
-} from "../lib/session/sessionConfig.js";
+} from "../../lib/session/sessionConfig.js";
 import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
-} from "../lib/session/sessionTypes.js";
+} from "../../lib/session/sessionTypes.js";
 import {
   ROUTE_REVEAL_MODE_BURST,
   ROUTE_REVEAL_MODE_LABELS,
   ROUTE_REVEAL_MODE_ROLLING
-} from "../lib/session/routeRevealMode.js";
+} from "../../lib/session/routeRevealMode.js";
 
 function VarianceSlider({
   label,

@@ -5,8 +5,8 @@ import {
   hasHotkeyModifier,
   HOTKEY_ACTIONS,
   isModifierOnlyCode
-} from "../lib/hotkeys.js";
-import { isTauriRuntime } from "../lib/runtime.js";
+} from "../../lib/hotkeys.js";
+import { isTauriRuntime } from "../../lib/runtime.js";
 import {
   BACKDROP_DENSITY_FIELDS,
   BACKDROP_DIRECTION_OPTIONS,
@@ -19,7 +19,7 @@ import {
   PARTICLE_APPEARANCE_FIELDS,
   PARTICLE_COLOR_FIELDS,
   THEME_OPTIONS
-} from "../lib/theme/index.js";
+} from "../../lib/theme/index.js";
 
 function HotkeyRow({
   action,

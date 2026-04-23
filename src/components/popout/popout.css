@@ -1,0 +1,237 @@
+.popout-root {
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--popout-background);
+}
+
+.popout-viewport {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    padding: 0;
+}
+
+.popout-scale-shell {
+    flex: none;
+    opacity: 0;
+}
+
+.popout-scale-shell.is-ready {
+    opacity: 1;
+}
+
+.popout-scale-target {
+    width: 42rem;
+    transform-origin: top left;
+    --popout-text-scale-y: 1;
+    --popout-font-boost: 0;
+}
+
+.popout-scale-target .drill-panel,
+.popout-empty-panel {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.popout-scale-target .drill-panel {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.popout-scale-target .drill-panel::before,
+.popout-scale-target .drill-panel::after {
+    display: none;
+}
+
+.popout-scale-target .drill-panel h1 {
+    margin-bottom: 0.55rem;
+    font-size: clamp(2.58rem, 5.4vw, 4.15rem);
+}
+
+.popout-scale-target .drill-complete-feedback {
+    --complete-feedback-width: 54rem;
+    --complete-feedback-min-height: 24rem;
+    --complete-feedback-gap: clamp(0.9rem, 2.2vw, 1.25rem);
+    --complete-feedback-padding-block: clamp(1.75rem, 4.6vw, 3.1rem);
+    --complete-feedback-padding-inline: clamp(1.9rem, 5vw, 3.45rem);
+    --complete-feedback-label-size: clamp(1.18rem, 2.8vw, 1.62rem);
+    --complete-feedback-value-size: clamp(6.8rem, 20vw, 9.8rem);
+    --complete-feedback-detail-width: 34rem;
+    --complete-feedback-detail-gap: 0.5rem;
+    --complete-feedback-detail-padding-block: 0.78rem;
+    --complete-feedback-detail-padding-inline: 0.95rem;
+    --complete-feedback-detail-size: clamp(1.55rem, 3.6vw, 2.2rem);
+    --complete-feedback-detail-label-column: 5.7rem;
+}
+
+.popout-scale-target .drill-objective-card {
+    height: 8.95rem;
+}
+
+.popout-scale-target .drill-objective-card h1 {
+    margin-bottom: 0;
+    min-height: 6.15rem;
+    max-height: 6.15rem;
+    font-size: var(--drill-title-popout-font-size);
+}
+
+.popout-scale-target .drill-objective-location {
+    font-size: var(--drill-location-popout-font-size);
+}
+
+.popout-scale-target .route-grid {
+    gap: 0.95rem;
+}
+
+.popout-scale-target .route-tile {
+    min-height: 8.9rem;
+}
+
+.popout-scale-target .route-tile strong {
+    font-size: 1.08rem;
+    line-height: 1.22;
+}
+
+.popout-scale-target .route-tile-footer {
+    min-height: 1.35rem;
+    font-size: 0.82rem;
+}
+
+.popout-scale-target .route-tile-key {
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 0.72rem;
+}
+
+.popout-scale-target .learn-panel {
+    width: min(100%, 30rem);
+}
+
+.popout-scale-target .learn-panel.no-variants {
+    width: min(100%, 32rem);
+}
+
+.popout-scale-target .learn-video-frame {
+    padding: 0.35rem;
+    border-radius: var(--radius-card);
+    box-shadow: var(--popout-learn-frame-shadow);
+}
+
+.popout-scale-target .learn-video-frame iframe {
+    border-radius: var(--radius-media);
+}
+
+.popout-scale-target .drill-embed-slot {
+    margin: 0.15rem 0 0.25rem;
+}
+
+.popout-scale-target .drill-panel-header.vertical {
+    gap: 0.2rem;
+}
+
+.popout-scale-target .eyebrow {
+    font-size: 0.94rem;
+    letter-spacing: 0.12em;
+}
+
+.popout-scale-target .split-card {
+    min-height: 4.95rem;
+    padding-top: 0.92rem;
+    padding-bottom: 0.92rem;
+}
+
+.popout-scale-target .split-heading {
+    gap: 0.46rem;
+}
+
+.popout-scale-target .split-index {
+    font-size: 2.08rem;
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+}
+
+.popout-scale-target .split-status {
+    font-size: 1.68rem;
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+}
+
+.popout-scale-target .timer-label {
+    font-size: 1.14rem;
+    letter-spacing: 0.12em;
+}
+
+.popout-scale-target .timer-pill.is-primary {
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
+}
+
+.popout-scale-target .timer-pill.is-primary strong {
+    font-size: clamp(3.35rem, 8.8vw, 4.75rem);
+}
+
+.popout-scale-target .timer-pill.is-secondary strong {
+    font-size: 1.62rem;
+}
+
+.popout-scale-target.is-readable-compact .split-card {
+    min-height: calc(4.95rem + 0.45rem * var(--popout-font-boost));
+    padding-top: calc(0.92rem + 0.08rem * var(--popout-font-boost));
+    padding-bottom: calc(0.92rem + 0.08rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .split-heading {
+    gap: calc(0.46rem + 0.06rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .split-index {
+    font-size: calc(2.08rem + 0.12rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .split-status {
+    font-size: calc(1.68rem + 0.1rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .timer-label {
+    font-size: calc(1.14rem + 0.06rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .timer-pill.is-primary {
+    padding-top: calc(1.2rem + 0.08rem * var(--popout-font-boost));
+    padding-bottom: calc(1.2rem + 0.08rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .timer-pill.is-primary strong {
+    font-size: calc(3.35rem + 0.18rem * var(--popout-font-boost));
+}
+
+.popout-scale-target.is-readable-compact .timer-pill.is-secondary strong {
+    font-size: calc(1.62rem + 0.08rem * var(--popout-font-boost));
+}
+
+.popout-scale-target .drill-panel h1,
+.popout-scale-target .eyebrow,
+.popout-scale-target .split-index,
+.popout-scale-target .split-status,
+.popout-scale-target .timer-label,
+.popout-scale-target .timer-pill strong {
+    transform: scaleY(var(--popout-text-scale-y));
+    transform-origin: left center;
+}
+
+.popout-scale-target .eyebrow,
+.popout-scale-target .split-index,
+.popout-scale-target .split-status,
+.popout-scale-target .timer-label,
+.popout-scale-target .timer-pill strong {
+    display: inline-block;
+}

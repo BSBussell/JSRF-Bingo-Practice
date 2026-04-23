@@ -1,0 +1,91 @@
+.panel {
+    position: relative;
+    background: var(--panel-background);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-shadow);
+    padding: 1.5rem;
+    overflow: hidden;
+    backdrop-filter: blur(22px);
+}
+
+.panel::before {
+    content: "";
+    position: absolute;
+
+    border-radius: inherit;
+    inset: 0;
+    pointer-events: none;
+    background: var(--panel-before-background);
+    opacity: 0.9;
+}
+
+.panel::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--panel-inner-shadow);
+}
+
+.hero-panel {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.panel-copy h1,
+.setup-panel h1,
+.drill-panel h1 {
+    margin: 0.25rem 0 0.75rem;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 0.98;
+    font-family: var(--font-ui);
+}
+
+.hero-copy,
+.panel-note,
+.objective-description,
+.mode-card p,
+.history-item p,
+.empty-state {
+    color: var(--text-secondary);
+}
+
+.mode-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.mode-card {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1.5rem;
+    align-items: flex-end;
+    padding: 1.4rem;
+    background: var(--settings-section-background);
+    border-radius: var(--radius-card-lg);
+    border: 1px solid var(--settings-section-border);
+    animation: surface-load-in 300ms ease-out both;
+    transition:
+        border-color 170ms ease,
+        filter 170ms ease,
+        transform 170ms ease;
+}
+
+.mode-card:nth-child(2) {
+    animation-delay: 45ms;
+}
+
+.mode-card:nth-child(3) {
+    animation-delay: 90ms;
+}
+
+.mode-card:hover,
+.mode-card:focus-within {
+    border-color: var(--timer-pill-accent-border);
+    filter: brightness(1.025);
+    transform: translateY(-1px);
+}
+

@@ -1,0 +1,186 @@
+.split-board {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.drill-panel .split-board {
+    --split-count: 3;
+    --split-active-index: 0;
+    --split-live-width: 33.333%;
+    --split-active-offset: 0%;
+    position: relative;
+    isolation: isolate;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    align-items: stretch;
+    border-radius: var(--radius-button);
+    overflow: hidden;
+    border: 1px solid var(--split-board-border);
+    background: var(--split-board-background);
+    box-shadow: var(--split-board-shadow);
+}
+
+.drill-panel .split-board::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--split-live-width);
+    pointer-events: none;
+    background: var(--split-live-background);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 216, 156, 0.04),
+        0 0 18px rgba(230, 180, 87, 0.08);
+    transform: translateX(var(--split-active-offset));
+    transition:
+        transform 340ms cubic-bezier(0.18, 0.82, 0.22, 1),
+        box-shadow 220ms ease,
+        filter 220ms ease;
+}
+
+.split-card {
+    position: relative;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-control);
+    background: var(--split-card-background);
+    border: 1px solid var(--split-card-border);
+    transition:
+        background-color 220ms ease,
+        border-color 220ms ease,
+        box-shadow 220ms ease,
+        filter 220ms ease;
+}
+
+.drill-panel .split-card {
+    z-index: 1;
+    padding: 0.5rem 0.66rem;
+    min-height: 3.55rem;
+    border: 0;
+    border-right: 1px solid var(--split-board-border);
+    border-radius: 0;
+    background: transparent;
+    display: grid;
+    align-items: center;
+}
+
+.drill-panel .split-card:last-child {
+    border-right: 0;
+}
+
+.split-card.is-hidden {
+    visibility: hidden;
+}
+
+.split-live {
+    border-color: var(--split-live-border);
+    background: var(--split-live-background);
+    animation: split-card-focus 300ms ease-out both;
+}
+
+.split-done {
+    border-color: var(--split-done-border);
+}
+
+.drill-panel .split-live {
+    background: transparent;
+    filter: brightness(1.015);
+    box-shadow: none;
+}
+
+.drill-panel .split-done {
+    background: var(--split-done-background);
+}
+
+.split-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.drill-panel .split-heading {
+    display: grid;
+    gap: 0.12rem;
+    align-content: center;
+    justify-items: start;
+}
+
+.split-status {
+    display: inline-block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    animation: split-status-change 180ms ease-out both;
+}
+
+.drill-panel .split-status {
+    font-size: 0.79rem;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+}
+
+.split-status-live {
+    color: var(--accent-strong);
+}
+
+.split-status-done {
+    color: var(--success);
+}
+
+.split-status-pending {
+    color: var(--muted);
+}
+
+.split-status-placeholder {
+    color: transparent;
+}
+
+.split-index {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.drill-panel .split-index {
+    font-size: 1rem;
+    text-transform: none;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+}
+
+.drill-embed-slot {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: center;
+}
+
+.practice-drill-slot .drill-panel {
+    width: min(100%, 34rem);
+}
+
+.practice-drill-slot .timer-pill.is-composite {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0.35rem;
+}
+
+.practice-drill-slot .timer-subslot {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    justify-self: end;
+}
+
+.practice-drill-slot .timer-pill.is-secondary {
+    min-width: 0;
+    justify-items: end;
+    text-align: right;
+}
+
+.practice-drill-slot .drill-action-row {
+    justify-content: space-between;
+    flex-wrap: nowrap;
+}
+

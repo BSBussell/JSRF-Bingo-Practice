@@ -1,4 +1,4 @@
-import { getLearningVideoEmptyLabel } from "../data/learnVideos.js";
+import { getLearningVideoEmptyLabel } from "../../data/learnVideos.js";
 import { LearningVideoPanel } from "./LearningVideoPanel.jsx";
 
 export function LearnPanel({

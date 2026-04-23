@@ -1,7 +1,7 @@
 import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
-} from "../lib/session/sessionTypes.js";
+} from "../../lib/session/sessionTypes.js";
 
 export function Header({
   activeMode,

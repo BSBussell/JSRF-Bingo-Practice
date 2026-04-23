@@ -1,22 +1,22 @@
 import { useMemo, useRef, useState } from "react";
 
-import { areaMeta } from "../data/areaMeta.js";
+import { areaMeta } from "../../data/areaMeta.js";
 import {
   PRIMARY_LEARNING_VIDEO_PLAYLIST_URL,
   buildBingopediaLearningVideoSources,
   buildBingopediaMiscTechRows,
   buildBingopediaTapeRow,
   getLearningVideoEmptyLabel
-} from "../data/learnVideos.js";
-import { formatDuration } from "../hooks/useTimer.js";
-import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
+} from "../../data/learnVideos.js";
+import { formatDuration } from "../../hooks/useTimer.js";
+import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
 import {
   BINGOPEDIA_FILTERS,
   buildBingopediaViewModel,
   filterBingopediaSquares,
   groupBingopediaSquaresByArea
-} from "../lib/stats/bingopedia.js";
-import { LearningVideoPanel } from "./LearningVideoPanel.jsx";
+} from "../../lib/stats/bingopedia.js";
+import { LearningVideoPanel } from "../learn/LearningVideoPanel.jsx";
 
 const FILTER_OPTIONS = [
   {
