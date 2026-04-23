@@ -1,18 +1,38 @@
 export const HOTKEY_ACTIONS = [
   {
     key: "split",
-    label: "Split",
+    label: "Phase Action",
     description: "Triggers the live phase action for travel, tape, or square completion."
   },
   {
     key: "skip",
-    label: "Skip",
+    label: "Skip Square",
     description: "Skips the current square and rolls the next square."
   },
   {
     key: "pause",
-    label: "Pause",
+    label: "Pause / Resume",
     description: "Toggles the current session between paused and running."
+  },
+  {
+    key: "runBack",
+    label: "Run It Back",
+    description: "Restarts the current run immediately from the same seed and session spec."
+  },
+  {
+    key: "skipSplit",
+    label: "Skip Split",
+    description: "Skips the current travel/tape split in practice mode."
+  },
+  {
+    key: "toggleGuide",
+    label: "Toggle Guide",
+    description: "Shows or hides the embedded route guide in practice mode."
+  },
+  {
+    key: "startCountdown",
+    label: "Start Countdown",
+    description: "Starts the run countdown from the Ready prompt."
   },
   {
     key: "end",

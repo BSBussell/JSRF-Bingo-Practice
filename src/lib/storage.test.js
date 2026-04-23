@@ -9,6 +9,10 @@ test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
   assert.equal(state.settings.autoOpenPopout, false);
   assert.equal(state.settings.routeDistrictColorsEnabled, true);
+  assert.equal(state.settings.hotkeys.runBack, null);
+  assert.equal(state.settings.hotkeys.skipSplit, null);
+  assert.equal(state.settings.hotkeys.toggleGuide, null);
+  assert.equal(state.settings.hotkeys.startCountdown, null);
   assert.equal(state.startCountdown, null);
   assert.equal(state.pendingCompletion, null);
 });
@@ -98,6 +102,24 @@ test("normalizeAppState preserves autoOpenPopout setting", () => {
   assert.equal(state.settings.autoOpenPopout, true);
 });
 
+test("normalizeAppState backfills optional hotkey actions as unbound", () => {
+  const state = normalizeAppState({
+    settings: {
+      hotkeys: {
+        split: "Enter",
+        skip: "KeyS",
+        pause: "KeyP",
+        end: "KeyE"
+      }
+    }
+  });
+
+  assert.equal(state.settings.hotkeys.runBack, null);
+  assert.equal(state.settings.hotkeys.skipSplit, null);
+  assert.equal(state.settings.hotkeys.toggleGuide, null);
+  assert.equal(state.settings.hotkeys.startCountdown, null);
+});
+
 test("normalizeAppState preserves route district color setting", () => {
   const state = normalizeAppState({
     settings: {
@@ -155,6 +177,30 @@ test("normalizeAppState preserves a valid shared startCountdown payload", () => 
   assert.equal(state.startCountdown.sessionId, "session_1234");
   assert.equal(state.startCountdown.startedAt, 1234);
   assert.equal(state.startCountdown.exportSeed, exportSeed);
+  assert.deepEqual(state.startCountdown.sessionSpec.objectiveIds, sessionSpec.objectiveIds);
+});
+
+test("normalizeAppState preserves a pending startCountdown waiting for Ready", () => {
+  const { sessionSpec, exportSeed } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 2
+    }),
+    "0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+  );
+  const state = normalizeAppState({
+    selectedMode: "practice",
+    startCountdown: {
+      id: "countdown_pending",
+      sessionId: "session_pending",
+      startedAt: null,
+      exportSeed,
+      sessionSpec
+    }
+  });
+
+  assert.ok(state.startCountdown);
+  assert.equal(state.startCountdown.startedAt, null);
+  assert.equal(state.startCountdown.sessionId, "session_pending");
   assert.deepEqual(state.startCountdown.sessionSpec.objectiveIds, sessionSpec.objectiveIds);
 });
 

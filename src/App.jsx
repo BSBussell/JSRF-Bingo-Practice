@@ -39,6 +39,7 @@ import {
   normalizeAppState
 } from "./lib/storage.js";
 import { buildLearningVideoSources } from "./data/learnVideos.js";
+import { formatHotkeyBinding } from "./lib/hotkeys.js";
 import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
 
@@ -108,18 +109,42 @@ function CurrentDrillPanel({
   );
 }
 
-function StartCountdownPanel({ countdownLabel }) {
+function StartCountdownPanel({
+  countdownLabel,
+  isPendingReady = false,
+  onStartCountdown,
+  startCountdownHotkey
+}) {
+  const readyHotkeyLabel = startCountdownHotkey
+    ? formatHotkeyBinding(startCountdownHotkey)
+    : null;
+
   return (
     <section className="panel drill-panel start-countdown-panel">
       <div className="drill-panel-header vertical">
         <p className="eyebrow">Get Ready</p>
         <h1>Drill Start</h1>
       </div>
-      <div className="start-countdown-stage" role="status" aria-live="assertive">
-        <strong key={countdownLabel} className="start-countdown-number">
-          {countdownLabel}
-        </strong>
-      </div>
+      {isPendingReady ? (
+        <div className="start-countdown-stage start-countdown-stage-idle">
+          <button
+            className="primary-button reward-button start-countdown-ready-button"
+            type="button"
+            onClick={onStartCountdown}
+          >
+            Ready?
+          </button>
+          {readyHotkeyLabel ? (
+            <p className="start-countdown-sequence">Hotkey: {readyHotkeyLabel}</p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="start-countdown-stage" role="status" aria-live="assertive">
+          <strong key={countdownLabel} className="start-countdown-number">
+            {countdownLabel}
+          </strong>
+        </div>
+      )}
     </section>
   );
 }
@@ -163,7 +188,12 @@ function ActiveSessionStage({
           onToggleLearnPanel={onToggleLearnPanel}
         />
       ) : (
-        <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
+        <StartCountdownPanel
+          countdownLabel={drillSession.startCountdownLabel}
+          isPendingReady={drillSession.isStartCountdownPendingReady}
+          onStartCountdown={drillSession.beginStartCountdown}
+          startCountdownHotkey={settings.hotkeys.startCountdown}
+        />
       )}
     </DrillStage>
   );
@@ -533,10 +563,15 @@ export default function App() {
   useSessionHotkeys({
     enabled: (!useDesktopGlobalHotkeys || hasWindowFocus) && isSessionMode,
     currentSession: drillSession.currentSession,
+    startCountdown: drillSession.startCountdown,
     hotkeys: settings.hotkeys,
     onSplit: drillSession.performPhaseAction,
     onSkip: drillSession.skipObjective,
     onPause: drillSession.togglePause,
+    onRunBack: drillSession.restartCurrentSession,
+    onSkipSplit: drillSession.skipCurrentSplit,
+    onToggleGuide: drillSession.toggleLearnPanelVisibility,
+    onStartCountdown: drillSession.beginStartCountdown,
     onEnd: drillSession.endSession,
     onRouteSlot: drillSession.completeRouteSlot
   });
@@ -551,6 +586,9 @@ export default function App() {
     onSplit: drillSession.performPhaseAction,
     onSkip: drillSession.skipObjective,
     onPause: drillSession.togglePause,
+    onRunBack: drillSession.restartCurrentSession,
+    onSkipSplit: drillSession.skipCurrentSplit,
+    onToggleGuide: drillSession.toggleLearnPanelVisibility,
     onEnd: drillSession.endSession
   });
 
@@ -585,7 +623,12 @@ export default function App() {
               onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
             />
           ) : drillSession.isStartCountdownActive ? (
-            <StartCountdownPanel countdownLabel={drillSession.startCountdownLabel} />
+            <StartCountdownPanel
+              countdownLabel={drillSession.startCountdownLabel}
+              isPendingReady={drillSession.isStartCountdownPendingReady}
+              onStartCountdown={drillSession.beginStartCountdown}
+              startCountdownHotkey={settings.hotkeys.startCountdown}
+            />
           ) : drillSession.pendingCompletion ? (
             <CompletionPanel
               completionSummary={drillSession.pendingCompletion}

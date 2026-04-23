@@ -16,6 +16,7 @@ import {
 import { isTauriRuntime } from "../lib/runtime.js";
 
 const MAX_ATTEMPTS = 24;
+const DESKTOP_UNSUPPORTED_ACTIONS = new Set(["startCountdown"]);
 
 function toDesktopMainKey(code) {
   if (!code) {
@@ -94,6 +95,7 @@ function buildDesktopShortcutRequest(action, binding) {
       displayLabel: "Unbound",
       accelerator: null,
       eligible: false,
+      skipRegistration: true,
       reason: "No binding set."
     };
   }
@@ -104,6 +106,7 @@ function buildDesktopShortcutRequest(action, binding) {
       displayLabel: formatHotkeyBinding(normalizedBinding),
       accelerator: null,
       eligible: false,
+      skipRegistration: false,
       reason: "Desktop global shortcuts require at least one modifier."
     };
   }
@@ -115,6 +118,7 @@ function buildDesktopShortcutRequest(action, binding) {
       displayLabel: formatHotkeyBinding(normalizedBinding),
       accelerator: null,
       eligible: false,
+      skipRegistration: false,
       reason: `Unsupported desktop key "${formatHotkeyKey(normalizedBinding.code)}".`
     };
   }
@@ -126,6 +130,7 @@ function buildDesktopShortcutRequest(action, binding) {
     displayLabel: formatHotkeyBinding(normalizedBinding),
     accelerator,
     eligible: true,
+    skipRegistration: false,
     reason: null
   };
 }
@@ -148,6 +153,9 @@ export function useDesktopGlobalShortcuts({
   onSplit,
   onSkip,
   onPause,
+  onRunBack,
+  onSkipSplit,
+  onToggleGuide,
   onEnd
 }) {
   const [attempts, setAttempts] = useState([]);
@@ -157,11 +165,16 @@ export function useDesktopGlobalShortcuts({
     split: onSplit,
     skip: onSkip,
     pause: onPause,
+    runBack: onRunBack,
+    skipSplit: onSkipSplit,
+    toggleGuide: onToggleGuide,
     end: onEnd
   });
   const requestedShortcuts = useMemo(
     () =>
-      HOTKEY_ACTIONS.map((action) => buildDesktopShortcutRequest(action.key, hotkeys[action.key])),
+      HOTKEY_ACTIONS
+        .filter((action) => !DESKTOP_UNSUPPORTED_ACTIONS.has(action.key))
+        .map((action) => buildDesktopShortcutRequest(action.key, hotkeys[action.key])),
     [hotkeys]
   );
   const requestedSignature = useMemo(
@@ -176,9 +189,12 @@ export function useDesktopGlobalShortcuts({
       split: onSplit,
       skip: onSkip,
       pause: onPause,
+      runBack: onRunBack,
+      skipSplit: onSkipSplit,
+      toggleGuide: onToggleGuide,
       end: onEnd
     };
-  }, [onEnd, onPause, onSkip, onSplit]);
+  }, [onEnd, onPause, onRunBack, onSkip, onSkipSplit, onSplit, onToggleGuide]);
 
   useEffect(() => {
     if (!isTauriRuntime() || isDrillPopoutView()) {
@@ -261,6 +277,16 @@ export function useDesktopGlobalShortcuts({
 
       for (const requestedShortcut of requestedShortcuts) {
         if (!requestedShortcut.eligible) {
+          if (requestedShortcut.skipRegistration) {
+            nextRegistrations[requestedShortcut.action] = createRegistrationEntry(
+              requestedShortcut.action,
+              null,
+              "idle",
+              requestedShortcut.reason
+            );
+            continue;
+          }
+
           pushAttempt(
             "register",
             requestedShortcut.accelerator ?? requestedShortcut.displayLabel,
@@ -355,8 +381,10 @@ export function useDesktopGlobalShortcuts({
     desktopGlobalModeActive: nativeModeActive,
     requestedShortcuts,
     registrations: HOTKEY_ACTIONS.map((action) =>
-      registrations[action.key] ??
-      createRegistrationEntry(action.key, null, "idle", "Not registered.")
+      DESKTOP_UNSUPPORTED_ACTIONS.has(action.key)
+        ? createRegistrationEntry(action.key, null, "idle", "Not available in desktop-global mode.")
+        : registrations[action.key] ??
+            createRegistrationEntry(action.key, null, "idle", "Not registered.")
     ),
     attempts,
     warningMessage

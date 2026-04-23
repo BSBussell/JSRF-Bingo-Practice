@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { eventMatchesHotkeyBinding } from "../lib/hotkeys.js";
+import { eventMatchesHotkeyBinding, HOTKEY_ACTIONS } from "../lib/hotkeys.js";
 
 function isEditableTarget(target) {
   return (
@@ -11,22 +11,46 @@ function isEditableTarget(target) {
 export function useSessionHotkeys({
   enabled,
   currentSession,
+  startCountdown,
   hotkeys,
   onSplit,
   onSkip,
   onPause,
+  onRunBack,
+  onSkipSplit,
+  onToggleGuide,
+  onStartCountdown,
   onEnd,
   onRouteSlot
 }) {
   useEffect(() => {
-    if (!enabled || !currentSession) {
+    if (!enabled || (!currentSession && !startCountdown)) {
       return undefined;
     }
 
+    const isRouteSession = currentSession?.sessionType === "route";
+    const isPracticeSession = Boolean(currentSession) && !isRouteSession;
+    const hasActiveSession = Boolean(currentSession);
+    const isCountdownPendingReady =
+      Boolean(startCountdown) && !Number.isFinite(startCountdown?.startedAt);
+    const actionIsEnabled = {
+      split: isPracticeSession,
+      skip: isPracticeSession,
+      pause: hasActiveSession,
+      runBack: hasActiveSession,
+      skipSplit: isPracticeSession,
+      toggleGuide: isPracticeSession,
+      startCountdown: isCountdownPendingReady,
+      end: hasActiveSession || Boolean(startCountdown)
+    };
     const handlersByAction = {
       split: onSplit,
       skip: onSkip,
       pause: onPause,
+      runBack: onRunBack,
+      skipSplit: onSkipSplit,
+      toggleGuide: onToggleGuide,
+      startCountdown: onStartCountdown,
       end: onEnd
     };
 
@@ -40,7 +64,7 @@ export function useSessionHotkeys({
       }
 
       if (
-        currentSession?.sessionType === "route" &&
+        isRouteSession &&
         !event.ctrlKey &&
         !event.altKey &&
         !event.shiftKey &&
@@ -60,9 +84,13 @@ export function useSessionHotkeys({
         }
       }
 
-      const matchedAction = Object.entries(hotkeys).find(([, binding]) =>
-        eventMatchesHotkeyBinding(binding, event)
-      )?.[0];
+      const matchedAction = HOTKEY_ACTIONS.find((action) => {
+        if (!actionIsEnabled[action.key]) {
+          return false;
+        }
+
+        return eventMatchesHotkeyBinding(hotkeys[action.key], event);
+      })?.key;
       if (!matchedAction) {
         return;
       }
@@ -80,5 +108,19 @@ export function useSessionHotkeys({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [enabled, currentSession, hotkeys, onEnd, onPause, onRouteSlot, onSkip, onSplit]);
+  }, [
+    enabled,
+    currentSession,
+    hotkeys,
+    onEnd,
+    onPause,
+    onRouteSlot,
+    onRunBack,
+    onSkip,
+    onSkipSplit,
+    onSplit,
+    onStartCountdown,
+    onToggleGuide,
+    startCountdown
+  ]);
 }

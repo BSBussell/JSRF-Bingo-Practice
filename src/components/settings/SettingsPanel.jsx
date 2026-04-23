@@ -526,20 +526,8 @@ export function SettingsPanel({
               />
             ))}
           </div>
-        </div>
-
-        <div className="settings-section">
           <div className="settings-section-copy">
-            <h2>Route board</h2>
-            <p>Controls the live route square grid.</p>
-          </div>
-          <div className="settings-list">
-            <ToggleField
-              label="District-colored area labels"
-              description="Colors route square area labels by the Shibuya-Cho, Kogane, and Benten bingo convention."
-              checked={settings.routeDistrictColorsEnabled}
-              onChange={(value) => onUpdateSetting("routeDistrictColorsEnabled", value)}
-            />
+            <p>In Route Mode you can press 1-9 to mark the corresponding square!</p>
           </div>
         </div>
 

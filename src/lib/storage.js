@@ -37,6 +37,10 @@ export const DEFAULT_HOTKEYS = {
   split: createHotkeyBinding("Enter", { ctrl: true, shift: true }),
   skip: createHotkeyBinding("KeyS", { ctrl: true, shift: true }),
   pause: createHotkeyBinding("KeyP", { ctrl: true, shift: true }),
+  runBack: null,
+  skipSplit: null,
+  toggleGuide: null,
+  startCountdown: null,
   end: createHotkeyBinding("KeyE", { ctrl: true, shift: true })
 };
 export const DEFAULT_SETTINGS = {
@@ -80,7 +84,8 @@ function normalizeHotkeyWithMigration(value, action) {
     return DEFAULT_HOTKEYS[action];
   }
 
-  return hotkeyBindingsMatch(normalizedValue, LEGACY_DEFAULT_HOTKEYS[action])
+  return LEGACY_DEFAULT_HOTKEYS[action] &&
+    hotkeyBindingsMatch(normalizedValue, LEGACY_DEFAULT_HOTKEYS[action])
     ? DEFAULT_HOTKEYS[action]
     : normalizedValue;
 }
@@ -96,6 +101,10 @@ function normalizeHotkeys(value) {
     split: normalizeHotkeyWithMigration(value.split, "split"),
     skip: normalizeHotkeyWithMigration(value.skip, "skip"),
     pause: normalizeHotkeyWithMigration(value.pause, "pause"),
+    runBack: normalizeHotkeyWithMigration(value.runBack, "runBack"),
+    skipSplit: normalizeHotkeyWithMigration(value.skipSplit, "skipSplit"),
+    toggleGuide: normalizeHotkeyWithMigration(value.toggleGuide, "toggleGuide"),
+    startCountdown: normalizeHotkeyWithMigration(value.startCountdown, "startCountdown"),
     end: normalizeHotkeyWithMigration(value.end, "end")
   };
 }
@@ -476,7 +485,9 @@ function normalizeStartCountdown(startCountdown) {
     startedAt:
       Number.isFinite(startCountdown.startedAt) && startCountdown.startedAt >= 0
         ? startCountdown.startedAt
-        : Date.now(),
+        : startCountdown.startedAt === null
+          ? null
+          : Date.now(),
     exportSeed:
       typeof startCountdown.exportSeed === "string" ? startCountdown.exportSeed : "",
     sessionSpec: {

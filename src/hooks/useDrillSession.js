@@ -72,11 +72,15 @@ function resolveSessionLearnPanelVisible(session, settings) {
 }
 
 function resolveStartCountdownDeadline(startCountdown) {
-  return (startCountdown?.startedAt ?? 0) + START_COUNTDOWN_DURATION_MS;
+  if (!Number.isFinite(startCountdown?.startedAt)) {
+    return null;
+  }
+
+  return startCountdown.startedAt + START_COUNTDOWN_DURATION_MS;
 }
 
 function resolveStartCountdownLabel(startCountdown, now) {
-  if (!startCountdown) {
+  if (!startCountdown || !Number.isFinite(startCountdown.startedAt)) {
     return null;
   }
 
@@ -446,7 +450,7 @@ export function useDrillSession(appState, setAppState) {
 
   useEffect(
     () => {
-      if (!startCountdown) {
+      if (!startCountdown || !Number.isFinite(startCountdown.startedAt)) {
         return undefined;
       }
 
@@ -457,6 +461,9 @@ export function useDrillSession(appState, setAppState) {
         setCountdownNow(now);
 
         const launchAt = resolveStartCountdownDeadline(startCountdown);
+        if (!launchAt) {
+          return;
+        }
         const remainingMs = launchAt - now;
         if (remainingMs <= 0) {
           return;
@@ -483,7 +490,12 @@ export function useDrillSession(appState, setAppState) {
 
   useEffect(
     () => {
-      if (!startCountdown) {
+      if (!startCountdown || !Number.isFinite(startCountdown.startedAt)) {
+        return undefined;
+      }
+
+      const countdownDeadline = resolveStartCountdownDeadline(startCountdown);
+      if (!countdownDeadline) {
         return undefined;
       }
 
@@ -517,7 +529,7 @@ export function useDrillSession(appState, setAppState) {
             previousValue.currentSession,
             previousValue.settings
           );
-          const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown);
+          const launchedAt = resolveStartCountdownDeadline(pendingStartCountdown) ?? Date.now();
           const sessionType = normalizeSessionType(sessionSpec.sessionType);
           const nextSettings = {
             ...previousValue.settings,
@@ -559,7 +571,7 @@ export function useDrillSession(appState, setAppState) {
                   }
           };
         });
-      }, Math.max(0, resolveStartCountdownDeadline(startCountdown) - Date.now()));
+      }, Math.max(0, countdownDeadline - Date.now()));
 
       return () => {
         window.clearTimeout(timeoutId);
@@ -615,7 +627,6 @@ export function useDrillSession(appState, setAppState) {
     }
 
     const countdownId = buildCountdownId();
-    const startedAt = Date.now();
     const sessionType = normalizeSessionType(sessionSpec.sessionType);
 
     updateState((previousValue) => ({
@@ -626,11 +637,28 @@ export function useDrillSession(appState, setAppState) {
       startCountdown: {
         id: countdownId,
         sessionId: buildSessionId(),
-        startedAt,
+        startedAt: null,
         sessionSpec: cloneSessionSpecForLaunch(sessionSpec, sessionType),
         exportSeed
       }
     }));
+  }
+
+  function beginStartCountdown() {
+    updateState((previousValue) => {
+      const pendingStartCountdown = previousValue.startCountdown;
+      if (!pendingStartCountdown || Number.isFinite(pendingStartCountdown.startedAt)) {
+        return previousValue;
+      }
+
+      return {
+        ...previousValue,
+        startCountdown: {
+          ...pendingStartCountdown,
+          startedAt: Date.now()
+        }
+      };
+    });
   }
 
   function restartCurrentSession() {
@@ -1465,8 +1493,11 @@ export function useDrillSession(appState, setAppState) {
       ? null
       : getPhaseActionLabel(currentSession?.phase);
   const startCountdownLabel = resolveStartCountdownLabel(startCountdown, countdownNow);
+  const isStartCountdownPendingReady =
+    startCountdown !== null && !Number.isFinite(startCountdown.startedAt);
 
   return {
+    startCountdown,
     currentSession,
     currentObjective,
     routeSlots,
@@ -1484,7 +1515,9 @@ export function useDrillSession(appState, setAppState) {
     selectedMode: appState.selectedMode,
     startCountdownLabel,
     isStartCountdownActive: startCountdown !== null,
+    isStartCountdownPendingReady,
     startSession,
+    beginStartCountdown,
     markEnteredLevel,
     unlockTape,
     togglePause,
