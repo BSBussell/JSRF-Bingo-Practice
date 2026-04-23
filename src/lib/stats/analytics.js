@@ -125,17 +125,31 @@ function buildSeedRows(entries, sessionType, seedNamesByExportSeed) {
     });
 }
 
-function practiceSeedCompletionEntries(history) {
-  return sortedByEndedAt(history).filter((entry) =>
+function practiceSeedCompletionEntries(entriesSortedByEndedAt) {
+  const skippedSessionIds = entriesSortedByEndedAt.reduce((sessionIds, entry) => {
+    if (
+      normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
+      entry.result === "skip" &&
+      typeof entry.sessionId === "string" &&
+      entry.sessionId
+    ) {
+      sessionIds.add(entry.sessionId);
+    }
+
+    return sessionIds;
+  }, new Set());
+
+  return entriesSortedByEndedAt.filter((entry) =>
     normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
     entry.result === "complete" &&
+    !skippedSessionIds.has(entry.sessionId) &&
     entry.sessionCompleted === true &&
     isFiniteNumber(entry.sessionTotalDurationMs)
   );
 }
 
-function routeSeedCompletionEntries(history) {
-  return sortedByEndedAt(history).filter((entry) =>
+function routeSeedCompletionEntries(entriesSortedByEndedAt) {
+  return entriesSortedByEndedAt.filter((entry) =>
     normalizeSessionType(entry?.sessionType) === ROUTE_SESSION_TYPE &&
     entry.result === "complete" &&
     isFiniteNumber(entry.totalDurationMs)
@@ -274,17 +288,18 @@ function markedSquareCount(runs) {
 
 export function buildAnalyticsViewModel(history = [], options = {}) {
   const safeHistory = Array.isArray(history) ? history : [];
+  const historyByEndedAt = sortedByEndedAt(safeHistory);
   const seedNamesByExportSeed =
     options.seedNamesByExportSeed && typeof options.seedNamesByExportSeed === "object"
       ? options.seedNamesByExportSeed
       : {};
   const practiceSeedRows = buildSeedRows(
-    practiceSeedCompletionEntries(safeHistory),
+    practiceSeedCompletionEntries(historyByEndedAt),
     PRACTICE_SESSION_TYPE,
     seedNamesByExportSeed
   );
   const routeSeedRows = buildSeedRows(
-    routeSeedCompletionEntries(safeHistory),
+    routeSeedCompletionEntries(historyByEndedAt),
     ROUTE_SESSION_TYPE,
     seedNamesByExportSeed
   );

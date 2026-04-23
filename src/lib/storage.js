@@ -415,6 +415,9 @@ function normalizePendingCompletion(pendingCompletion) {
   const totalDurationMs = Number.isFinite(pendingCompletion.totalDurationMs)
     ? Math.max(0, pendingCompletion.totalDurationMs)
     : 0;
+  const pauseDurationMs = Number.isFinite(pendingCompletion.pauseDurationMs)
+    ? Math.max(0, pendingCompletion.pauseDurationMs)
+    : 0;
   const sessionType = normalizeSessionType(
     pendingCompletion.sessionType ?? sessionSpecInput.sessionType
   );
@@ -426,6 +429,7 @@ function normalizePendingCompletion(pendingCompletion) {
     finishedAt,
     objectiveCount,
     squaresCleared,
+    pauseDurationMs,
     totalDurationMs,
     visibleCount:
       Number.isInteger(pendingCompletion.visibleCount) && pendingCompletion.visibleCount >= 0

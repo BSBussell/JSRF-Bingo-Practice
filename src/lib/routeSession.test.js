@@ -148,6 +148,7 @@ test("completeRouteSlot returns a completion summary on the final clear", () => 
     exportSeed: "BNGSD3.test",
     objectiveCount: 2,
     squaresCleared: 2,
+    pauseDurationMs: 200,
     totalDurationMs: 1000,
     visibleCount: 2,
     routeRevealMode: ROUTE_REVEAL_MODE_ROLLING,

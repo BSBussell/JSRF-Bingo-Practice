@@ -47,6 +47,10 @@ function renderRecapFactValue(fact) {
   }
 
   if (fact.valueType === "seed-pb-status") {
+    if (fact.status === "incomplete") {
+      return "Incomplete";
+    }
+
     if (Number.isFinite(fact.pbDurationMs)) {
       return formatDuration(fact.pbDurationMs);
     }
@@ -68,6 +72,7 @@ function renderRecapFactDetail(fact) {
 
   if (
     fact.valueType === "seed-pb-status" &&
+    fact.status !== "incomplete" &&
     Number.isFinite(fact.deltaMs)
   ) {
     return `${formatDurationDelta(fact.deltaMs)} vs PB`;
@@ -124,6 +129,10 @@ export function CompletionPanel({
     : objectiveCount;
   const recapFacts = Array.isArray(completionRecap?.facts) ? completionRecap.facts : [];
   const attemptsFact = completionRecap?.attempts ?? null;
+  const pauseDurationMs = Number.isFinite(completionSummary.pauseDurationMs)
+    ? Math.max(0, completionSummary.pauseDurationMs)
+    : 0;
+  const pauseDurationLabel = `Pause Time: ${formatDuration(pauseDurationMs)}`;
   const particleSize = clampNumber(backdrop?.appearance?.size, 0.2, 2.5, 1.15);
   const particleGlow = clampNumber(backdrop?.appearance?.glow, 0, 5, 1.15);
   const particleFlicker = clampNumber(backdrop?.appearance?.flicker, 0, 3, 1);
@@ -193,6 +202,7 @@ export function CompletionPanel({
                   <span>{fact.label}</span>
                   <strong>{renderRecapFactValue(fact)}</strong>
                   {renderRecapFactDetailNode(fact)}
+                  {fact.key === "totalTime" ? <p>{pauseDurationLabel}</p> : null}
                 </article>
               );
             })}
@@ -203,7 +213,7 @@ export function CompletionPanel({
           <article className="completion-stat completion-total-stat">
             <span>{isRouteCompletion ? "Total Route Time" : "Total Drill Time"}</span>
             <strong>{formatDuration(completionSummary.totalDurationMs)}</strong>
-            <p className="completion-stat-note">Full run timer, pause-adjusted.</p>
+            <p className="completion-stat-note">{pauseDurationLabel}</p>
           </article>
           <article className="completion-stat completion-objective-stat">
             <span>Squares Cleared</span>

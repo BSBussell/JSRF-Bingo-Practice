@@ -62,6 +62,7 @@ export function buildRouteCompletionResult({
     exportSeed: session.exportSeed ?? "",
     objectiveCount: Array.isArray(session.objectiveIds) ? session.objectiveIds.length : 0,
     squaresCleared: session.completedCount ?? 0,
+    pauseDurationMs: Math.max(0, session.sessionTotalPausedMs ?? 0),
     totalDurationMs: Math.max(
       0,
       endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)
@@ -84,6 +85,7 @@ export function buildRouteHistoryEntry(routeResult) {
     routeRevealMode: routeResult.routeRevealMode,
     objectiveCount: routeResult.objectiveCount,
     squaresCleared: routeResult.squaresCleared,
+    pauseDurationMs: routeResult.pauseDurationMs ?? 0,
     totalDurationMs: routeResult.totalDurationMs,
     startedAt: routeResult.startedAt,
     endedAt: routeResult.endedAt,

@@ -112,3 +112,56 @@ test("buildAnalyticsViewModel derives seed rows and grouped runs from history", 
   assert.equal(analytics.runs[0].averageGapMs, 6000);
   assert.equal(analytics.runs[0].longestGapMs, 6000);
 });
+
+test("buildAnalyticsViewModel excludes skipped practice sessions from seed PB tracking", () => {
+  const history = [
+    {
+      sessionType: "practice",
+      sessionId: "seed_clean",
+      objectiveId: "dogen_005",
+      result: "complete",
+      exportSeed: "BNGSD3.practice",
+      sessionObjectiveIndex: 0,
+      endedAt: 1000
+    },
+    {
+      sessionType: "practice",
+      sessionId: "seed_clean",
+      objectiveId: "rdh_010",
+      result: "complete",
+      exportSeed: "BNGSD3.practice",
+      sessionObjectiveIndex: 1,
+      sessionCompleted: true,
+      sessionObjectiveCount: 2,
+      sessionTotalDurationMs: 15000,
+      endedAt: 2000
+    },
+    {
+      sessionType: "practice",
+      sessionId: "seed_skip",
+      objectiveId: "dogen_005",
+      result: "skip",
+      exportSeed: "BNGSD3.practice",
+      sessionObjectiveIndex: 0,
+      endedAt: 3000
+    },
+    {
+      sessionType: "practice",
+      sessionId: "seed_skip",
+      objectiveId: "rdh_010",
+      result: "complete",
+      exportSeed: "BNGSD3.practice",
+      sessionObjectiveIndex: 1,
+      sessionCompleted: true,
+      sessionObjectiveCount: 2,
+      sessionTotalDurationMs: 12000,
+      endedAt: 4000
+    }
+  ];
+
+  const analytics = buildAnalyticsViewModel(history);
+
+  assert.equal(analytics.practiceSeeds.length, 1);
+  assert.equal(analytics.practiceSeeds[0].attempts, 1);
+  assert.equal(analytics.practiceSeeds[0].pbDurationMs, 15000);
+});

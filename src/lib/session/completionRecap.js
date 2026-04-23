@@ -120,6 +120,7 @@ function buildObjectiveDetailSegments(entry) {
 
 function practiceSeedHistoryEntries(history, completionSummary) {
   const exportSeed = completionSummary?.exportSeed;
+  const skippedSessionIds = practiceSkippedSessionIds(history);
 
   if (!exportSeed || !Array.isArray(history)) {
     return [];
@@ -128,18 +129,49 @@ function practiceSeedHistoryEntries(history, completionSummary) {
   return history.filter((entry) =>
     normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
     entry.result === "complete" &&
+    !skippedSessionIds.has(entry.sessionId) &&
     entry.exportSeed === exportSeed &&
     entry.sessionCompleted === true &&
     isFiniteNumber(entry.sessionTotalDurationMs)
   );
 }
 
+function practiceSkippedSessionIds(history) {
+  if (!Array.isArray(history)) {
+    return new Set();
+  }
+
+  return history.reduce((sessionIds, entry) => {
+    if (
+      normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
+      entry.result === "skip" &&
+      typeof entry.sessionId === "string" &&
+      entry.sessionId
+    ) {
+      sessionIds.add(entry.sessionId);
+    }
+
+    return sessionIds;
+  }, new Set());
+}
+
 function buildPracticeSeedPbStatus(completionSummary, history) {
   const totalDurationMs = completionSummary?.totalDurationMs;
   const exportSeed = completionSummary?.exportSeed;
+  const skippedSessionIds = practiceSkippedSessionIds(history);
 
   if (!exportSeed || !isFiniteNumber(totalDurationMs)) {
     return null;
+  }
+
+  if (skippedSessionIds.has(completionSummary.sessionId)) {
+    return {
+      key: "practiceSeedPbStatus",
+      label: "Seed PB",
+      valueType: "seed-pb-status",
+      status: "incomplete",
+      tone: "neutral"
+    };
   }
 
   const seedEntries = practiceSeedHistoryEntries(history, completionSummary);

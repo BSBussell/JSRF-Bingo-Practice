@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { buildCompletionRecap } from "./session/completionRecap.js";
 
-test("buildCompletionRecap derives practice seed PB and split facts from session history", () => {
+test("buildCompletionRecap marks practice seed PB as incomplete when the session has skips", () => {
   const completionSummary = {
     sessionId: "practice_1",
     sessionType: "practice",
@@ -80,9 +80,9 @@ test("buildCompletionRecap derives practice seed PB and split facts from session
 
   assert.equal(recap.sessionType, "practice");
   assert.equal(facts.totalTime.durationMs, 20000);
-  assert.equal(facts.practiceSeedPbStatus.status, "new-pb");
-  assert.equal(facts.practiceSeedPbStatus.pbDurationMs, 22000);
-  assert.equal(facts.practiceSeedPbStatus.deltaMs, -2000);
+  assert.equal(facts.practiceSeedPbStatus.status, "incomplete");
+  assert.equal(facts.practiceSeedPbStatus.pbDurationMs, undefined);
+  assert.equal(facts.practiceSeedPbStatus.deltaMs, undefined);
   assert.equal(recap.attempts.key, "practiceSeedAttempts");
   assert.equal(recap.attempts.count, 2);
   assert.equal(facts.practiceSeedAttempts, undefined);

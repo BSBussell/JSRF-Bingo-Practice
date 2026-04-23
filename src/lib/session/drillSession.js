@@ -124,6 +124,7 @@ export function buildSessionCompletionSummary({
     finishedAt: endedAt,
     exportSeed: session.exportSeed ?? "",
     objectiveCount: Array.isArray(session.objectiveIds) ? session.objectiveIds.length : 0,
+    pauseDurationMs: Math.max(0, session.sessionTotalPausedMs ?? 0),
     totalDurationMs: Math.max(
       0,
       endedAt - session.sessionStartedAt - (session.sessionTotalPausedMs ?? 0)

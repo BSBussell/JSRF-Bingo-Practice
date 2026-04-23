@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { areaMeta, getAreaLabel } from "../../data/areaMeta.js";
 import { districtToneClassName } from "../../lib/districtDisplay.js";
@@ -725,13 +725,19 @@ export function StatsPanel({
   onRenameSeed,
   onFocusedHistoryRunHandled
 }) {
-  const analytics = buildAnalyticsViewModel(history, { seedNamesByExportSeed });
+  const analytics = useMemo(
+    () => buildAnalyticsViewModel(history, { seedNamesByExportSeed }),
+    [history, seedNamesByExportSeed]
+  );
   const [seedDetailType, setSeedDetailType] = useState(null);
   const [seedPbSortMode, setSeedPbSortMode] = useState("recent");
   const [historyDetailVisible, setHistoryDetailVisible] = useState(false);
   const [historySortMode, setHistorySortMode] = useState("recent");
   const [focusedRunId, setFocusedRunId] = useState("");
-  const seedDetailRows = seedDetailType ? seedRowsForType(analytics, seedDetailType) : [];
+  const seedDetailRows = useMemo(
+    () => (seedDetailType ? seedRowsForType(analytics, seedDetailType) : []),
+    [analytics, seedDetailType]
+  );
 
   useEffect(() => {
     if (!focusedHistoryRunId) {

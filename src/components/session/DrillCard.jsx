@@ -65,7 +65,15 @@ function formatCompletionFeedback(feedback) {
 }
 
 function formatSeedPbFeedback(feedback) {
-  if (!feedback || feedback.seedPbStatus === "no-prior") {
+  if (!feedback) {
+    return "";
+  }
+
+  if (feedback.seedPbStatus === "incomplete") {
+    return "Incomplete";
+  }
+
+  if (feedback.seedPbStatus === "no-prior") {
     return "No prior";
   }
 

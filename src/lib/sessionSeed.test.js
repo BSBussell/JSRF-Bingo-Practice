@@ -492,6 +492,7 @@ test("completion summaries use session-level timing", () => {
     finishedAt: 2750,
     exportSeed: encodeSessionSeed(sessionSpec),
     objectiveCount: 1,
+    pauseDurationMs: 250,
     totalDurationMs: 2000
   });
 });

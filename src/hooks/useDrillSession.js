@@ -184,10 +184,31 @@ function buildPracticeSeedPbFeedback({
 }) {
   const exportSeed = session.exportSeed ?? "";
   const objectiveIndex = session.currentObjectiveIndex ?? 0;
+  const skippedSessionIds = Array.isArray(history)
+    ? history.reduce((sessionIds, entry) => {
+        if (
+          normalizeSessionType(entry?.sessionType) === PRACTICE_SESSION_TYPE &&
+          entry?.result === "skip" &&
+          typeof entry.sessionId === "string" &&
+          entry.sessionId
+        ) {
+          sessionIds.add(entry.sessionId);
+        }
+
+        return sessionIds;
+      }, new Set())
+    : new Set();
 
   if (!exportSeed || !Array.isArray(history)) {
     return {
       seedPbStatus: "no-prior",
+      seedPbDiffMs: null
+    };
+  }
+
+  if (skippedSessionIds.has(session.id)) {
+    return {
+      seedPbStatus: "incomplete",
       seedPbDiffMs: null
     };
   }
@@ -198,6 +219,7 @@ function buildPracticeSeedPbFeedback({
       entry.result !== "complete" ||
       entry.exportSeed !== exportSeed ||
       entry.sessionId === session.id ||
+      skippedSessionIds.has(entry.sessionId) ||
       entry.sessionCompleted !== true ||
       typeof entry.sessionTotalDurationMs !== "number"
     ) {
@@ -676,53 +698,25 @@ export function useDrillSession(appState, setAppState) {
     pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
 
-    const now = Date.now();
     const sessionType = normalizeSessionType(session.sessionType ?? sessionSpec.sessionType);
     const nextSessionSpec = cloneSessionSpecForLaunch(sessionSpec, sessionType);
     const exportSeed = session.exportSeed ?? "";
-    const firstObjective = objectivesById[nextSessionSpec.objectiveIds[0]];
+    const countdownId = buildCountdownId();
     const restartedSessionId = buildSessionId();
 
     updateState((previousValue) => {
-      const learnPanelVisible = resolveSessionLearnPanelVisible(session, previousValue.settings);
-      const nextSettings = {
-        ...previousValue.settings,
-        startingArea: nextSessionSpec.config.startingArea,
-        drillSettings: mergeSessionConfigIntoDrillSettings(
-          previousValue.settings.drillSettings,
-          nextSessionSpec.config,
-          sessionType
-        )
-      };
-
       return {
         ...previousValue,
         selectedMode: sessionType,
-        settings: nextSettings,
         pendingCompletion: null,
-        startCountdown: null,
-        currentSession:
-          sessionType === ROUTE_SESSION_TYPE
-            ? buildRouteSessionState({
-                sessionId: restartedSessionId,
-                now,
-                sessionSpec: nextSessionSpec,
-                exportSeed
-              })
-            : {
-                ...buildSeededSessionState({
-                  sessionId: restartedSessionId,
-                  now,
-                  currentArea: nextSessionSpec.config.startingArea,
-                  objective: firstObjective,
-                  currentObjectiveIndex: 0,
-                  sessionSpec: nextSessionSpec,
-                  exportSeed
-                }),
-                ui: {
-                  learnPanelVisible
-                }
-              }
+        currentSession: null,
+        startCountdown: {
+          id: countdownId,
+          sessionId: restartedSessionId,
+          startedAt: null,
+          sessionSpec: nextSessionSpec,
+          exportSeed
+        }
       };
     });
 

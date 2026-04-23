@@ -609,7 +609,10 @@ export function BingopediaPanel({
   const squarePaneRef = useRef(null);
   const detailPaneRef = useRef(null);
   const selectedAreaSummary = viewModel.areaSummaries[selectedArea] ?? null;
-  const selectedSquare = viewModel.squares.find((row) => row.id === selectedSquareId) ?? null;
+  const selectedSquare = useMemo(
+    () => viewModel.squares.find((row) => row.id === selectedSquareId) ?? null,
+    [viewModel.squares, selectedSquareId]
+  );
   const searchActive = search.trim().length > 0 || activeFilter !== BINGOPEDIA_FILTERS.ALL;
   const tapeRow = useMemo(() => {
     if (searchActive) {
@@ -629,30 +632,42 @@ export function BingopediaPanel({
     () => (searchActive ? [] : buildBingopediaMiscTechRows(selectedArea)),
     [searchActive, selectedArea]
   );
-  const selectedMiscTech =
-    miscTechRows.find((row) => row.id === selectedMiscTechId) ?? null;
+  const selectedMiscTech = useMemo(
+    () => miscTechRows.find((row) => row.id === selectedMiscTechId) ?? null,
+    [miscTechRows, selectedMiscTechId]
+  );
   const listMotionKey = searchActive
     ? `search:${search.trim()}:${activeFilter}`
     : `area:${selectedArea}`;
-  const filteredRows = searchActive
-    ? filterBingopediaSquares(viewModel.squares, {
+  const filteredRows = useMemo(() => {
+    if (searchActive) {
+      return filterBingopediaSquares(viewModel.squares, {
         search,
         filter: activeFilter
-      })
-    : selectedAreaSummary?.squares ?? [];
-  const groupedRows = searchActive
-    ? groupBingopediaSquaresByArea(filteredRows)
-    : selectedAreaSummary
-      ? [
-          {
-            area: selectedAreaSummary.area,
-            label: selectedAreaSummary.label,
-            district: selectedSquare?.district ?? "",
-            districtLabel: selectedSquare?.districtLabel ?? "",
-            squares: filteredRows
-          }
-        ]
-      : [];
+      });
+    }
+
+    return selectedAreaSummary?.squares ?? [];
+  }, [activeFilter, search, searchActive, selectedAreaSummary, viewModel.squares]);
+  const groupedRows = useMemo(() => {
+    if (searchActive) {
+      return groupBingopediaSquaresByArea(filteredRows);
+    }
+
+    if (!selectedAreaSummary) {
+      return [];
+    }
+
+    return [
+      {
+        area: selectedAreaSummary.area,
+        label: selectedAreaSummary.label,
+        district: selectedSquare?.district ?? "",
+        districtLabel: selectedSquare?.districtLabel ?? "",
+        squares: filteredRows
+      }
+    ];
+  }, [filteredRows, searchActive, selectedAreaSummary, selectedSquare]);
 
   function scrollPaneIntoView(paneRef) {
     if (!shouldUseMobileBingopediaFlow()) {
