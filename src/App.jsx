@@ -335,22 +335,31 @@ function SettingsModeView({
   );
 }
 
-function StatsModeView({ drillSession }) {
+function StatsModeView({
+  drillSession,
+  focusedHistoryRunId,
+  onFocusedHistoryRunHandled
+}) {
   return (
     <StatsPanel
       stats={drillSession.stats}
       history={drillSession.history}
       seedNamesByExportSeed={drillSession.seedNamesByExportSeed}
+      focusedHistoryRunId={focusedHistoryRunId}
       onDeleteEntry={drillSession.deleteHistoryEntry}
       onDeleteRun={drillSession.deleteHistoryRun}
       onCopySeed={drillSession.copySeed}
       onRunSeed={drillSession.runSeed}
       onRenameSeed={drillSession.renameSeed}
+      onFocusedHistoryRunHandled={onFocusedHistoryRunHandled}
     />
   );
 }
 
-function BingopediaModeView({ drillSession }) {
+function BingopediaModeView({
+  drillSession,
+  onOpenHistoryRun
+}) {
   return (
     <div className="content-stack">
       <BingopediaPanel
@@ -359,6 +368,7 @@ function BingopediaModeView({ drillSession }) {
         aggregateStats={drillSession.aggregateStats}
         settings={drillSession.settings}
         onPracticeObjective={drillSession.practiceObjective}
+        onOpenHistoryRun={onOpenHistoryRun}
       />
     </div>
   );
@@ -394,6 +404,7 @@ export default function App() {
     activeMode === PRACTICE_SESSION_TYPE || activeMode === ROUTE_SESSION_TYPE;
   const [capturingAction, setCapturingAction] = useState(null);
   const [popoutError, setPopoutError] = useState(null);
+  const [focusedStatsHistoryRunId, setFocusedStatsHistoryRunId] = useState("");
   const [hasWindowFocus, setHasWindowFocus] = useState(
     typeof document === "undefined" ? true : document.hasFocus()
   );
@@ -414,6 +425,15 @@ export default function App() {
   const headerReleaseActionLoading = desktopRuntime
     ? desktopUpdate.isChecking
     : webReleaseDownload.isChecking;
+
+  function openStatsHistoryRun(sessionId) {
+    if (typeof sessionId !== "string" || !sessionId) {
+      return;
+    }
+
+    setFocusedStatsHistoryRunId(sessionId);
+    drillSession.goToStats();
+  }
 
   useEffect(() => {
     function handleFocus() {
@@ -624,9 +644,16 @@ export default function App() {
             onCancelHotkeyCapture={() => setCapturingAction(null)}
           />
         ) : activeMode === "bingopedia" ? (
-          <BingopediaModeView drillSession={drillSession} />
+          <BingopediaModeView
+            drillSession={drillSession}
+            onOpenHistoryRun={openStatsHistoryRun}
+          />
         ) : activeMode === "stats" ? (
-          <StatsModeView drillSession={drillSession} />
+          <StatsModeView
+            drillSession={drillSession}
+            focusedHistoryRunId={focusedStatsHistoryRunId}
+            onFocusedHistoryRunHandled={() => setFocusedStatsHistoryRunId("")}
+          />
         ) : (
           <ModeSelect
             hasActiveSession={Boolean(drillSession.currentSession)}

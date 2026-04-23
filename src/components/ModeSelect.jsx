@@ -61,8 +61,8 @@ export function ModeSelect({
             <p className="mode-label">Video Library!</p>
             <h2>Bingopedia</h2>
             <p>
-              Browse every square by district and area, watch mapped guide videos,
-              check your history, and select specific squares to practice. Built by
+              Browse every square by district and area, watch reference videos,
+              check your history, and select specific squares to practice. Library by
               Naestrinus + others!
             </p>
           </div>

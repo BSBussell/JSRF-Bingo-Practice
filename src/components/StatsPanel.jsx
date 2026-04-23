@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { getAreaLabel } from "../data/areaMeta.js";
+import { areaMeta, getAreaLabel } from "../data/areaMeta.js";
 import { formatDuration } from "../hooks/useTimer.js";
 import { formatObjectiveTypeLabel } from "../lib/objectiveTypes.js";
 import { getRouteRevealModeLabel } from "../lib/session/routeRevealMode.js";
@@ -74,6 +74,13 @@ function seedTypeLabel(sessionType) {
   return sessionType === ROUTE_SESSION_TYPE ? "Route" : "Drill";
 }
 
+function districtClassName(district) {
+  if (district === "ShibuyaCho") return "is-shibuya";
+  if (district === "Kogane") return "is-kogane";
+  if (district === "Benten") return "is-benten";
+  return "";
+}
+
 function seedRowsForType(analytics, sessionType) {
   return sessionType === ROUTE_SESSION_TYPE ? analytics.routeSeeds : analytics.practiceSeeds;
 }
@@ -142,31 +149,37 @@ function sortedRuns(runs, sortMode) {
   });
 }
 
-function renderAreaRows(rows, emptyLabel) {
+function renderAreaRows(rows, emptyLabel, options = {}) {
+  const showBest = options.showBest !== false;
+
   if (rows.length === 0) {
     return <div className="analytics-empty-state">{emptyLabel}</div>;
   }
 
   return (
-    <div className="stats-clean-table">
+    <div className={`stats-clean-table ${showBest ? "has-best" : "no-best"}`}>
       <div className="stats-area-header">
         <span>Area</span>
         <span>Samples</span>
         <span>Avg</span>
-        <span>Best</span>
+        {showBest ? <span>Best</span> : null}
       </div>
       {rows.map((row) => (
         <div key={row.key} className="stats-clean-row stats-area-row">
-          <strong>{getAreaLabel(row.key)}</strong>
-          <span className="stats-area-metric">
+          <strong className={`analytics-area-name ${districtClassName(areaMeta[row.key]?.district)}`}>
+            {getAreaLabel(row.key)}
+          </strong>
+          <span className="stats-area-metric" data-label="Samples">
             <strong>{row.completions}</strong>
           </span>
-          <span className="stats-area-metric">
+          <span className="stats-area-metric" data-label="Avg">
             <strong>{row.averageMs !== null ? formatDuration(row.averageMs) : "n/a"}</strong>
           </span>
-          <span className="stats-area-metric">
-            <strong>{row.bestMs !== null ? formatDuration(row.bestMs) : "n/a"}</strong>
-          </span>
+          {showBest ? (
+            <span className="stats-area-metric" data-label="Best">
+              <strong>{row.bestMs !== null ? formatDuration(row.bestMs) : "n/a"}</strong>
+            </span>
+          ) : null}
         </div>
       ))}
     </div>
@@ -495,10 +508,29 @@ function RunsList({
   onDeleteRun,
   onDeleteEntry,
   onCopySeed,
-  onRunSeed
+  onRunSeed,
+  focusedRunId = ""
 }) {
   const [confirmingRunId, setConfirmingRunId] = useState(null);
   const [page, setPage] = useState(1);
+  const appliedFocusedRunIdRef = useRef("");
+
+  useEffect(() => {
+    if (!focusedRunId) {
+      appliedFocusedRunIdRef.current = "";
+      return;
+    }
+
+    if (appliedFocusedRunIdRef.current === focusedRunId) {
+      return;
+    }
+
+    const focusedIndex = runs.findIndex((run) => run.sessionId === focusedRunId);
+    if (focusedIndex >= 0) {
+      setPage(Math.floor(focusedIndex / HISTORY_RUNS_PAGE_SIZE) + 1);
+    }
+    appliedFocusedRunIdRef.current = focusedRunId;
+  }, [focusedRunId, runs]);
 
   if (runs.length === 0) {
     return <p className="empty-state">No runs recorded yet.</p>;
@@ -516,9 +548,13 @@ function RunsList({
       <div className="analytics-run-list">
         {visibleRuns.map((run) => {
           const isConfirming = confirmingRunId === run.sessionId;
+          const isFocusedRun = Boolean(focusedRunId) && run.sessionId === focusedRunId;
 
           return (
-            <article className="analytics-run-card" key={run.sessionId}>
+            <article
+              className={`analytics-run-card ${isFocusedRun ? "is-focused-history-run" : ""}`}
+              key={run.sessionId}
+            >
               <div className="analytics-run-copy">
                 <span className="badge">{runTypeLabel(run)}</span>
                 <h3>{run.title}</h3>
@@ -574,7 +610,7 @@ function RunsList({
                   {isConfirming ? "Confirm Delete" : "Delete Run"}
                 </button>
               </div>
-              <details className="analytics-run-details">
+              <details className="analytics-run-details" open={isFocusedRun ? true : undefined}>
                 <summary>Run entries</summary>
                 <RunEntryList run={run} onDeleteEntry={onDeleteEntry} />
               </details>
@@ -649,6 +685,7 @@ function HistoryPreviewCard({
 function HistoryDetailPage({
   runs,
   sortMode,
+  focusedRunId,
   onSortModeChange,
   onBack,
   onDeleteRun,
@@ -688,6 +725,7 @@ function HistoryDetailPage({
         <RunsList
           key={sortMode}
           runs={sortedHistoryRuns}
+          focusedRunId={focusedRunId}
           onDeleteRun={onDeleteRun}
           onDeleteEntry={onDeleteEntry}
           onCopySeed={onCopySeed}
@@ -702,18 +740,33 @@ export function StatsPanel({
   stats,
   history,
   seedNamesByExportSeed,
+  focusedHistoryRunId = "",
   onDeleteEntry,
   onDeleteRun,
   onCopySeed,
   onRunSeed,
-  onRenameSeed
+  onRenameSeed,
+  onFocusedHistoryRunHandled
 }) {
   const analytics = buildAnalyticsViewModel(history, { seedNamesByExportSeed });
   const [seedDetailType, setSeedDetailType] = useState(null);
   const [seedPbSortMode, setSeedPbSortMode] = useState("recent");
   const [historyDetailVisible, setHistoryDetailVisible] = useState(false);
   const [historySortMode, setHistorySortMode] = useState("recent");
+  const [focusedRunId, setFocusedRunId] = useState("");
   const seedDetailRows = seedDetailType ? seedRowsForType(analytics, seedDetailType) : [];
+
+  useEffect(() => {
+    if (!focusedHistoryRunId) {
+      return;
+    }
+
+    setFocusedRunId(focusedHistoryRunId);
+    setSeedDetailType(null);
+    setHistorySortMode("recent");
+    setHistoryDetailVisible(true);
+    onFocusedHistoryRunHandled?.();
+  }, [focusedHistoryRunId, onFocusedHistoryRunHandled]);
 
   if (seedDetailType) {
     return (
@@ -735,8 +788,12 @@ export function StatsPanel({
       <HistoryDetailPage
         runs={analytics.runs}
         sortMode={historySortMode}
+        focusedRunId={focusedRunId}
         onSortModeChange={setHistorySortMode}
-        onBack={() => setHistoryDetailVisible(false)}
+        onBack={() => {
+          setHistoryDetailVisible(false);
+          setFocusedRunId("");
+        }}
         onDeleteRun={onDeleteRun}
         onDeleteEntry={onDeleteEntry}
         onCopySeed={onCopySeed}
@@ -746,7 +803,7 @@ export function StatsPanel({
   }
 
   return (
-    <section className="stats-page">
+    <section className="stats-page stats-dashboard-page">
       <div className="panel stats-hero-panel">
         <div className="panel-heading compact">
           <div>
@@ -800,7 +857,10 @@ export function StatsPanel({
       <section className="analytics-section">
         <HistoryPreviewCard
           runs={analytics.runs}
-          onShowMore={() => setHistoryDetailVisible(true)}
+          onShowMore={() => {
+            setFocusedRunId("");
+            setHistoryDetailVisible(true);
+          }}
           onDeleteRun={onDeleteRun}
           onDeleteEntry={onDeleteEntry}
           onCopySeed={onCopySeed}
@@ -808,22 +868,24 @@ export function StatsPanel({
         />
       </section>
 
-      <section className="analytics-section">
+      <section className="analytics-section analytics-area-section">
         <div className="panel-heading compact">
           <div>
             <h2>Area Tables</h2>
           </div>
         </div>
         <div className="analytics-three-column">
-          <article className="panel analytics-panel">
+          <article className="panel analytics-panel analytics-area-panel">
             <div className="panel-heading compact">
               <div>
                 <h2>Soul Squares</h2>
               </div>
             </div>
-            {renderAreaRows(stats.squareByArea, "No completed soul square splits yet.")}
+            {renderAreaRows(stats.squareByArea, "No completed soul square splits yet.", {
+              showBest: false
+            })}
           </article>
-          <article className="panel analytics-panel">
+          <article className="panel analytics-panel analytics-area-panel">
             <div className="panel-heading compact">
               <div>
                 <h2>Tape</h2>
@@ -831,7 +893,7 @@ export function StatsPanel({
             </div>
             {renderAreaRows(stats.tapeByArea, "No tape splits recorded yet.")}
           </article>
-          <article className="panel analytics-panel">
+          <article className="panel analytics-panel analytics-area-panel">
             <div className="panel-heading compact">
               <div>
                 <h2>Graffiti</h2>
