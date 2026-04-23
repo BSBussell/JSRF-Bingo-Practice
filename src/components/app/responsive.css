@@ -143,6 +143,8 @@
     }
 
     .app-header {
+        position: static;
+        top: auto;
         gap: 0.8rem;
         padding: 0.8rem 0.85rem;
     }
@@ -162,6 +164,20 @@
         min-width: 0;
         justify-content: center;
         padding: 0.65rem 0.7rem;
+    }
+
+    .nav-group {
+        min-width: 0;
+    }
+
+    .nav-group-trigger {
+        width: 100%;
+    }
+
+    .nav-group-menu {
+        left: 0;
+        right: auto;
+        min-width: max(100%, 10.5rem);
     }
 
     .header-release-slot {
@@ -585,6 +601,58 @@
         justify-self: start;
     }
 
+    .seed-builder-heading {
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+    }
+
+    .seed-builder-heading .panel-note {
+        justify-self: stretch;
+        max-width: none;
+        margin: 0;
+    }
+
+    .seed-builder-workbench {
+        min-height: 0;
+        grid-template-rows: auto auto auto minmax(13rem, auto);
+    }
+
+    .seed-builder-seed-row,
+    .seed-builder-route-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .seed-builder-route-row {
+        justify-content: stretch;
+    }
+
+    .seed-builder-visible-field {
+        width: 100%;
+    }
+
+    .seed-builder-shelf {
+        --seed-builder-shelf-square: clamp(5.4rem, 30vw, 6.6rem);
+    }
+
+    .seed-builder-add-button {
+        justify-self: stretch;
+    }
+
+    .seed-builder-level-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding: 0.58rem 0.65rem;
+    }
+
+    .seed-builder-level-tab {
+        flex: 0 0 auto;
+        min-width: max-content;
+        padding: 0.34rem 0.72rem;
+    }
+
 }
 
 @media (max-width: 430px) {
@@ -657,7 +725,8 @@
     .stats-dashboard-page .stats-hero-panel,
     .analytics-detail-page .stats-hero-panel,
     .stats-dashboard-page .analytics-section,
-    .analytics-detail-page .analytics-section {
+    .analytics-detail-page .analytics-section,
+    .nav-group-item {
         animation: none;
     }
 
@@ -692,11 +761,18 @@
     .excluded-area-mobile-district,
     .excluded-area-mobile-chip,
     .drill-slider-row,
+    .seed-builder-timeline-card,
+    .seed-builder-shelf-card,
+    .seed-builder-level-tab,
+    .icon-button,
     .primary-button,
     .primary-button::before,
     .secondary-button,
     .ghost-button,
     .nav-link,
+    .nav-group-menu,
+    .nav-group-item,
+    .nav-group-trigger::after,
     .bingopedia-filter-chip,
     .bingopedia-area-button,
     .bingopedia-square-row,
@@ -729,12 +805,22 @@
     .excluded-area-mobile-chip:hover,
     .drill-slider-row:not(.is-disabled):hover,
     .drill-slider-row:not(.is-disabled):focus-within,
+    .seed-builder-timeline-card:hover,
+    .seed-builder-timeline-card:focus-within,
+    .seed-builder-shelf-card:not(.is-used):hover,
+    .seed-builder-shelf-card:not(.is-used):focus-within,
+    .seed-builder-level-tab:hover,
+    .seed-builder-level-tab:focus-visible,
+    .icon-button:hover,
+    .icon-button:focus-visible,
     .analytics-overview-grid article:hover,
     .analytics-overview-grid article:focus-within,
     .analytics-seed-row:hover,
     .analytics-seed-row:focus-within,
     .analytics-run-card:hover,
     .analytics-run-card:focus-within,
+    .nav-group-item:hover,
+    .nav-group-item:focus-visible,
     .bingopedia-area-button:hover,
     .bingopedia-area-button:focus-visible,
     .bingopedia-square-row:hover,
@@ -742,5 +828,9 @@
     .bingopedia-attempt-row.is-clickable:hover,
     .bingopedia-attempt-row.is-clickable:focus-visible {
         transform: none;
+    }
+
+    .nav-group-item {
+        opacity: 1;
     }
 }

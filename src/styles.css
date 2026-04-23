@@ -4,6 +4,7 @@
 @import "./components/settings/settings.css";
 @import "./components/learn/learn.css";
 @import "./components/session/session.css";
+@import "./components/seedBuilder/seedBuilder.css";
 @import "./components/stats/stats.css";
 @import "./components/session/splits.css";
 @import "./components/popout/popout.css";

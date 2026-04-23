@@ -900,6 +900,142 @@ button {
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 0.75rem;
+    position: relative;
+    overflow: visible;
+}
+
+.nav-group {
+    position: relative;
+}
+
+.nav-group-trigger {
+    justify-content: space-between;
+    min-width: 6.55rem;
+    gap: 0.36rem;
+    text-align: left;
+    padding-right: 0.78rem;
+}
+
+.nav-group-trigger-label {
+    flex: 1 1 auto;
+}
+
+.nav-group-trigger-icon {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 1.32rem;
+    width: 1.32rem;
+    font-size: 1.06rem;
+    line-height: 1;
+    opacity: 0.84;
+    transition:
+        transform 160ms ease,
+        opacity 160ms ease;
+}
+
+.nav-group:hover .nav-group-trigger-icon,
+.nav-group:focus-within .nav-group-trigger-icon {
+    transform: rotate(-180deg);
+    opacity: 1;
+}
+
+.nav-group-menu {
+    position: absolute;
+    top: calc(100% + 0.16rem);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    gap: 0.32rem;
+    min-width: 11rem;
+    padding: 0.45rem;
+    border: 1px solid var(--dropdown-border);
+    border-radius: var(--radius-control);
+    background: var(--dropdown-background);
+    box-shadow: var(--dropdown-shadow);
+    backdrop-filter: blur(14px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.2rem) scale(0.98);
+    transform-origin: top right;
+    transition:
+        opacity 170ms ease,
+        transform 190ms ease,
+        visibility 0s linear 170ms;
+}
+
+.nav-group-menu::before {
+    content: "";
+    position: absolute;
+    top: -0.42rem;
+    left: 0;
+    right: 0;
+    height: 0.42rem;
+}
+
+.nav-group:hover .nav-group-menu,
+.nav-group:focus-within .nav-group-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition:
+        opacity 170ms ease,
+        transform 190ms ease,
+        visibility 0s linear 0s;
+}
+
+.nav-group-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.56rem 0.72rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius-control) - 0.2rem);
+    color: var(--text-secondary);
+    background: transparent;
+    font-family: var(--font-ui);
+    font-size: 0.96rem;
+    cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease,
+        transform 150ms ease;
+    opacity: 0;
+    transform: translateY(0.16rem);
+}
+
+.nav-group:hover .nav-group-item,
+.nav-group:focus-within .nav-group-item {
+    animation: nav-group-item-in 200ms ease both;
+}
+
+.nav-group:hover .nav-group-item:nth-child(2),
+.nav-group:focus-within .nav-group-item:nth-child(2) {
+    animation-delay: 35ms;
+}
+
+.nav-group:hover .nav-group-item:nth-child(3),
+.nav-group:focus-within .nav-group-item:nth-child(3) {
+    animation-delay: 70ms;
+}
+
+.nav-group-item:hover,
+.nav-group-item:focus-visible {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--nav-active-background) 58%, transparent);
+    border-color: color-mix(in srgb, var(--nav-active-border) 68%, transparent);
+    transform: translateY(-1px);
+}
+
+.nav-group-item.is-active {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--nav-active-background) 76%, transparent);
+    border-color: color-mix(in srgb, var(--nav-active-border) 76%, transparent);
+    box-shadow: inset 0 0 0 1px rgba(255, 219, 166, 0.08);
 }
 
 .nav-link {
@@ -939,6 +1075,18 @@ button {
     background: var(--nav-active-background);
     border-color: var(--nav-active-border);
     box-shadow: var(--nav-active-shadow);
+}
+
+@keyframes nav-group-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.18rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .release-nav-link.is-placeholder {

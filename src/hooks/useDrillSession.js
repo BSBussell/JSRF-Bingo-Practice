@@ -24,6 +24,10 @@ import {
 } from "../lib/session/drillSession.js";
 import { mergeSessionConfigIntoDrillSettings } from "../lib/session/sessionConfig.js";
 import { resolveSeedInput } from "../lib/seed/sessionSeed.js";
+import {
+  SEED_BUILDER_MODE,
+  normalizeSeedBuilderDraft
+} from "../lib/seedBuilder.js";
 import { buildObjectivePracticeLaunch } from "../lib/session/objectivePractice.js";
 import { createDefaultAppState, normalizeAppState } from "../lib/storage.js";
 import {
@@ -1161,6 +1165,16 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
+  function goToSeedBuilder() {
+    pendingRouteFeedbackRef.current = null;
+    setSessionFeedback(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: SEED_BUILDER_MODE,
+      startCountdown: null
+    }));
+  }
+
   function goToSettings() {
     pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
@@ -1204,6 +1218,20 @@ export function useDrillSession(appState, setAppState) {
               ...settingsUpdater
             }
     }));
+  }
+
+  function updateSeedBuilderDraft(draftUpdater) {
+    updateState((previousValue) => {
+      const nextDraft =
+        typeof draftUpdater === "function"
+          ? draftUpdater(previousValue.seedBuilderDraft)
+          : draftUpdater;
+
+      return {
+        ...previousValue,
+        seedBuilderDraft: normalizeSeedBuilderDraft(nextDraft)
+      };
+    });
   }
 
   function updateHotkey(action, binding) {
@@ -1449,6 +1477,7 @@ export function useDrillSession(appState, setAppState) {
     stats,
     phaseInfo,
     pendingCompletion,
+    seedBuilderDraft: appState.seedBuilderDraft,
     sessionFeedback,
     settings: appState.settings,
     startingArea: appState.settings.startingArea,
@@ -1478,9 +1507,11 @@ export function useDrillSession(appState, setAppState) {
     goToRoute,
     goToStats,
     goToBingopedia,
+    goToSeedBuilder,
     goToSettings,
     toggleLearnPanelVisibility,
     updateSettings,
+    updateSeedBuilderDraft,
     updateHotkey,
     clearHotkey,
     resetAllData,

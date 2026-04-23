@@ -6,6 +6,11 @@ import {
   DEFAULT_DRILL_SETTINGS,
   normalizeDrillSettings
 } from "./drill/drillSettings.js";
+import {
+  SEED_BUILDER_MODE,
+  createDefaultSeedBuilderDraft,
+  normalizeSeedBuilderDraft
+} from "./seedBuilder.js";
 import { encodeSessionSeed } from "./seed/sessionSeed.js";
 import { normalizeSessionConfig } from "./session/sessionConfig.js";
 import {
@@ -498,6 +503,7 @@ export function createDefaultAppState() {
     currentSession: null,
     startCountdown: null,
     pendingCompletion: null,
+    seedBuilderDraft: createDefaultSeedBuilderDraft(),
     history: [],
     seedNamesByExportSeed: {},
     bestTimesByObjective: {},
@@ -524,6 +530,8 @@ export function normalizeAppState(value) {
         ? "stats"
       : rawSelectedMode === "bingopedia"
         ? "bingopedia"
+      : rawSelectedMode === SEED_BUILDER_MODE
+        ? SEED_BUILDER_MODE
       : rawSelectedMode === ROUTE_SESSION_TYPE
         ? ROUTE_SESSION_TYPE
       : rawSelectedMode === PRACTICE_SESSION_TYPE ||
@@ -541,6 +549,7 @@ export function normalizeAppState(value) {
     currentSession: normalizeCurrentSession(value.currentSession, settings),
     startCountdown: normalizeStartCountdown(value.startCountdown),
     pendingCompletion: normalizePendingCompletion(value.pendingCompletion),
+    seedBuilderDraft: normalizeSeedBuilderDraft(value.seedBuilderDraft),
     history: Array.isArray(value.history) ? value.history.map(normalizeHistoryEntry) : [],
     seedNamesByExportSeed: normalizeSeedNamesByExportSeed(value.seedNamesByExportSeed),
     bestTimesByObjective: normalizeBestTimesByObjective(value.bestTimesByObjective),

@@ -29,6 +29,51 @@ test("normalizeAppState preserves bingopedia mode selection", () => {
   assert.equal(state.selectedMode, "bingopedia");
 });
 
+test("normalizeAppState preserves seed builder mode selection", () => {
+  const state = normalizeAppState({
+    selectedMode: "seed-builder"
+  });
+
+  assert.equal(state.selectedMode, "seed-builder");
+});
+
+test("createDefaultAppState initializes a seed builder draft", () => {
+  const state = createDefaultAppState();
+
+  assert.equal(state.seedBuilderDraft.sessionType, "practice");
+  assert.deepEqual(state.seedBuilderDraft.objectiveIds, []);
+  assert.equal(typeof state.seedBuilderDraft.rngSeed, "string");
+});
+
+test("normalizeAppState backfills a missing seed builder draft", () => {
+  const state = normalizeAppState({});
+
+  assert.equal(state.seedBuilderDraft.sessionType, "practice");
+  assert.deepEqual(state.seedBuilderDraft.objectiveIds, []);
+  assert.equal(typeof state.seedBuilderDraft.rngSeed, "string");
+});
+
+test("normalizeAppState normalizes malformed seed builder drafts", () => {
+  const state = normalizeAppState({
+    seedBuilderDraft: {
+      sessionType: "route",
+      objectiveIds: ["dogen_graffiti", "not-real", "dogen_graffiti", "rdh_010"],
+      selectedArea: "not-real-area",
+      routeVisibleCount: 20,
+      routeRevealMode: "burst",
+      seedInputDraft: 42,
+      rngSeed: "00112233445566778899aabbccddeeff"
+    }
+  });
+
+  assert.equal(state.seedBuilderDraft.sessionType, "route");
+  assert.deepEqual(state.seedBuilderDraft.objectiveIds, ["dogen_graffiti", "rdh_010"]);
+  assert.equal(state.seedBuilderDraft.selectedArea, "Dogen");
+  assert.equal(state.seedBuilderDraft.routeVisibleCount, 2);
+  assert.equal(state.seedBuilderDraft.routeRevealMode, "burst");
+  assert.equal(state.seedBuilderDraft.seedInputDraft, undefined);
+});
+
 test("normalizeAppState preserves trimmed custom seed names", () => {
   const state = normalizeAppState({
     seedNamesByExportSeed: {

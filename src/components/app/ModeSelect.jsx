@@ -6,6 +6,7 @@ import {
 export function ModeSelect({
   onSelectPractice,
   onSelectRoute,
+  onSelectSeedBuilder,
   onSelectBingopedia,
   onSelectStats,
   onSelectSettings,
@@ -54,6 +55,20 @@ export function ModeSelect({
           </div>
           <button className="primary-button" type="button" onClick={onSelectRoute}>
             {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? "Resume Route" : "Start Route"}
+          </button>
+        </article>
+        <article className="mode-card">
+          <div>
+            <p className="mode-label">Custom Seeds</p>
+            <h2>Seed Builder</h2>
+            <p>
+              Build your own practice or route seeds from exact squares.
+              Import a seed or phrase, reorder the timeline, then copy or play
+              the result as a normal replay seed.
+            </p>
+          </div>
+          <button className="primary-button" type="button" onClick={onSelectSeedBuilder}>
+            Open Seed Builder
           </button>
         </article>
         <article className="mode-card">

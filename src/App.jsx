@@ -8,6 +8,7 @@ import {
   ModeSelect,
   PopoutViewport,
   RouteCard,
+  SeedBuilderPanel,
   SettingsPanel,
   SetupPanel,
   StatsPanel
@@ -30,6 +31,7 @@ import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
 } from "./lib/session/sessionTypes.js";
+import { SEED_BUILDER_MODE } from "./lib/seedBuilder.js";
 import { isTauriRuntime } from "./lib/runtime.js";
 import {
   APP_STORAGE_KEY,
@@ -378,6 +380,20 @@ function BingopediaModeView({
   );
 }
 
+function SeedBuilderModeView({ drillSession }) {
+  return (
+    <div className="content-stack">
+      <SeedBuilderPanel
+        draft={drillSession.seedBuilderDraft}
+        drillSettings={drillSession.settings.drillSettings}
+        onUpdateDraft={drillSession.updateSeedBuilderDraft}
+        onStartSession={drillSession.startSession}
+        onCopySeed={drillSession.copySeed}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   const popoutView = isDrillPopoutView();
   const appMainRef = useRef(null);
@@ -612,6 +628,7 @@ export default function App() {
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
         onSelectRoute={drillSession.goToRoute}
+        onSelectSeedBuilder={drillSession.goToSeedBuilder}
         onSelectBingopedia={drillSession.goToBingopedia}
         onSelectStats={drillSession.goToStats}
         onSelectSettings={drillSession.goToSettings}
@@ -652,6 +669,8 @@ export default function App() {
             drillSession={drillSession}
             onOpenHistoryRun={openStatsHistoryRun}
           />
+        ) : activeMode === SEED_BUILDER_MODE ? (
+          <SeedBuilderModeView drillSession={drillSession} />
         ) : activeMode === "stats" ? (
           <StatsModeView
             drillSession={drillSession}
@@ -663,6 +682,7 @@ export default function App() {
             hasActiveSession={Boolean(drillSession.currentSession)}
             onSelectPractice={drillSession.goToPractice}
             onSelectRoute={drillSession.goToRoute}
+            onSelectSeedBuilder={drillSession.goToSeedBuilder}
             onSelectBingopedia={drillSession.goToBingopedia}
             onSelectStats={drillSession.goToStats}
             onSelectSettings={drillSession.goToSettings}

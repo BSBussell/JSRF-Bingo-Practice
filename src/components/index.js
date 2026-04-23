@@ -4,6 +4,7 @@ export { ModeSelect } from "./app/ModeSelect.jsx";
 export { BingopediaPanel } from "./bingopedia/BingopediaPanel.jsx";
 export { LearnPanel } from "./learn/LearnPanel.jsx";
 export { PopoutViewport } from "./popout/PopoutViewport.jsx";
+export { SeedBuilderPanel } from "./seedBuilder/SeedBuilderPanel.jsx";
 export { SettingsPanel } from "./settings/SettingsPanel.jsx";
 export { CompletionPanel } from "./session/CompletionPanel.jsx";
 export { DrillCard } from "./session/DrillCard.jsx";
