@@ -85,6 +85,17 @@ function resolveStartCountdownLabel(startCountdown, now) {
   return START_COUNTDOWN_SEQUENCE[stepIndex] ?? null;
 }
 
+function cloneSessionSpecForLaunch(sessionSpec, sessionType) {
+  return {
+    ...sessionSpec,
+    sessionType: normalizeSessionType(sessionType ?? sessionSpec?.sessionType),
+    config: {
+      ...sessionSpec.config
+    },
+    objectiveIds: sessionSpec.objectiveIds.slice()
+  };
+}
+
 function resolveSelectedMode(previousValue, requestedMode) {
   const activeSessionType = normalizeSessionType(
     previousValue.currentSession?.sessionType ?? previousValue.startCountdown?.sessionSpec?.sessionType
@@ -612,17 +623,78 @@ export function useDrillSession(appState, setAppState) {
         id: countdownId,
         sessionId: buildSessionId(),
         startedAt,
-        sessionSpec: {
-          ...sessionSpec,
-          sessionType,
-          config: {
-            ...sessionSpec.config
-          },
-          objectiveIds: sessionSpec.objectiveIds.slice()
-        },
+        sessionSpec: cloneSessionSpecForLaunch(sessionSpec, sessionType),
         exportSeed
       }
     }));
+  }
+
+  function restartCurrentSession() {
+    const session = currentSession;
+    const sessionSpec = session?.sessionSpec;
+    if (
+      !session ||
+      !sessionSpec?.objectiveIds?.length ||
+      !objectivesById[sessionSpec.objectiveIds[0]]
+    ) {
+      return false;
+    }
+
+    clearPendingPracticeResolution();
+    pendingRouteFeedbackRef.current = null;
+    setSessionFeedback(null);
+
+    const now = Date.now();
+    const sessionType = normalizeSessionType(session.sessionType ?? sessionSpec.sessionType);
+    const nextSessionSpec = cloneSessionSpecForLaunch(sessionSpec, sessionType);
+    const exportSeed = session.exportSeed ?? "";
+    const firstObjective = objectivesById[nextSessionSpec.objectiveIds[0]];
+    const restartedSessionId = buildSessionId();
+
+    updateState((previousValue) => {
+      const learnPanelVisible = resolveSessionLearnPanelVisible(session, previousValue.settings);
+      const nextSettings = {
+        ...previousValue.settings,
+        startingArea: nextSessionSpec.config.startingArea,
+        drillSettings: mergeSessionConfigIntoDrillSettings(
+          previousValue.settings.drillSettings,
+          nextSessionSpec.config,
+          sessionType
+        )
+      };
+
+      return {
+        ...previousValue,
+        selectedMode: sessionType,
+        settings: nextSettings,
+        pendingCompletion: null,
+        startCountdown: null,
+        currentSession:
+          sessionType === ROUTE_SESSION_TYPE
+            ? buildRouteSessionState({
+                sessionId: restartedSessionId,
+                now,
+                sessionSpec: nextSessionSpec,
+                exportSeed
+              })
+            : {
+                ...buildSeededSessionState({
+                  sessionId: restartedSessionId,
+                  now,
+                  currentArea: nextSessionSpec.config.startingArea,
+                  objective: firstObjective,
+                  currentObjectiveIndex: 0,
+                  sessionSpec: nextSessionSpec,
+                  exportSeed
+                }),
+                ui: {
+                  learnPanelVisible
+                }
+              }
+      };
+    });
+
+    return true;
   }
 
   function markEnteredLevel() {
@@ -1391,6 +1463,7 @@ export function useDrillSession(appState, setAppState) {
     performPhaseAction,
     completeObjective,
     completeRouteSlot,
+    restartCurrentSession,
     skipCurrentSplit,
     skipObjective,
     endSession,

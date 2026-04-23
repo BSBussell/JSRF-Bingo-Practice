@@ -607,6 +607,8 @@ function buildCssVariables(palette) {
   const success = palette.success ?? DEFAULT_SUCCESS;
   const danger = palette.danger ?? DEFAULT_DANGER;
   const warning = palette.warning ?? DEFAULT_WARNING;
+  const completionFeedbackSurface = mixColors(surfaceDeep, background, 0.18);
+  const completionFeedbackSurfaceDeep = mixColors(surfaceDeep, background, 0.34);
   const glow = clampNumber(
     palette.glowIntensity,
     GLOW_INTENSITY_CAPS.min,
@@ -743,6 +745,12 @@ function buildCssVariables(palette) {
     "--result-fail-background": rgba(danger, 0.18),
     "--completion-stat-background": rgba(text, 0.04),
     "--completion-stat-border": rgba(palette.border, 0.06),
+    "--completion-feedback-background": `radial-gradient(circle at top, ${rgba(text, 0.045)}, transparent 48%), linear-gradient(180deg, ${rgba(completionFeedbackSurface, 0.9)}, ${rgba(completionFeedbackSurfaceDeep, 0.92)}), var(--panel-background)`,
+    "--completion-feedback-win-background": `radial-gradient(circle at top right, ${rgba(districtColors.Benten, 0.24 * glow)}, transparent 56%), linear-gradient(180deg, ${rgba(completionFeedbackSurface, 0.9)}, ${rgba(completionFeedbackSurfaceDeep, 0.92)}), var(--panel-background)`,
+    "--completion-feedback-shadow": `0 18px 44px ${rgba("#000000", 0.32)}, inset 0 1px 0 ${rgba(text, 0.04)}`,
+    "--completion-feedback-win-shadow": `0 18px 44px ${rgba("#000000", 0.34)}, 0 0 0 1px ${rgba(districtColors.Benten, 0.28 * glow)}`,
+    "--completion-feedback-detail-background": `radial-gradient(circle at 12% 18%, ${rgba(text, 0.09)}, transparent 34%), var(--timer-pill-background)`,
+    "--completion-feedback-detail-shadow": `var(--timer-pill-shadow), inset 0 0 0 1px ${rgba(text, 0.018)}`,
     "--modal-backdrop-background": rgba(background, 0.72),
     "--danger-modal-border": rgba(danger, 0.24),
     "--danger-modal-shadow": `0 20px 46px ${rgba("#000000", 0.42)}, 0 0 36px ${rgba(danger, 0.12)}`,

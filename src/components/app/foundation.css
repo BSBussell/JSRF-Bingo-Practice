@@ -228,6 +228,26 @@
     --result-fail-background: rgba(238, 138, 143, 0.18);
     --completion-stat-background: rgba(255, 247, 234, 0.04);
     --completion-stat-border: rgba(255, 230, 201, 0.06);
+    --completion-feedback-background:
+        radial-gradient(circle at top, rgba(255, 237, 214, 0.045), transparent 48%),
+        linear-gradient(180deg, rgba(8, 12, 20, 0.9), rgba(10, 15, 24, 0.92)),
+        var(--panel-background);
+    --completion-feedback-win-background:
+        radial-gradient(circle at top right, rgba(121, 176, 223, 0.24), transparent 56%),
+        linear-gradient(180deg, rgba(8, 12, 20, 0.9), rgba(10, 15, 24, 0.92)),
+        var(--panel-background);
+    --completion-feedback-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 239, 217, 0.04);
+    --completion-feedback-win-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.34),
+        0 0 0 1px rgba(121, 176, 223, 0.28);
+    --completion-feedback-detail-background:
+        radial-gradient(circle at 12% 18%, rgba(255, 237, 214, 0.09), transparent 34%),
+        var(--timer-pill-background);
+    --completion-feedback-detail-shadow:
+        var(--timer-pill-shadow),
+        inset 0 0 0 1px rgba(255, 239, 217, 0.018);
     --modal-backdrop-background: rgba(7, 10, 16, 0.72);
     --danger-modal-border: rgba(255, 111, 120, 0.24);
     --danger-modal-shadow:

@@ -128,25 +128,16 @@
         var(--complete-feedback-padding-inline);
     border: 1px solid var(--completion-stat-border);
     border-radius: var(--radius-card);
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
-        var(--panel-background);
-    box-shadow:
-        var(--shadow-panel),
-        var(--timer-pill-shadow);
+    background: var(--completion-feedback-background);
+    box-shadow: var(--completion-feedback-shadow);
     pointer-events: none;
     animation: drill-complete-feedback-pop 220ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
 .drill-complete-feedback.is-win {
     border-color: color-mix(in srgb, var(--route-district-benten), transparent 44%);
-    background:
-        radial-gradient(circle at top right, color-mix(in srgb, var(--route-district-benten), transparent 72%), transparent 54%),
-        linear-gradient(180deg, rgba(255, 213, 146, 0.12), rgba(255, 255, 255, 0.024)),
-        var(--panel-background);
-    box-shadow:
-        var(--shadow-panel),
-        0 0 0 1px color-mix(in srgb, var(--route-district-benten), transparent 72%);
+    background: var(--completion-feedback-win-background);
+    box-shadow: var(--completion-feedback-win-shadow);
 }
 
 .drill-complete-feedback-label {
@@ -194,15 +185,8 @@
         var(--complete-feedback-detail-padding-inline);
     border: 1px solid var(--surface-card-border);
     border-radius: var(--radius-control);
-    background:
-        radial-gradient(circle at 8% 18%, rgba(255, 255, 255, 0.065), transparent 34%),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.12) 48%, rgba(255, 255, 255, 0.035)),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.16)),
-        rgba(0, 0, 0, 0.22);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.035),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.28),
-        inset 0 0 18px rgba(0, 0, 0, 0.16);
+    background: var(--completion-feedback-detail-background);
+    box-shadow: var(--completion-feedback-detail-shadow);
     color: var(--text-secondary);
     font-size: var(--complete-feedback-detail-size);
     line-height: 1.05;
@@ -210,7 +194,7 @@
 }
 
 .drill-complete-detail-row span {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.62em;
     font-weight: 750;
     letter-spacing: 0.095em;
@@ -220,11 +204,12 @@
 
 .drill-complete-detail-row strong {
     min-width: 0;
-    color: var(--text-primary);
+    color: var(--timer-pill-text);
     font-size: 1.16em;
     font-weight: 750;
     line-height: 0.98;
     text-align: right;
+    text-shadow: var(--primary-text-shadow);
     overflow-wrap: anywhere;
 }
 
@@ -253,14 +238,7 @@
 
 .route-wave-feedback {
     z-index: 80;
-    background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.045), transparent 48%),
-        linear-gradient(180deg, rgba(7, 11, 18, 0.86), rgba(10, 15, 24, 0.9)),
-        var(--panel-background);
     border-color: var(--surface-card-border);
-    box-shadow:
-        0 18px 44px rgba(0, 0, 0, 0.32),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .route-wave-feedback .drill-complete-feedback-details {
@@ -269,21 +247,6 @@
 
 .route-wave-feedback .drill-complete-detail-row {
     border-color: var(--timer-pill-border);
-    background:
-        radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.09), transparent 34%),
-        var(--timer-pill-background);
-    box-shadow:
-        var(--timer-pill-shadow),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.018);
-}
-
-.route-wave-feedback .drill-complete-detail-row span {
-    color: var(--text-secondary);
-}
-
-.route-wave-feedback .drill-complete-detail-row strong {
-    color: var(--timer-pill-text);
-    text-shadow: var(--primary-text-shadow);
 }
 
 .drill-objective-location {
@@ -1350,14 +1313,27 @@
 
 .drill-action-menu {
     position: relative;
+    z-index: 30;
     margin-left: auto;
 }
 
 .drill-action-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-width: 2.9rem;
-    padding: 0.78rem 0.86rem;
-    font-size: 1.08rem;
-    line-height: 1;
+    min-height: 2.9rem;
+    padding: 0;
+}
+
+.drill-action-menu-icon {
+    display: block;
+    width: 1.88rem;
+    height: 1.88rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
 }
 
 .drill-action-menu-list {
@@ -1367,7 +1343,7 @@
     min-width: 13rem;
     display: grid;
     gap: 0.25rem;
-    z-index: 5;
+    z-index: 40;
     padding: 0.35rem;
     border-radius: var(--radius-control);
     background: var(--dropdown-background);

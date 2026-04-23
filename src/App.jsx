@@ -68,6 +68,7 @@ function CurrentDrillPanel({
         sessionFeedback={drillSession.sessionFeedback}
         backdrop={backdrop}
         onCompleteSlot={drillSession.completeRouteSlot}
+        onRunBack={drillSession.restartCurrentSession}
         onTogglePause={drillSession.togglePause}
         onEndSession={drillSession.endSession}
       />
@@ -94,6 +95,7 @@ function CurrentDrillPanel({
       sessionFeedback={drillSession.sessionFeedback}
       backdrop={backdrop}
       onPhaseAction={drillSession.performPhaseAction}
+      onRunBack={drillSession.restartCurrentSession}
       onSkipSplit={drillSession.skipCurrentSplit}
       onTogglePause={drillSession.togglePause}
       onSkip={drillSession.skipObjective}

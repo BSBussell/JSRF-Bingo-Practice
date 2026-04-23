@@ -90,6 +90,7 @@ export function RouteCard({
   sessionFeedback,
   backdrop,
   onCompleteSlot,
+  onRunBack,
   onTogglePause,
   onEndSession
 }) {
@@ -228,9 +229,20 @@ export function RouteCard({
             aria-label="More actions"
             aria-haspopup="menu"
           >
-            ☰
+            <svg className="drill-action-menu-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 7L7 7M20 7L11 7" />
+              <path d="M20 17H17M4 17L13 17" />
+              <path d="M4 12H7L20 12" />
+            </svg>
           </button>
           <div className="drill-action-menu-list" role="menu" aria-label="Additional actions">
+            <button
+              className="secondary-button drill-action-menu-item"
+              type="button"
+              onClick={onRunBack}
+            >
+              Run It Back
+            </button>
             <button
               className="secondary-button danger-button drill-action-menu-item"
               type="button"
