@@ -60,7 +60,7 @@
     border: 0;
     border-right: 1px solid var(--split-board-border);
     border-radius: 0;
-    background: transparent;
+    background: var(--split-card-background);
     display: grid;
     align-items: center;
 }
@@ -84,7 +84,7 @@
 }
 
 .drill-panel .split-live {
-    background: transparent;
+    background: var(--split-live-background);
     filter: brightness(1.015);
     box-shadow: none;
 }
@@ -183,4 +183,3 @@
     justify-content: space-between;
     flex-wrap: nowrap;
 }
-

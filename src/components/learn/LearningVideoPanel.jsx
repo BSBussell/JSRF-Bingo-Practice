@@ -142,8 +142,12 @@ export function LearningVideoPanel({
 
       {hasVariants ? (
         <div className="learn-variant-menu">
-          <button className="secondary-button learn-variant-trigger" type="button">
-            Varients
+          <button
+            className="secondary-button learn-variant-trigger"
+            type="button"
+            aria-haspopup="menu"
+          >
+            Variants
           </button>
           <div className="learn-variant-list" role="menu" aria-label="Guide options">
             {options.map((option) => (
@@ -151,6 +155,7 @@ export function LearningVideoPanel({
                 key={buildOptionKey(option)}
                 className={`learn-variant-option ${buildOptionKey(option) === buildOptionKey(selectedVideo) ? "is-active" : ""}`}
                 type="button"
+                role="menuitem"
                 onClick={() => setSelectedOptionKey(buildOptionKey(option))}
               >
                 {option.label}

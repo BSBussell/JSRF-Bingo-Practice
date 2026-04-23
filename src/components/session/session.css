@@ -68,7 +68,7 @@
     position: absolute;
     top: 0.35rem;
     left: 0.35rem;
-    z-index: 3;
+    z-index: 70;
     width: calc(100% - 0.7rem);
     height: calc(100% - 0.7rem);
     pointer-events: none;
@@ -80,7 +80,7 @@
 .drill-complete-flash {
     position: absolute;
     inset: 0.35rem;
-    z-index: 2;
+    z-index: 60;
     overflow: hidden;
     border-radius: calc(var(--radius-card) - 0.1rem);
     pointer-events: none;
@@ -114,7 +114,7 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    z-index: 4;
+    z-index: 80;
     display: grid;
     justify-items: center;
     align-content: center;
@@ -252,7 +252,38 @@
 }
 
 .route-wave-feedback {
-    z-index: 6;
+    z-index: 80;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.045), transparent 48%),
+        linear-gradient(180deg, rgba(7, 11, 18, 0.86), rgba(10, 15, 24, 0.9)),
+        var(--panel-background);
+    border-color: var(--surface-card-border);
+    box-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.route-wave-feedback .drill-complete-feedback-details {
+    gap: calc(var(--complete-feedback-detail-gap) + 0.08rem);
+}
+
+.route-wave-feedback .drill-complete-detail-row {
+    border-color: var(--timer-pill-border);
+    background:
+        radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.09), transparent 34%),
+        var(--timer-pill-background);
+    box-shadow:
+        var(--timer-pill-shadow),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.018);
+}
+
+.route-wave-feedback .drill-complete-detail-row span {
+    color: var(--text-secondary);
+}
+
+.route-wave-feedback .drill-complete-detail-row strong {
+    color: var(--timer-pill-text);
+    text-shadow: var(--primary-text-shadow);
 }
 
 .drill-objective-location {
@@ -1520,4 +1551,3 @@
 .drill-panel .timer-pill.is-secondary strong {
     font-size: 1.08rem;
 }
-

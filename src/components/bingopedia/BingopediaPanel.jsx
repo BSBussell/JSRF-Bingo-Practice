@@ -257,7 +257,7 @@ function SquareList({
       </button>
 
       <div className="bingopedia-pane-heading">
-        <p className="eyebrow">Objective Selection</p>
+        <p className="eyebrow">Square Selection</p>
         <h2>{heading}</h2>
         <p>
           {searchActive ? "Global results" : "Selected location"} · {totalSquares} square{totalSquares === 1 ? "" : "s"}
