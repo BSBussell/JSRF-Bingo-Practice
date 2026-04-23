@@ -47,7 +47,6 @@
 .panel-note,
 .objective-description,
 .mode-card p,
-.history-item p,
 .empty-state {
     color: var(--text-secondary);
 }
@@ -88,4 +87,3 @@
     filter: brightness(1.025);
     transform: translateY(-1px);
 }
-

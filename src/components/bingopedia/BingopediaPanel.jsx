@@ -8,7 +8,10 @@ import {
   buildBingopediaTapeRow,
   getLearningVideoEmptyLabel
 } from "../../data/learnVideos.js";
-import { formatDuration } from "../../hooks/useTimer.js";
+import {
+  areaDistrictToneClassName,
+  districtToneClassName
+} from "../../lib/districtDisplay.js";
 import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
 import {
   BINGOPEDIA_FILTERS,
@@ -16,6 +19,7 @@ import {
   filterBingopediaSquares,
   groupBingopediaSquaresByArea
 } from "../../lib/stats/bingopedia.js";
+import { formatOptionalDuration, formatTimestamp } from "../../lib/timeFormat.js";
 import { LearningVideoPanel } from "../learn/LearningVideoPanel.jsx";
 
 const FILTER_OPTIONS = [
@@ -58,31 +62,11 @@ function shouldReduceMotion() {
 }
 
 function formatStatDuration(value) {
-  return typeof value === "number" && Number.isFinite(value) ? formatDuration(value) : "n/a";
-}
-
-function formatDate(timestamp) {
-  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
-    return "Never";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(timestamp));
-}
-
-function districtClassName(district) {
-  if (district === "ShibuyaCho") return "is-shibuya";
-  if (district === "Kogane") return "is-kogane";
-  if (district === "Benten") return "is-benten";
-  return "";
+  return formatOptionalDuration(value);
 }
 
 function areaDistrictClassName(area) {
-  return districtClassName(areaMeta[area]?.district);
+  return areaDistrictToneClassName(area);
 }
 
 function formatBingopediaTypeLabel(row) {
@@ -115,7 +99,7 @@ function AreaIndex({
               {district.areas.map((area) => (
                 <button
                   key={area.area}
-                  className={`bingopedia-area-button ${area.area === selectedArea ? "is-active" : ""} ${districtClassName(district.district)}`}
+                  className={`bingopedia-area-button ${area.area === selectedArea ? "is-active" : ""} ${districtToneClassName(district.district)}`}
                   type="button"
                   onClick={() => onSelectArea(area.area)}
                 >
@@ -179,14 +163,14 @@ function SquareRow({
 }) {
   return (
     <button
-      className={`bingopedia-square-row ${selected ? "is-active" : ""} ${districtClassName(row.district)}`}
+      className={`bingopedia-square-row ${selected ? "is-active" : ""} ${districtToneClassName(row.district)}`}
       type="button"
       onClick={() => onSelect(row)}
     >
       <span className="bingopedia-square-main">
         <strong>{row.description}</strong>
         <span className="bingopedia-square-tags">
-          {showArea ? <span className={`bingopedia-level-label ${districtClassName(row.district)}`}>{row.areaLabel}</span> : null}
+          {showArea ? <span className={`bingopedia-level-label ${districtToneClassName(row.district)}`}>{row.areaLabel}</span> : null}
           <span>{formatBingopediaTypeLabel(row)}</span>
         </span>
       </span>
@@ -397,7 +381,7 @@ function RecentAttempts({
           attempt.sessionId.length > 0;
         const resultLabel = attempt.result === "complete" ? "Clear" : "Skip";
         const durationLabel = formatStatDuration(attempt.durationMs);
-        const dateLabel = formatDate(attempt.endedAt);
+        const dateLabel = formatTimestamp(attempt.endedAt, "Never");
         const content = (
           <>
             <strong>{resultLabel}</strong>
@@ -458,7 +442,7 @@ function SquareDetail({
           <p className="eyebrow">Selected Square Details</p>
           <h2>{row.description}</h2>
           <p className="bingopedia-detail-meta">
-            <span className={`bingopedia-level-label ${districtClassName(row.district)}`}>{row.areaLabel}</span>
+            <span className={`bingopedia-level-label ${districtToneClassName(row.district)}`}>{row.areaLabel}</span>
             <span>{formatBingopediaTypeLabel(row)}</span>
           </p>
         </div>
@@ -494,7 +478,7 @@ function SquareDetail({
           <MetricCard label="clears" value={row.clears} />
           <MetricCard label="skips" value={row.skips} />
           <MetricCard label="average" value={formatStatDuration(row.averageMs)} />
-          <MetricCard label="last clear" value={formatDate(row.lastClearAt)} />
+          <MetricCard label="last clear" value={formatTimestamp(row.lastClearAt, "Never")} />
         </div>
       </section>
 
@@ -548,7 +532,7 @@ function TapeDetail({
           <MetricCard label="PB" value={formatStatDuration(stats.bestMs)} />
           <MetricCard label="collected" value={stats.completions ?? 0} />
           <MetricCard label="average" value={formatStatDuration(stats.averageMs)} />
-          <MetricCard label="last collected" value={formatDate(stats.lastCollectedAt)} />
+          <MetricCard label="last collected" value={formatTimestamp(stats.lastCollectedAt, "Never")} />
         </div>
       </section>
     </div>

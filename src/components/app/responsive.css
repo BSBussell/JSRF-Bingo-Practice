@@ -132,9 +132,7 @@
     .panel-heading,
     .drill-panel-header,
     .settings-row,
-    .setup-toggle-card,
-    .history-item,
-    .stats-row {
+    .setup-toggle-card {
         flex-direction: column;
         align-items: flex-start;
     }
@@ -372,18 +370,6 @@
     .modal-actions {
         width: 100%;
         justify-content: flex-start;
-    }
-
-    .history-actions,
-    .history-meta {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .history-delete-button {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
     }
 
     .theme-reset-row {
@@ -633,14 +619,6 @@
     }
 }
 
-@media (hover: none) {
-    .history-delete-button {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .learn-video-frame,
     .learn-video-frame::before,
@@ -705,8 +683,6 @@
     .analytics-overview-grid article,
     .analytics-seed-row,
     .analytics-run-card,
-    .history-item,
-    .stats-row,
     .route-tile,
     .route-tile::before,
     .route-tile-key,

@@ -1,5 +1,5 @@
 import { getAreaLabel } from "../../data/areaMeta.js";
-import { formatDuration } from "../../hooks/useTimer.js";
+import { formatDuration, formatDurationDelta } from "../../lib/timeFormat.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
 
@@ -50,13 +50,6 @@ function routeTileClassName(slot, useDistrictLocationColors) {
   ]
     .filter(Boolean)
     .join(" ");
-}
-
-function formatDurationDelta(durationMs) {
-  const safeDurationMs = Number.isFinite(durationMs) ? durationMs : 0;
-  const prefix = safeDurationMs > 0 ? "+" : safeDurationMs < 0 ? "-" : "";
-
-  return `${prefix}${formatDuration(Math.abs(safeDurationMs))}`;
 }
 
 function formatRouteSeedPbFeedback(feedback) {

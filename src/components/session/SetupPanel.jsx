@@ -47,6 +47,7 @@ import {
   ROUTE_REVEAL_MODE_LABELS,
   ROUTE_REVEAL_MODE_ROLLING
 } from "../../lib/session/routeRevealMode.js";
+import { districtToneClassName } from "../../lib/districtDisplay.js";
 
 function VarianceSlider({
   label,
@@ -184,13 +185,6 @@ function getDistrictExclusionState(drillSettings, districtGroup) {
   return "some";
 }
 
-function districtClassName(district) {
-  if (district === "ShibuyaCho") return "is-shibuya";
-  if (district === "Kogane") return "is-kogane";
-  if (district === "Benten") return "is-benten";
-  return "";
-}
-
 function ExcludedAreasControl({
   drillSettings,
   disabled,
@@ -226,7 +220,7 @@ function ExcludedAreasControl({
                     return (
                       <td key={area}>
                         <button
-                          className={`district-cell-button area-cell-button ${districtClassName(districtGroup.district)} ${excluded ? "is-excluded" : ""}`}
+                          className={`district-cell-button area-cell-button ${districtToneClassName(districtGroup.district)} ${excluded ? "is-excluded" : ""}`}
                           type="button"
                           disabled={disabled}
                           onClick={() => onAreaToggle(area)}
@@ -266,7 +260,7 @@ function ExcludedAreasControl({
 
                   return (
                     <button
-                      className={`excluded-area-mobile-chip ${districtClassName(districtGroup.district)} ${excluded ? "is-excluded" : ""}`}
+                      className={`excluded-area-mobile-chip ${districtToneClassName(districtGroup.district)} ${excluded ? "is-excluded" : ""}`}
                       type="button"
                       key={area}
                       disabled={disabled}

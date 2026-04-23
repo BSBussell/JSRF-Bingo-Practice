@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { formatDuration } from "../../hooks/useTimer.js";
+import { formatDuration, formatDurationDelta } from "../../lib/timeFormat.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 
 function clampNumber(value, min, max, fallback) {
@@ -27,13 +27,6 @@ function hexToRgba(hex, alpha) {
   const g = (value >> 8) & 255;
   const b = value & 255;
   return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
-}
-
-function formatDurationDelta(durationMs) {
-  const safeDurationMs = Number.isFinite(durationMs) ? durationMs : 0;
-  const prefix = safeDurationMs > 0 ? "+" : safeDurationMs < 0 ? "-" : "";
-
-  return `${prefix}${formatDuration(Math.abs(safeDurationMs))}`;
 }
 
 function renderRecapFactValue(fact) {

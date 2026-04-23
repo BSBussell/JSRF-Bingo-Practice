@@ -7,9 +7,7 @@
 @import "./components/stats/stats.css";
 @import "./components/session/splits.css";
 @import "./components/popout/popout.css";
-@import "./components/stats/history-list.css";
 @import "./components/session/route.css";
-@import "./components/stats/history-actions.css";
 @import "./components/session/completion.css";
 @import "./components/bingopedia/bingopedia.css";
 @import "./components/app/modal.css";

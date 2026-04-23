@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { areaMeta, getAreaLabel } from "../../data/areaMeta.js";
-import { formatDuration } from "../../hooks/useTimer.js";
+import { districtToneClassName } from "../../lib/districtDisplay.js";
 import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
 import { getRouteRevealModeLabel } from "../../lib/session/routeRevealMode.js";
 import {
@@ -9,6 +9,12 @@ import {
   ROUTE_SESSION_TYPE
 } from "../../lib/session/sessionTypes.js";
 import { buildAnalyticsViewModel } from "../../lib/stats/analytics.js";
+import {
+  formatDuration,
+  formatDurationDelta,
+  formatOptionalDuration,
+  formatTimestamp
+} from "../../lib/timeFormat.js";
 
 const HISTORY_RUNS_PAGE_SIZE = 5;
 const SEED_PB_SORT_OPTIONS = [
@@ -48,37 +54,8 @@ const HISTORY_SORT_OPTIONS = [
   }
 ];
 
-function formatDelta(durationMs) {
-  if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) {
-    return "n/a";
-  }
-
-  const prefix = durationMs > 0 ? "+" : durationMs < 0 ? "-" : "";
-  return `${prefix}${formatDuration(Math.abs(durationMs))}`;
-}
-
-function formatDate(timestamp) {
-  if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
-    return "Unknown";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(new Date(timestamp));
-}
-
 function seedTypeLabel(sessionType) {
   return sessionType === ROUTE_SESSION_TYPE ? "Route" : "Drill";
-}
-
-function districtClassName(district) {
-  if (district === "ShibuyaCho") return "is-shibuya";
-  if (district === "Kogane") return "is-kogane";
-  if (district === "Benten") return "is-benten";
-  return "";
 }
 
 function seedRowsForType(analytics, sessionType) {
@@ -166,18 +143,18 @@ function renderAreaRows(rows, emptyLabel, options = {}) {
       </div>
       {rows.map((row) => (
         <div key={row.key} className="stats-clean-row stats-area-row">
-          <strong className={`analytics-area-name ${districtClassName(areaMeta[row.key]?.district)}`}>
+          <strong className={`analytics-area-name ${districtToneClassName(areaMeta[row.key]?.district)}`}>
             {getAreaLabel(row.key)}
           </strong>
           <span className="stats-area-metric" data-label="Samples">
             <strong>{row.completions}</strong>
           </span>
           <span className="stats-area-metric" data-label="Avg">
-            <strong>{row.averageMs !== null ? formatDuration(row.averageMs) : "n/a"}</strong>
+            <strong>{formatOptionalDuration(row.averageMs)}</strong>
           </span>
           {showBest ? (
             <span className="stats-area-metric" data-label="Best">
-              <strong>{row.bestMs !== null ? formatDuration(row.bestMs) : "n/a"}</strong>
+              <strong>{formatOptionalDuration(row.bestMs)}</strong>
             </span>
           ) : null}
         </div>
@@ -337,13 +314,13 @@ function SeedRows({
                 objectives
               </span>
               <span className={latestIsPb ? "analytics-positive" : ""}>
-                <strong>{formatDelta(row.latestDeltaMs)}</strong>
+                <strong>{formatDurationDelta(row.latestDeltaMs)}</strong>
                 latest
               </span>
               <span>
                 <strong>
                   {typeof row.firstToBestDeltaMs === "number"
-                    ? formatDelta(-row.firstToBestDeltaMs)
+                    ? formatDurationDelta(-row.firstToBestDeltaMs)
                     : "n/a"}
                 </strong>
                 improvement
@@ -483,7 +460,7 @@ function RunEntryList({ run, onDeleteEntry }) {
         return (
           <div className="analytics-run-entry" key={`${entry.sessionId}-${entry.endedAt}-${index}`}>
             <span>{entry.sessionType === ROUTE_SESSION_TYPE ? entry.label ?? "Route" : entry.label}</span>
-            <span>{typeof durationMs === "number" ? formatDuration(durationMs) : "n/a"}</span>
+            <span>{formatOptionalDuration(durationMs)}</span>
             <span>
               {entry.sessionType === ROUTE_SESSION_TYPE
                 ? `${entry.squaresCleared ?? 0} clears`
@@ -558,11 +535,11 @@ function RunsList({
               <div className="analytics-run-copy">
                 <span className="badge">{runTypeLabel(run)}</span>
                 <h3>{run.title}</h3>
-                <p>{runMeta(run)} / {formatDate(run.endedAt)}</p>
+                <p>{runMeta(run)} / {formatTimestamp(run.endedAt)}</p>
               </div>
               <div className="analytics-run-metrics">
                 <span>
-                  <strong>{typeof run.totalDurationMs === "number" ? formatDuration(run.totalDurationMs) : "n/a"}</strong>
+                  <strong>{formatOptionalDuration(run.totalDurationMs)}</strong>
                   total
                 </span>
                 <span>
@@ -572,11 +549,11 @@ function RunsList({
                 {run.sessionType === ROUTE_SESSION_TYPE ? (
                   <>
                     <span>
-                      <strong>{typeof run.averageGapMs === "number" ? formatDuration(run.averageGapMs) : "n/a"}</strong>
+                      <strong>{formatOptionalDuration(run.averageGapMs)}</strong>
                       avg gap
                     </span>
                     <span>
-                      <strong>{typeof run.longestGapMs === "number" ? formatDuration(run.longestGapMs) : "n/a"}</strong>
+                      <strong>{formatOptionalDuration(run.longestGapMs)}</strong>
                       longest gap
                     </span>
                   </>
