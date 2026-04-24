@@ -6,9 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { isDrillPopoutView } from "../lib/drill/drillPopout.js";
 import {
+  getDesktopAcceleratorCandidates,
   formatHotkeyBinding,
   formatHotkeyKey,
-  getDesktopModifierParts,
   hasHotkeyModifier,
   HOTKEY_ACTIONS,
   normalizeHotkeyBinding
@@ -18,81 +18,13 @@ import { isTauriRuntime } from "../lib/runtime.js";
 const MAX_ATTEMPTS = 24;
 const DESKTOP_UNSUPPORTED_ACTIONS = new Set(["startCountdown"]);
 
-function toDesktopMainKey(code) {
-  if (!code) {
-    return null;
-  }
-
-  if (code.startsWith("Key")) {
-    return code;
-  }
-
-  if (code.startsWith("Digit")) {
-    return code.slice(5);
-  }
-
-  if (code.startsWith("Numpad")) {
-    return code;
-  }
-
-  switch (code) {
-    case "Enter":
-    case "Space":
-    case "Tab":
-    case "Backspace":
-    case "Delete":
-    case "Escape":
-    case "Home":
-    case "End":
-    case "PageUp":
-    case "PageDown":
-    case "Insert":
-    case "Pause":
-    case "PrintScreen":
-      return code;
-    case "ArrowUp":
-      return "Up";
-    case "ArrowDown":
-      return "Down";
-    case "ArrowLeft":
-      return "Left";
-    case "ArrowRight":
-      return "Right";
-    case "Minus":
-      return "-";
-    case "Equal":
-      return "=";
-    case "BracketLeft":
-      return "[";
-    case "BracketRight":
-      return "]";
-    case "Backslash":
-    case "IntlBackslash":
-      return "Backslash";
-    case "Semicolon":
-      return ";";
-    case "Quote":
-      return "'";
-    case "Backquote":
-      return "`";
-    case "Comma":
-      return ",";
-    case "Period":
-      return ".";
-    case "Slash":
-      return "/";
-    default:
-      // Function keys are the only open-ended family we currently accept.
-      return /^F\d{1,2}$/.test(code) ? code : null;
-  }
-}
-
 function buildDesktopShortcutRequest(action, binding) {
   const normalizedBinding = normalizeHotkeyBinding(binding);
   if (!normalizedBinding) {
     return {
       action,
       displayLabel: "Unbound",
+      accelerators: [],
       accelerator: null,
       eligible: false,
       skipRegistration: true,
@@ -104,6 +36,7 @@ function buildDesktopShortcutRequest(action, binding) {
     return {
       action,
       displayLabel: formatHotkeyBinding(normalizedBinding),
+      accelerators: [],
       accelerator: null,
       eligible: false,
       skipRegistration: false,
@@ -111,11 +44,12 @@ function buildDesktopShortcutRequest(action, binding) {
     };
   }
 
-  const mainKey = toDesktopMainKey(normalizedBinding.code);
-  if (!mainKey) {
+  const accelerators = getDesktopAcceleratorCandidates(normalizedBinding);
+  if (accelerators.length === 0) {
     return {
       action,
       displayLabel: formatHotkeyBinding(normalizedBinding),
+      accelerators: [],
       accelerator: null,
       eligible: false,
       skipRegistration: false,
@@ -123,11 +57,12 @@ function buildDesktopShortcutRequest(action, binding) {
     };
   }
 
-  const accelerator = [...getDesktopModifierParts(normalizedBinding), mainKey].join("+");
+  const accelerator = accelerators[0];
 
   return {
     action,
     displayLabel: formatHotkeyBinding(normalizedBinding),
+    accelerators,
     accelerator,
     eligible: true,
     skipRegistration: false,
@@ -161,6 +96,7 @@ export function useDesktopGlobalShortcuts({
   const [attempts, setAttempts] = useState([]);
   const [registrations, setRegistrations] = useState({});
   const [warningMessage, setWarningMessage] = useState(null);
+  const registeredAcceleratorsRef = useRef(new Set());
   const handlersRef = useRef({
     split: onSplit,
     skip: onSkip,
@@ -223,24 +159,73 @@ export function useDesktopGlobalShortcuts({
       }
     }
 
-    async function unregisterAll(reason, allowStateUpdates = true) {
+    async function clearKnownRegistrations(reason, allowStateUpdates = true) {
       if (!shortcutPlugin) {
         shortcutPlugin = await import("@tauri-apps/plugin-global-shortcut");
       }
 
-      pushAttempt("unregisterAll", "*", "pending", reason);
-      try {
-        await shortcutPlugin.unregisterAll();
-        pushAttempt("unregisterAll", "*", "success", reason);
-        return true;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        pushAttempt("unregisterAll", "*", "failed", message);
-        if (allowStateUpdates && !cancelled) {
-          setWarningMessage(`Failed to clear native global shortcuts: ${message}`);
+      const acceleratorsToClear = new Set(registeredAcceleratorsRef.current);
+      for (const requestedShortcut of requestedShortcuts) {
+        for (const acceleratorCandidate of requestedShortcut.accelerators) {
+          acceleratorsToClear.add(acceleratorCandidate);
         }
-        return false;
       }
+
+      pushAttempt("unregister", "*", "pending", reason);
+
+      let firstFailureMessage = null;
+      const stillRegisteredAccelerators = new Set();
+      for (const accelerator of acceleratorsToClear) {
+        if (typeof shortcutPlugin.isRegistered === "function") {
+          try {
+            const isRegisteredByApp = await shortcutPlugin.isRegistered(accelerator);
+            if (!isRegisteredByApp) {
+              pushAttempt("unregister", accelerator, "success", "Already clear.");
+              continue;
+            }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            pushAttempt("unregister-check", accelerator, "failed", message);
+            // Continue with unregister; this fallback keeps cleanup resilient if
+            // the registration check itself is unavailable on a platform build.
+          }
+        }
+
+        try {
+          await shortcutPlugin.unregister(accelerator);
+          pushAttempt("unregister", accelerator, "success", "Cleared prior registration.");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          const alreadyClear = /not registered|unregistered|unknown shortcut/i.test(message);
+          if (alreadyClear) {
+            pushAttempt("unregister", accelerator, "success", "Already clear.");
+            continue;
+          }
+
+          pushAttempt("unregister", accelerator, "failed", message);
+          if (!firstFailureMessage) {
+            firstFailureMessage = message;
+          }
+          stillRegisteredAccelerators.add(accelerator);
+        }
+      }
+
+      registeredAcceleratorsRef.current = stillRegisteredAccelerators;
+
+      if (!firstFailureMessage) {
+        pushAttempt("unregister", "*", "success", reason);
+        return true;
+      }
+
+      if (allowStateUpdates && !cancelled) {
+        setWarningMessage(
+          `Some native shortcuts could not be cleared cleanly: ${firstFailureMessage}`
+        );
+      }
+      // Continue with registration attempts even when cleanup is partial. This
+      // lets the sync loop surface actionable register conflicts per shortcut.
+      pushAttempt("unregister", "*", "failed", reason);
+      return true;
     }
 
     async function syncNativeShortcuts() {
@@ -248,7 +233,7 @@ export function useDesktopGlobalShortcuts({
 
       // Clearing first is a little blunt, but it keeps native registration
       // state deterministic across focus changes, failed binds, and rebinding.
-      const cleared = await unregisterAll(
+      const cleared = await clearKnownRegistrations(
         nativeModeActive
           ? "Preparing native registrations for unfocused mode."
           : suspendNative
@@ -274,8 +259,13 @@ export function useDesktopGlobalShortcuts({
 
       const nextRegistrations = {};
       const failureMessages = [];
+      const nextRegisteredAccelerators = new Set();
 
       for (const requestedShortcut of requestedShortcuts) {
+        if (cancelled) {
+          return;
+        }
+
         if (!requestedShortcut.eligible) {
           if (requestedShortcut.skipRegistration) {
             nextRegistrations[requestedShortcut.action] = createRegistrationEntry(
@@ -310,47 +300,138 @@ export function useDesktopGlobalShortcuts({
           `${requestedShortcut.action} native registration requested.`
         );
 
-        try {
-          await shortcutPlugin.register(requestedShortcut.accelerator, (event) => {
-            // The plugin reports both press and release transitions. The app's
-            // actions are edge-triggered, so release events should be ignored.
-            if (event.state !== "Pressed") {
+        let registeredAccelerator = null;
+        let failureMessage = null;
+
+        for (const acceleratorCandidate of requestedShortcut.accelerators) {
+          if (cancelled) {
+            return;
+          }
+
+          try {
+            await shortcutPlugin.register(acceleratorCandidate, (event) => {
+              // The plugin reports both press and release transitions. The app's
+              // actions are edge-triggered, so release events should be ignored.
+              if (event.state !== "Pressed") {
+                return;
+              }
+
+              const handler = handlersRef.current[requestedShortcut.action];
+              handler?.();
+            });
+
+            if (cancelled) {
+              try {
+                await shortcutPlugin.unregister(acceleratorCandidate);
+              } catch {
+                // Best effort only; the next sync pass starts by unregistering all.
+              }
               return;
             }
 
-            const handler = handlersRef.current[requestedShortcut.action];
-            handler?.();
-          });
+            registeredAccelerator = acceleratorCandidate;
+            break;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            const alreadyRegistered = /already registered/i.test(message);
 
+            if (alreadyRegistered && typeof shortcutPlugin.isRegistered === "function") {
+              let isRegisteredByApp = false;
+
+              try {
+                isRegisteredByApp = await shortcutPlugin.isRegistered(acceleratorCandidate);
+              } catch {
+                isRegisteredByApp = false;
+              }
+
+              if (isRegisteredByApp) {
+                pushAttempt(
+                  "register",
+                  acceleratorCandidate,
+                  "pending",
+                  "Shortcut already existed in this app; re-registering."
+                );
+
+                try {
+                  await shortcutPlugin.unregister(acceleratorCandidate);
+                  await shortcutPlugin.register(acceleratorCandidate, (event) => {
+                    if (event.state !== "Pressed") {
+                      return;
+                    }
+
+                    const handler = handlersRef.current[requestedShortcut.action];
+                    handler?.();
+                  });
+
+                  if (cancelled) {
+                    try {
+                      await shortcutPlugin.unregister(acceleratorCandidate);
+                    } catch {
+                      // Best effort only; the next sync pass starts by unregistering all.
+                    }
+                    return;
+                  }
+
+                  registeredAccelerator = acceleratorCandidate;
+                  break;
+                } catch (retryError) {
+                  const retryMessage =
+                    retryError instanceof Error ? retryError.message : String(retryError);
+                  pushAttempt("register", acceleratorCandidate, "failed", retryMessage);
+                  failureMessage = retryMessage;
+                  continue;
+                }
+              }
+
+              const externalConflictMessage =
+                `${message} (likely reserved by another application).`;
+              pushAttempt("register", acceleratorCandidate, "failed", externalConflictMessage);
+              failureMessage = externalConflictMessage;
+              continue;
+            }
+
+            pushAttempt("register", acceleratorCandidate, "failed", message);
+            failureMessage = message;
+          }
+        }
+
+        if (registeredAccelerator) {
+          nextRegisteredAccelerators.add(registeredAccelerator);
           pushAttempt(
             "register",
-            requestedShortcut.accelerator,
+            registeredAccelerator,
             "success",
             `${requestedShortcut.action} registered.`
           );
           nextRegistrations[requestedShortcut.action] = createRegistrationEntry(
             requestedShortcut.action,
-            requestedShortcut.accelerator,
+            registeredAccelerator,
             "registered",
             "Registered natively."
           );
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          pushAttempt("register", requestedShortcut.accelerator, "failed", message);
-          nextRegistrations[requestedShortcut.action] = createRegistrationEntry(
-            requestedShortcut.action,
-            requestedShortcut.accelerator,
-            "failed",
-            message
-          );
-          failureMessages.push(`${requestedShortcut.accelerator}: ${message}`);
+          continue;
         }
+
+        const fallbackFailureMessage =
+          failureMessage ??
+          "Registration failed for all accelerator formats.";
+        const attemptedAccelerators = requestedShortcut.accelerators.join(", ");
+        nextRegistrations[requestedShortcut.action] = createRegistrationEntry(
+          requestedShortcut.action,
+          requestedShortcut.accelerator,
+          "failed",
+          fallbackFailureMessage
+        );
+        failureMessages.push(
+          `${requestedShortcut.action} (${attemptedAccelerators}): ${fallbackFailureMessage}`
+        );
       }
 
       if (cancelled) {
         return;
       }
 
+      registeredAcceleratorsRef.current = nextRegisteredAccelerators;
       setRegistrations(nextRegistrations);
       setWarningMessage(
         failureMessages.length > 0 ? `Native shortcut registration failed: ${failureMessages[0]}` : null
@@ -365,14 +446,8 @@ export function useDesktopGlobalShortcuts({
 
     return () => {
       cancelled = true;
-
-      if (!shortcutPlugin) {
-        return;
-      }
-
-      // Best-effort cleanup only; surfacing teardown failures during unmount is
-      // usually more noise than signal.
-      unregisterAll("Effect cleanup.", false).catch(() => {});
+      // Do not unregister during cleanup: this async teardown can race with the
+      // next effect run and wipe freshly-registered shortcuts.
     };
   }, [hasWindowFocus, nativeModeActive, requestedSignature, suspendNative, suspendReason]);
 

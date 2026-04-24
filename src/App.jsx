@@ -346,6 +346,7 @@ function RouteModeView({
 function SettingsModeView({
   drillSession,
   capturingAction,
+  desktopGlobalWarning,
   onBeginHotkeyCapture,
   onCancelHotkeyCapture
 }) {
@@ -355,6 +356,7 @@ function SettingsModeView({
         settings={drillSession.settings}
         hasActiveSession={Boolean(drillSession.currentSession)}
         capturingAction={capturingAction}
+        desktopHotkeyWarning={desktopGlobalWarning}
         onBeginHotkeyCapture={onBeginHotkeyCapture}
         onCancelHotkeyCapture={onCancelHotkeyCapture}
         onUpdateSetting={(key, value) =>
@@ -486,22 +488,69 @@ export default function App() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+    let removeDesktopFocusListener = null;
+
+    function applyFocusState(nextFocusState) {
+      setHasWindowFocus(Boolean(nextFocusState));
+    }
+
     function handleFocus() {
-      setHasWindowFocus(true);
+      applyFocusState(true);
     }
 
     function handleBlur() {
-      setHasWindowFocus(false);
+      applyFocusState(false);
     }
 
     window.addEventListener("focus", handleFocus);
     window.addEventListener("blur", handleBlur);
 
+    if (desktopRuntime) {
+      import("@tauri-apps/api/window")
+        .then(async ({ getCurrentWindow }) => {
+          if (cancelled) {
+            return;
+          }
+
+          const currentWindow = getCurrentWindow();
+
+          try {
+            const focused = await currentWindow.isFocused();
+            if (!cancelled) {
+              applyFocusState(focused);
+            }
+          } catch {
+            // Browser focus events are already active; keep the best-known state.
+          }
+
+          try {
+            const unlisten = await currentWindow.onFocusChanged((event) => {
+              applyFocusState(event.payload);
+            });
+
+            if (cancelled) {
+              unlisten();
+              return;
+            }
+
+            removeDesktopFocusListener = unlisten;
+          } catch {
+            // Browser focus events are already active; keep the best-known state.
+          }
+        })
+        .catch(() => {
+          // Browser focus events are already active; keep the best-known state.
+        });
+    }
+
     return () => {
+      cancelled = true;
+      removeDesktopFocusListener?.();
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
     };
-  }, []);
+  }, [desktopRuntime]);
 
   useEffect(() => {
     if (activeMode !== "settings" && capturingAction) {
@@ -575,7 +624,7 @@ export default function App() {
     onEnd: drillSession.endSession,
     onRouteSlot: drillSession.completeRouteSlot
   });
-  useDesktopGlobalShortcuts({
+  const desktopGlobalShortcuts = useDesktopGlobalShortcuts({
     enabled:
       useDesktopGlobalHotkeys &&
       hasActiveSession,
@@ -704,6 +753,7 @@ export default function App() {
           <SettingsModeView
             drillSession={drillSession}
             capturingAction={capturingAction}
+            desktopGlobalWarning={desktopGlobalShortcuts.warningMessage}
             onBeginHotkeyCapture={setCapturingAction}
             onCancelHotkeyCapture={() => setCapturingAction(null)}
           />

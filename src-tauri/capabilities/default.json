@@ -1,12 +1,20 @@
 {
   "identifier": "default",
   "description": "Core capability set for the main and drill pop-out windows",
+  "remote": {
+    "urls": [
+      "http://localhost:1420/*",
+      "http://localhost:1430/*",
+      "http://127.0.0.1:1420/*",
+      "http://127.0.0.1:1430/*"
+    ]
+  },
   "windows": ["main", "drill-popout"],
   "permissions": [
     "core:default",
     "core:window:allow-set-always-on-top",
+    "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
-    "global-shortcut:allow-unregister-all"
+    "global-shortcut:allow-unregister"
   ]
 }

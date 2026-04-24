@@ -384,7 +384,7 @@ function SeedBuilderSeedBar({
           label="Seed type"
           value={sessionType}
           options={[
-            { value: PRACTICE_SESSION_TYPE, label: "Practice" },
+            { value: PRACTICE_SESSION_TYPE, label: "Square" },
             { value: ROUTE_SESSION_TYPE, label: "Route" }
           ]}
           onChange={onSessionTypeChange}

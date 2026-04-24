@@ -9,12 +9,62 @@ test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
   assert.equal(state.settings.autoOpenPopout, false);
   assert.equal(state.settings.routeDistrictColorsEnabled, true);
-  assert.equal(state.settings.hotkeys.runBack, null);
+  assert.deepEqual(state.settings.hotkeys.split, {
+    code: "Space",
+    modifiers: {
+      ctrl: true,
+      alt: false,
+      shift: true,
+      meta: false
+    }
+  });
+  assert.deepEqual(state.settings.hotkeys.skip, {
+    code: "ArrowRight",
+    modifiers: {
+      ctrl: true,
+      alt: false,
+      shift: true,
+      meta: false
+    }
+  });
+  assert.deepEqual(state.settings.hotkeys.pause, {
+    code: "ArrowDown",
+    modifiers: {
+      ctrl: true,
+      alt: false,
+      shift: true,
+      meta: false
+    }
+  });
+  assert.deepEqual(state.settings.hotkeys.runBack, {
+    code: "ArrowUp",
+    modifiers: {
+      ctrl: true,
+      alt: false,
+      shift: true,
+      meta: false
+    }
+  });
   assert.equal(state.settings.hotkeys.skipSplit, null);
   assert.equal(state.settings.hotkeys.toggleGuide, null);
   assert.equal(state.settings.hotkeys.startCountdown, null);
   assert.equal(state.startCountdown, null);
   assert.equal(state.pendingCompletion, null);
+});
+
+test("normalizeAppState preserves explicitly unbound hotkeys", () => {
+  const state = normalizeAppState({
+    settings: {
+      hotkeys: {
+        split: null,
+        skip: "KeyS",
+        pause: "KeyP",
+        end: "KeyE"
+      }
+    }
+  });
+
+  assert.equal(state.settings.hotkeys.split, null);
 });
 
 test("normalizeAppState preserves stats mode selection", () => {
@@ -102,7 +152,7 @@ test("normalizeAppState preserves autoOpenPopout setting", () => {
   assert.equal(state.settings.autoOpenPopout, true);
 });
 
-test("normalizeAppState backfills optional hotkey actions as unbound", () => {
+test("normalizeAppState backfills missing hotkey actions to current defaults", () => {
   const state = normalizeAppState({
     settings: {
       hotkeys: {
@@ -114,7 +164,15 @@ test("normalizeAppState backfills optional hotkey actions as unbound", () => {
     }
   });
 
-  assert.equal(state.settings.hotkeys.runBack, null);
+  assert.deepEqual(state.settings.hotkeys.runBack, {
+    code: "ArrowUp",
+    modifiers: {
+      ctrl: true,
+      alt: false,
+      shift: true,
+      meta: false
+    }
+  });
   assert.equal(state.settings.hotkeys.skipSplit, null);
   assert.equal(state.settings.hotkeys.toggleGuide, null);
   assert.equal(state.settings.hotkeys.startCountdown, null);

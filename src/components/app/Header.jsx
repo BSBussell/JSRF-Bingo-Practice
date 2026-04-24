@@ -56,7 +56,7 @@ export function Header({
               role="menuitem"
               onClick={onSelectPractice}
             >
-              Drill
+              Square
               {hasActiveSession && currentSessionType === PRACTICE_SESSION_TYPE ? <span className="nav-badge">Live</span> : null}
             </button>
             <button

@@ -34,10 +34,10 @@ const LEGACY_DEFAULT_HOTKEYS = {
   end: createHotkeyBinding("KeyE")
 };
 export const DEFAULT_HOTKEYS = {
-  split: createHotkeyBinding("Enter", { ctrl: true, shift: true }),
-  skip: createHotkeyBinding("KeyS", { ctrl: true, shift: true }),
-  pause: createHotkeyBinding("KeyP", { ctrl: true, shift: true }),
-  runBack: null,
+  split: createHotkeyBinding("Space", { ctrl: true, shift: true }),
+  skip: createHotkeyBinding("ArrowRight", { ctrl: true, shift: true }),
+  pause: createHotkeyBinding("ArrowDown", { ctrl: true, shift: true }),
+  runBack: createHotkeyBinding("ArrowUp", { ctrl: true, shift: true }),
   skipSplit: null,
   toggleGuide: null,
   startCountdown: null,
@@ -79,6 +79,10 @@ function hotkeyBindingsMatch(left, right) {
 }
 
 function normalizeHotkeyWithMigration(value, action) {
+  if (value === null) {
+    return null;
+  }
+
   const normalizedValue = normalizeHotkeyBinding(value);
   if (!normalizedValue) {
     return DEFAULT_HOTKEYS[action];

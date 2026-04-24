@@ -213,3 +213,113 @@ export function getDesktopModifierParts(binding) {
     normalizedBinding.modifiers.meta ? "Cmd" : null
   ].filter(Boolean);
 }
+
+function toDesktopMainKeyCandidates(code) {
+  if (!code) {
+    return [];
+  }
+
+  if (code.startsWith("Key")) {
+    const letter = code.slice(3);
+    return letter ? [letter, code] : [code];
+  }
+
+  if (code.startsWith("Digit")) {
+    const digit = code.slice(5);
+    return digit ? [digit, code] : [code];
+  }
+
+  if (code.startsWith("Numpad")) {
+    return [code];
+  }
+
+  switch (code) {
+    case "Enter":
+    case "Space":
+    case "Tab":
+    case "Backspace":
+    case "Delete":
+    case "Escape":
+    case "Home":
+    case "End":
+    case "PageUp":
+    case "PageDown":
+    case "Insert":
+    case "Pause":
+    case "PrintScreen":
+      return [code];
+    case "ArrowUp":
+      return ["Up", code];
+    case "ArrowDown":
+      return ["Down", code];
+    case "ArrowLeft":
+      return ["Left", code];
+    case "ArrowRight":
+      return ["Right", code];
+    case "Minus":
+      return ["-", code];
+    case "Equal":
+      return ["=", code];
+    case "BracketLeft":
+      return ["[", code];
+    case "BracketRight":
+      return ["]", code];
+    case "Backslash":
+    case "IntlBackslash":
+      return ["Backslash", "\\"];
+    case "Semicolon":
+      return [";", code];
+    case "Quote":
+      return ["'", code];
+    case "Backquote":
+      return ["`", code];
+    case "Comma":
+      return [",", code];
+    case "Period":
+      return [".", code];
+    case "Slash":
+      return ["/", code];
+    default:
+      return /^F\d{1,2}$/.test(code) ? [code] : [];
+  }
+}
+
+export function getDesktopAcceleratorCandidates(binding) {
+  const normalizedBinding = normalizeHotkeyBinding(binding);
+  if (!normalizedBinding) {
+    return [];
+  }
+
+  const mainKeyCandidates = toDesktopMainKeyCandidates(normalizedBinding.code);
+  if (mainKeyCandidates.length === 0) {
+    return [];
+  }
+
+  const baseModifierParts = getDesktopModifierParts(normalizedBinding);
+  const modifierSets = [baseModifierParts];
+  const canonicalModifierParts = baseModifierParts.map((part) => {
+    if (part === "Ctrl") {
+      return "CommandOrControl";
+    }
+
+    if (part === "Cmd") {
+      return "Meta";
+    }
+
+    return part;
+  });
+
+  if (canonicalModifierParts.join("+") !== baseModifierParts.join("+")) {
+    modifierSets.push(canonicalModifierParts);
+  }
+
+  const acceleratorSet = new Set();
+
+  for (const modifierParts of modifierSets) {
+    for (const mainKey of mainKeyCandidates) {
+      acceleratorSet.add([...modifierParts, mainKey].join("+"));
+    }
+  }
+
+  return Array.from(acceleratorSet);
+}

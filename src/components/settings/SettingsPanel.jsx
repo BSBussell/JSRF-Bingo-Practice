@@ -219,6 +219,7 @@ export function SettingsPanel({
   settings,
   hasActiveSession,
   capturingAction,
+  desktopHotkeyWarning = null,
   onBeginHotkeyCapture,
   onCancelHotkeyCapture,
   onUpdateSetting,
@@ -513,6 +514,9 @@ export function SettingsPanel({
         <div className="settings-section">
           <div className="settings-section-copy">
             <h2>Session hotkeys</h2>
+            {isTauriRuntime() && desktopHotkeyWarning ? (
+              <p className="settings-inline-warning">{desktopHotkeyWarning}</p>
+            ) : null}
           </div>
           <div className="settings-list">
             {HOTKEY_ACTIONS.map((action) => (
