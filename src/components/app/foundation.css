@@ -804,7 +804,7 @@ button {
 .app-header {
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 200;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -901,6 +901,7 @@ button {
     flex-wrap: wrap;
     gap: 0.75rem;
     position: relative;
+    z-index: 210;
     overflow: visible;
 }
 
@@ -943,7 +944,7 @@ button {
     position: absolute;
     top: calc(100% + 0.16rem);
     right: 0;
-    z-index: 30;
+    z-index: 220;
     display: grid;
     gap: 0.32rem;
     min-width: 11rem;
@@ -1123,6 +1124,15 @@ button {
     border-radius: 999px;
     font-size: 0.8rem;
     background: var(--badge-background);
+}
+
+.mobile-menu-trigger,
+.mobile-nav-overlay {
+    display: none;
+}
+
+body.mobile-menu-open {
+    overflow: hidden;
 }
 
 .app-main {

@@ -146,7 +146,6 @@
 }
 
 @media (max-width: 720px) {
-    .app-header,
     .panel-heading,
     .drill-panel-header,
     .settings-row,
@@ -161,55 +160,205 @@
     }
 
     .app-header {
-        position: static;
-        top: auto;
-        gap: 0.8rem;
+        position: sticky;
+        top: 0;
+        gap: 0.5rem;
         padding: 0.8rem 0.85rem;
-    }
-
-    .main-nav,
-    .header-release-slot {
-        width: 100%;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .main-nav {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(5.8rem, 1fr));
-        gap: 0.45rem;
+        display: none;
     }
 
-    .nav-link {
-        min-width: 0;
+    .mobile-menu-trigger {
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
-        padding: 0.65rem 0.7rem;
+        width: 2.9rem;
+        min-width: 2.9rem;
+        min-height: 2.9rem;
+        padding: 0;
     }
 
-    .nav-link-icon {
+    .mobile-menu-trigger-icon {
+        display: inline-grid;
+        place-items: center;
+        width: 1.88rem;
+        height: 1.88rem;
+    }
+
+    .mobile-menu-trigger-icon svg {
         width: 100%;
-        height: auto;
-        min-height: 2.52rem;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
     }
 
-    .nav-group {
-        min-width: 0;
+    .mobile-nav-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 4000;
+        display: flex;
+        flex-direction: column;
+        padding: calc(env(safe-area-inset-top, 0px) + 0.85rem) 0.85rem calc(env(safe-area-inset-bottom, 0px) + 1rem);
+        background:
+            radial-gradient(circle at 14% 10%, rgba(230, 180, 87, 0.18), transparent 24%),
+            radial-gradient(circle at 86% 16%, rgba(103, 199, 189, 0.13), transparent 28%),
+            radial-gradient(circle at 50% 100%, rgba(214, 141, 125, 0.12), transparent 32%),
+            linear-gradient(180deg, #070f19 0%, #0b1320 52%, #0f1826 100%);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateX(100%);
+        transition:
+            transform 260ms ease,
+            opacity 180ms ease,
+            visibility 0s linear 260ms;
     }
 
-    .nav-group-trigger {
-        width: 100%;
+    .mobile-nav-overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(0);
+        transition:
+            transform 300ms cubic-bezier(0.22, 0.9, 0.28, 1),
+            opacity 220ms ease,
+            visibility 0s linear 0s;
     }
 
-    .nav-group-menu {
-        left: 0;
-        right: auto;
-        min-width: max(100%, 10.5rem);
-    }
-
-    .header-release-slot {
-        min-width: 0;
-    }
-
-    .release-nav-link {
+    .mobile-nav-header {
+        display: flex;
         justify-content: flex-start;
+        padding-bottom: 0.9rem;
+    }
+
+    .mobile-nav-back-button {
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--nav-border);
+        border-radius: var(--radius-button);
+        background: var(--nav-background);
+        color: var(--text-primary);
+        width: 2.9rem;
+        min-width: 2.9rem;
+        min-height: 2.9rem;
+        padding: 0;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 239, 217, 0.07),
+            0 10px 22px rgba(0, 0, 0, 0.26);
+    }
+
+    .mobile-nav-back-icon {
+        display: inline-grid;
+        place-items: center;
+        width: 1.9rem;
+        height: 1.9rem;
+    }
+
+    .mobile-nav-back-icon svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .mobile-nav-menu {
+        display: grid;
+        gap: 0.72rem;
+        align-content: start;
+        overflow-y: auto;
+        padding-right: 0.2rem;
+    }
+
+    .mobile-nav-group {
+        display: grid;
+        gap: 0.3rem;
+        padding: 0.68rem 0.72rem;
+        border: 1px solid rgba(255, 228, 202, 0.08);
+        border-radius: var(--radius-card);
+        background:
+            linear-gradient(180deg, rgba(255, 244, 226, 0.03), rgba(255, 255, 255, 0.01)),
+            rgba(15, 19, 29, 0.64);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 239, 217, 0.04),
+            0 14px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    .mobile-nav-group h2 {
+        margin: 0;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-shadow: var(--muted-text-shadow);
+    }
+
+    .mobile-nav-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        width: 100%;
+        min-height: 2.65rem;
+        padding: 0.5rem 0.55rem;
+        border: 1px solid transparent;
+        border-radius: calc(var(--radius-control) - 0.12rem);
+        background: transparent;
+        color: var(--text-secondary);
+        text-align: left;
+        font-size: 1.04rem;
+        transition:
+            background-color 160ms ease,
+            border-color 160ms ease,
+            color 160ms ease,
+            transform 160ms ease,
+            box-shadow 170ms ease;
+    }
+
+    .mobile-nav-item:hover,
+    .mobile-nav-item:focus-visible {
+        color: var(--text-primary);
+        background: color-mix(in srgb, var(--nav-active-background) 74%, transparent);
+        border-color: color-mix(in srgb, var(--nav-active-border) 72%, transparent);
+        box-shadow: inset 0 0 0 1px rgba(255, 219, 166, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .mobile-nav-top-item {
+        color: var(--text-primary);
+        font-size: 1.08rem;
+        font-weight: 600;
+        margin-top: 0.12rem;
+        border: 1px solid rgba(255, 228, 202, 0.08);
+        border-radius: var(--radius-control);
+        background:
+            linear-gradient(135deg, rgba(230, 180, 87, 0.1), rgba(214, 141, 125, 0.08)),
+            rgba(255, 255, 255, 0.015);
+        box-shadow: inset 0 1px 0 rgba(255, 239, 217, 0.04);
+    }
+
+    .mobile-nav-item-prefix {
+        width: 0.8rem;
+        opacity: 0.74;
+        color: var(--text-muted);
+    }
+
+    .mobile-nav-item.is-active {
+        color: var(--text-primary);
+        text-shadow: var(--accent-text-shadow);
+        background: color-mix(in srgb, var(--nav-active-background) 80%, transparent);
+        border-color: color-mix(in srgb, var(--nav-active-border) 76%, transparent);
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 219, 166, 0.1),
+            0 0 18px rgba(230, 180, 87, 0.14);
     }
 
     .panel {
@@ -851,6 +1000,9 @@
     .primary-button::before,
     .secondary-button,
     .ghost-button,
+    .mobile-nav-back-button,
+    .mobile-nav-item,
+    .mobile-nav-overlay,
     .nav-link,
     .nav-group-menu,
     .nav-group-item,
@@ -901,6 +1053,8 @@
     .analytics-seed-row:focus-within,
     .analytics-run-card:hover,
     .analytics-run-card:focus-within,
+    .mobile-nav-item:hover,
+    .mobile-nav-item:focus-visible,
     .nav-group-item:hover,
     .nav-group-item:focus-visible,
     .bingopedia-area-button:hover,

@@ -62,7 +62,7 @@ export function ModeSelect({
 
       <div className="mode-feature-grid">
         <ModeTile
-          label="Play Mode"
+          label="gaming"
           title="Square Practice"
           description="Practice one square at a time and track splits, PBs, and square stats!"
           actionLabel={
@@ -75,7 +75,7 @@ export function ModeSelect({
           featured
         />
         <ModeTile
-          label="Play Mode"
+          label="gaming"
           title="Routing Practice"
           description="Train pathing with a visible grid and test your ability to route between squares."
           actionLabel={
