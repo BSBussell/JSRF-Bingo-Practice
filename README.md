@@ -62,10 +62,6 @@ Some unconventional playlist titles are matched through non-runtime title aliase
 in `scripts/data/learning-video-title-aliases.json`. These aliases are generator
 input only and should not include video IDs.
 
-Do not add hardcoded objective, square, area, or tape video maps back into
-runtime code. Runtime code should interpret the generated manifest and show an
-empty state when a manifest entry is absent.
-
 ## Tauri desktop development
 
 Make sure Rust is installed and that your machine has the standard [Tauri system prerequisites](https://tauri.app/start/prerequisites/) for your OS.
