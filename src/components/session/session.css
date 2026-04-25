@@ -45,7 +45,8 @@
 }
 
 .drill-objective-card {
-    height: 7.05rem;
+    min-height: 7.05rem;
+    height: auto;
     align-content: start;
     transform-origin: center top;
     backface-visibility: hidden;
@@ -306,7 +307,7 @@
     overflow: hidden;
     min-width: 0;
     min-height: 4.35rem;
-    max-height: 4.35rem;
+    max-height: 5.2rem;
     font-size: var(--drill-title-font-size);
     line-height: 0.98;
     overflow-wrap: anywhere;
@@ -1380,7 +1381,8 @@
 }
 
 .drill-action-menu:hover .drill-action-menu-list,
-.drill-action-menu:focus-within .drill-action-menu-list {
+.drill-action-menu:focus-within .drill-action-menu-list,
+.drill-action-menu.is-open .drill-action-menu-list {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0) scale(1);

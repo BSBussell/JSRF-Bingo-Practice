@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getAreaLabel } from "../../data/areaMeta.js";
 import { formatDuration, formatDurationDelta } from "../../lib/timeFormat.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
@@ -299,6 +299,8 @@ export function DrillCard({
   onSkip,
   onEndSession
 }) {
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef(null);
   const objectiveTitle = formatDrillObjectiveLabel(objective);
   const [objectiveTitleRef, objectiveTitleFontSize] = useMultiLineFontFit(objectiveTitle, {
     minRem: 1.35,
@@ -408,6 +410,28 @@ export function DrillCard({
       : null;
   const completionFeedback = formatCompletionFeedback(squareReward);
   const seedPbFeedback = formatSeedPbFeedback(squareReward);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!actionMenuRef.current?.contains(event.target)) {
+        setIsActionMenuOpen(false);
+      }
+    }
+
+    if (!isActionMenuOpen) {
+      return undefined;
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isActionMenuOpen]);
+
+  function runMenuAction(action) {
+    setIsActionMenuOpen(false);
+    action();
+  }
 
   return (
     <section className="panel drill-panel">
@@ -530,12 +554,15 @@ export function DrillCard({
           </button>
         </div>
 
-        <div className="drill-action-menu">
+        <div className={`drill-action-menu ${isActionMenuOpen ? "is-open" : ""}`} ref={actionMenuRef}>
           <button
             className="secondary-button drill-action-menu-trigger"
             type="button"
             aria-label="More actions"
             aria-haspopup="menu"
+            aria-expanded={isActionMenuOpen}
+            aria-controls="drill-action-menu-list"
+            onClick={() => setIsActionMenuOpen((previousValue) => !previousValue)}
           >
             <svg className="drill-action-menu-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M4 7L7 7M20 7L11 7" />
@@ -543,18 +570,23 @@ export function DrillCard({
               <path d="M4 12H7L20 12" />
             </svg>
           </button>
-          <div className="drill-action-menu-list" role="menu" aria-label="Additional actions">
-            <button className="secondary-button drill-action-menu-item" type="button" onClick={onRunBack}>
+          <div
+            className="drill-action-menu-list"
+            id="drill-action-menu-list"
+            role="menu"
+            aria-label="Additional actions"
+          >
+            <button className="secondary-button drill-action-menu-item" type="button" onClick={() => runMenuAction(onRunBack)}>
               Run It Back
             </button>
-            <button className="secondary-button drill-action-menu-item" type="button" onClick={onSkipSplit} disabled={Boolean(squareReward)}>
+            <button className="secondary-button drill-action-menu-item" type="button" onClick={() => runMenuAction(onSkipSplit)} disabled={Boolean(squareReward)}>
               Skip Split
             </button>
             {onToggleLearnPanel ? (
               <button
                 className="secondary-button drill-action-menu-item"
                 type="button"
-                onClick={onToggleLearnPanel}
+                onClick={() => runMenuAction(onToggleLearnPanel)}
               >
                 {learnPanelVisible ? "Hide Route Guide" : "Show Route Guide"}
               </button>
@@ -562,7 +594,7 @@ export function DrillCard({
             <button
               className="secondary-button danger-button drill-action-menu-item"
               type="button"
-              onClick={onEndSession}
+              onClick={() => runMenuAction(onEndSession)}
             >
               End Session
             </button>

@@ -36,7 +36,7 @@
 }
 
 .bingopedia-filter-chip {
-    min-height: 2.2rem;
+    min-height: 2.6rem;
     padding: 0.35rem 0.62rem;
     border-radius: 999px;
     border: 1px solid var(--secondary-button-border);
@@ -493,6 +493,7 @@
 
 .bingopedia-practice-callout .primary-button {
     min-width: 9rem;
+    min-height: 2.75rem;
     padding-inline: 0.9rem;
 }
 

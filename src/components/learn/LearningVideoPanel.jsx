@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function buildOptionKey(option) {
   if (option.playlistId) {
@@ -70,6 +70,8 @@ export function LearningVideoPanel({
   const [selectedOptionKey, setSelectedOptionKey] = useState(
     selectedSource && options[0] ? buildOptionKey(options[0]) : ""
   );
+  const [isVariantMenuOpen, setIsVariantMenuOpen] = useState(false);
+  const variantMenuRef = useRef(null);
 
   useEffect(() => {
     setSelectedSourceKey((currentKey) =>
@@ -88,6 +90,23 @@ export function LearningVideoPanel({
           : ""
     );
   }, [options, selectedSource]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!variantMenuRef.current?.contains(event.target)) {
+        setIsVariantMenuOpen(false);
+      }
+    }
+
+    if (!isVariantMenuOpen) {
+      return undefined;
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isVariantMenuOpen]);
 
   const selectedVideo =
     options.find((option) => buildOptionKey(option) === selectedOptionKey) ?? options[0] ?? null;
@@ -141,22 +160,28 @@ export function LearningVideoPanel({
       </div>
 
       {hasVariants ? (
-        <div className="learn-variant-menu">
+        <div className={`learn-variant-menu ${isVariantMenuOpen ? "is-open" : ""}`} ref={variantMenuRef}>
           <button
             className="secondary-button learn-variant-trigger"
             type="button"
             aria-haspopup="menu"
+            aria-expanded={isVariantMenuOpen}
+            aria-controls="learn-variant-list"
+            onClick={() => setIsVariantMenuOpen((previousValue) => !previousValue)}
           >
             Variants
           </button>
-          <div className="learn-variant-list" role="menu" aria-label="Guide options">
+          <div className="learn-variant-list" id="learn-variant-list" role="menu" aria-label="Guide options">
             {options.map((option) => (
               <button
                 key={buildOptionKey(option)}
                 className={`learn-variant-option ${buildOptionKey(option) === buildOptionKey(selectedVideo) ? "is-active" : ""}`}
                 type="button"
                 role="menuitem"
-                onClick={() => setSelectedOptionKey(buildOptionKey(option))}
+                onClick={() => {
+                  setSelectedOptionKey(buildOptionKey(option));
+                  setIsVariantMenuOpen(false);
+                }}
               >
                 {option.label}
               </button>

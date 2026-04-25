@@ -38,7 +38,7 @@
 }
 
 .learn-source-tab {
-    min-height: 2.35rem;
+    min-height: 2.75rem;
     padding: 0.42rem 0.7rem;
     border-radius: 999px;
     border: 1px solid var(--secondary-button-border);
@@ -132,6 +132,7 @@
 }
 
 .learn-variant-trigger {
+    min-height: 2.75rem;
     padding: 0.55rem 0.8rem;
 }
 
@@ -161,7 +162,8 @@
 }
 
 .learn-variant-menu:hover .learn-variant-list,
-.learn-variant-menu:focus-within .learn-variant-list {
+.learn-variant-menu:focus-within .learn-variant-list,
+.learn-variant-menu.is-open .learn-variant-list {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
