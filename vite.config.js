@@ -9,7 +9,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        popout: resolve(__dirname, "popout.html")
+        popout: resolve(__dirname, "popout.html"),
+        multinodeTest: resolve(__dirname, "multinode-test.html")
       }
     }
   },
