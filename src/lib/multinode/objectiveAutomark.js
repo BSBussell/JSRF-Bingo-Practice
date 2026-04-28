@@ -72,7 +72,7 @@ function getRuleFromObjective(objective) {
         type: "soul_collected",
         soulId
       },
-      reason: "Soul objectives complete when the matching soul is collected."
+      reason: "Soul-backed objectives complete when the matching soul is collected."
     };
   }
 

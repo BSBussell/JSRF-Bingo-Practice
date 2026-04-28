@@ -23,6 +23,10 @@ import { useSessionHotkeys } from "./hooks/useSessionHotkeys.js";
 import { useTimer } from "./hooks/useTimer.js";
 import { resolveMultinodeAutomarkAction } from "./lib/multinode/automarkDispatch.js";
 import {
+  buildMultinodeAutomarkContext,
+  formatMultinodeConnectionStatus
+} from "./lib/multinode/appAutomark.js";
+import {
   isDrillPopoutView,
   openDrillPopoutWindow,
   syncDrillPopoutAlwaysOnTop
@@ -41,7 +45,6 @@ import {
   normalizeAppState
 } from "./lib/storage.js";
 import { buildLearningVideoSources } from "./data/learnVideos.js";
-import { objectivesById } from "./data/objectives.js";
 import { formatHotkeyBinding } from "./lib/hotkeys.js";
 import { parseReleaseNotesMarkdown } from "./lib/releaseNotes.js";
 import { resolveTheme } from "./lib/theme/index.js";
@@ -599,55 +602,19 @@ export default function App() {
   const activeMode = appState.selectedMode;
   const settings = drillSession.settings;
   const multinodeLink = settings.multinodeLink ?? "";
-  const startCountdownSessionType = drillSession.startCountdown?.sessionSpec?.sessionType ?? null;
-  const countdownObjectiveId =
-    drillSession.startCountdown?.sessionSpec?.objectiveIds?.[0] ?? null;
-  const countdownObjective = countdownObjectiveId ? objectivesById[countdownObjectiveId] ?? null : null;
-  const currentAutomarkObjective =
-    drillSession.currentSession?.sessionType === PRACTICE_SESSION_TYPE
-      ? drillSession.currentObjective
-      : startCountdownSessionType === PRACTICE_SESSION_TYPE
-        ? countdownObjective
-        : null;
-  const currentPracticePhase =
-    drillSession.currentSession?.sessionType === PRACTICE_SESSION_TYPE
-      ? drillSession.currentSession.phase
-      : null;
-  const routeAutomarkCandidates =
-    drillSession.currentSession?.sessionType === ROUTE_SESSION_TYPE
-      ? drillSession.routeSlots
-          .filter((slot) => slot.objective)
-          .map((slot) => ({
-            objective: slot.objective,
-            routeSlotId: `${slot.slotIndex}:${slot.objective.id}`,
-            routeSlotIndex: slot.slotIndex
-          }))
-      : [];
-  const routeAutomarkSignature = routeAutomarkCandidates
-    .map((candidate) => candidate.routeSlotId)
-    .join("|");
-  const automarkActiveKey = drillSession.currentSession
-    ? drillSession.currentSession.sessionType === ROUTE_SESSION_TYPE
-      ? `${drillSession.currentSession.id}:route:${routeAutomarkSignature}`
-      : `${drillSession.currentSession.id}:practice:${drillSession.currentSession.phase}:${drillSession.currentObjective?.id ?? ""}`
-    : drillSession.startCountdown
-      ? `${drillSession.startCountdown.id}:countdown:${startCountdownSessionType ?? ""}:${countdownObjectiveId ?? ""}`
-      : "idle";
-  const automarkEnabled = Boolean(
-    multinodeLink.trim() &&
-      (drillSession.currentSession ||
-        drillSession.isStartCountdownActive)
-  );
+  const automarkContext = buildMultinodeAutomarkContext({
+    currentSession: drillSession.currentSession,
+    startCountdown: drillSession.startCountdown,
+    currentObjective: drillSession.currentObjective,
+    routeSlots: drillSession.routeSlots
+  });
   const multinodeAutomark = useMultinodeAutomark({
     link: multinodeLink,
-    enabled: automarkEnabled,
-    currentObjective: currentAutomarkObjective,
-    currentObjectiveMatchOptions: {
-      phase: currentPracticePhase,
-      allowAreaChange: currentPracticePhase === "travel"
-    },
-    candidateObjectives: routeAutomarkCandidates,
-    activeKey: automarkActiveKey,
+    enabled: Boolean(multinodeLink.trim()) && automarkContext.enabled,
+    currentObjective: automarkContext.currentObjective,
+    currentObjectiveMatchOptions: automarkContext.currentObjectiveMatchOptions,
+    candidateObjectives: automarkContext.candidateObjectives,
+    activeKey: automarkContext.activeKey,
     onObjectiveMatched(payload) {
       const session = drillSession.currentSession;
       const action = resolveMultinodeAutomarkAction({
@@ -656,18 +623,6 @@ export default function App() {
         phase: session?.phase,
         routeSlotIndex: payload.routeSlotIndex
       });
-
-      if (import.meta.env.DEV) {
-        console.debug("[multinode automark]", {
-          event: payload.event,
-          objectiveId: payload.objective?.id ?? null,
-          routeSlotIndex: payload.routeSlotIndex,
-          sessionType: session?.sessionType ?? null,
-          phase: session?.phase ?? null,
-          action: action.type,
-          reason: action.reason
-        });
-      }
 
       // Automark deliberately delegates to the same manual actions, keeping split
       // progression, feedback, timing, history, PBs, and stats centralized.
@@ -916,37 +871,21 @@ export default function App() {
       Pop Out
     </button>
     ) : null;
-  const multinodeStatusLabel =
-    multinodeAutomark.status === "connected"
-      ? "Connected"
-      : multinodeAutomark.status === "connecting"
-        ? "Connecting..."
-        : multinodeAutomark.status === "error"
-          ? `Failed${multinodeAutomark.error ? `: ${multinodeAutomark.error}` : ""}`
-          : multinodeAutomark.status === "closed"
-            ? "Disconnected"
-            : "Idle";
-  const multinodeStatusIndicator =
-    multinodeAutomark.status === "connected"
-      ? "✓"
-      : multinodeAutomark.status === "error"
-        ? "✕"
-        : "•";
+  const multinodeStatus = formatMultinodeConnectionStatus(
+    multinodeAutomark.status,
+    multinodeAutomark.error
+  );
   const multinodePanelProps = {
     link: multinodeLink,
     status: multinodeAutomark.status,
-    indicator: multinodeStatusIndicator,
-    statusLabel: multinodeStatusLabel,
-    objectiveStatus: multinodeAutomark.currentObjectiveStatus,
-    lastMatchReason: multinodeAutomark.lastMatchResult?.result?.reason ?? null,
+    indicator: multinodeStatus.indicator,
+    statusLabel: multinodeStatus.label,
     onChangeLink(nextValue) {
       drillSession.updateSettings((previousSettings) => ({
         ...previousSettings,
         multinodeLink: nextValue
       }));
-    },
-    onConnect: multinodeAutomark.connect,
-    onDisconnect: multinodeAutomark.disconnect
+    }
   };
 
   if (popoutView) {

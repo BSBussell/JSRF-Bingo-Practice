@@ -17,7 +17,13 @@ function objectiveById(id) {
 }
 
 test("unsupported objective returns supported false with a reason", () => {
-  const objective = objectiveById("dogen_092");
+  const objective = {
+    id: "fake_unsupported",
+    sourceGroup: "mystery",
+    type: "unknown",
+    code: "???",
+    area: "Dogen"
+  };
   const result = getObjectiveAutomarkRule(objective);
 
   assert.equal(result.supported, false);
@@ -25,27 +31,51 @@ test("unsupported objective returns supported false with a reason", () => {
   assert.ok(result.reason.length > 0);
 });
 
-test("tape objective returns a tape_collected rule and matches correct tapeId", () => {
-  const objective = objectiveById("dogen_062");
+test("trick-count soul objective returns a soul_collected rule and matches correct soulId", () => {
+  const objective = objectiveById("shibuya_094");
   const ruleResult = getObjectiveAutomarkRule(objective);
-  assert.deepEqual(ruleResult.rule, { type: "tape_collected", tapeId: 2 });
+  assert.deepEqual(ruleResult.rule, { type: "soul_collected", soulId: 94 });
 
   const matchResult = doesEventMatchObjectiveAutomark(
-    { type: "tape_collected", tapeId: 2 },
+    { type: "soul_collected", soulId: 94 },
     objective
   );
   assert.equal(matchResult.matched, true);
 });
 
-test("tape objective does not match wrong tapeId", () => {
+test("special soul objective returns a soul_collected rule and matches correct soulId", () => {
+  const objective = objectiveById("dogen_062");
+  const ruleResult = getObjectiveAutomarkRule(objective);
+  assert.deepEqual(ruleResult.rule, { type: "soul_collected", soulId: 62 });
+
+  const matchResult = doesEventMatchObjectiveAutomark(
+    { type: "soul_collected", soulId: 62 },
+    objective
+  );
+  assert.equal(matchResult.matched, true);
+});
+
+test("special soul objective does not match wrong soulId", () => {
   const objective = objectiveById("dogen_062");
   const matchResult = doesEventMatchObjectiveAutomark(
-    { type: "tape_collected", tapeId: 7 },
+    { type: "soul_collected", soulId: 61 },
     objective
   );
 
   assert.equal(matchResult.supported, true);
   assert.equal(matchResult.matched, false);
+});
+
+test("points-goal soul objective returns a soul_collected rule and matches correct soulId", () => {
+  const objective = objectiveById("chuo_065");
+  const ruleResult = getObjectiveAutomarkRule(objective);
+  assert.deepEqual(ruleResult.rule, { type: "soul_collected", soulId: 65 });
+
+  const matchResult = doesEventMatchObjectiveAutomark(
+    { type: "soul_collected", soulId: 65 },
+    objective
+  );
+  assert.equal(matchResult.matched, true);
 });
 
 test("tape phase can match the current objective area's tape", () => {
