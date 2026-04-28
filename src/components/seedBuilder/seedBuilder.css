@@ -47,15 +47,32 @@
 }
 
 .seed-builder-seed-bar {
+    position: relative;
+    isolation: isolate;
     display: grid;
     gap: 0.65rem;
     padding: 0.74rem 0.82rem 0.68rem;
     border: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--surface-card-border) 86%, transparent);
     border-radius: calc(var(--radius-card) + 0.14rem) calc(var(--radius-card) + 0.14rem) 0 0;
+    background: var(--surface-card-background);
+    overflow: hidden;
+}
+
+.seed-builder-seed-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
     background:
-        linear-gradient(180deg, rgba(255, 223, 182, 0.07), rgba(255, 255, 255, 0.012)),
-        rgba(255, 255, 255, 0.016);
+        radial-gradient(circle at 22% 8%, rgba(255, 223, 182, 0.06), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 58%);
+}
+
+.seed-builder-seed-bar > * {
+    position: relative;
+    z-index: 1;
 }
 
 .seed-builder-seed-row,
@@ -66,7 +83,7 @@
 }
 
 .seed-builder-seed-row {
-    grid-template-columns: minmax(18rem, 1.5fr) auto minmax(12rem, auto) auto auto;
+    grid-template-columns: minmax(18rem, 1.5fr) auto minmax(12rem, auto) minmax(8rem, auto) auto auto;
 }
 
 .seed-builder-seed-row .segmented-control {
@@ -96,6 +113,10 @@
 
 .seed-builder-visible-field {
     width: 5.2rem;
+}
+
+.seed-builder-start-area-field {
+    min-width: 8rem;
 }
 
 .seed-builder-status-row {
@@ -216,7 +237,7 @@
 
 .seed-builder-timeline-card {
     flex: 0 0 var(--seed-builder-timeline-square);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     width: var(--seed-builder-timeline-square);
     min-width: var(--seed-builder-timeline-square);
     aspect-ratio: 1;
@@ -249,6 +270,90 @@
     height: 2px;
     background: var(--surface-card-border);
     transform: translateY(-50%);
+}
+
+.seed-builder-timeline-controls {
+    display: inline-flex;
+    gap: 0.22rem;
+    justify-self: end;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.seed-builder-timeline-controls-bottom {
+    justify-self: stretch;
+    justify-content: center;
+    gap: 0.34rem;
+    margin-top: auto;
+}
+
+.seed-builder-timeline-card:hover .seed-builder-timeline-controls,
+.seed-builder-timeline-card:focus-within .seed-builder-timeline-controls {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.seed-builder-timeline-control {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 0.46rem;
+    border: 1px solid var(--surface-card-border);
+    background: var(--input-background);
+    color: var(--text-secondary);
+    font: inherit;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: filter 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.seed-builder-timeline-control-close {
+    position: absolute;
+    top: -0.52rem;
+    right: -0.52rem;
+    z-index: 2;
+    border-radius: 999px;
+    width: 1.9rem;
+    height: 1.9rem;
+    opacity: 0;
+    transform: translateY(-2px) scale(0.96);
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.seed-builder-timeline-card:hover .seed-builder-timeline-control-close,
+.seed-builder-timeline-card:focus-within .seed-builder-timeline-control-close {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.seed-builder-timeline-control-arrow {
+    width: 2.7rem;
+    height: 2.35rem;
+    font-size: 1.2rem;
+}
+
+.seed-builder-timeline-control:hover,
+.seed-builder-timeline-control:focus-visible {
+    border-color: var(--timer-pill-accent-border);
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.seed-builder-timeline-control.is-danger:hover,
+.seed-builder-timeline-control.is-danger:focus-visible {
+    border-color: var(--danger-button-border);
+    color: var(--danger-button-text);
+}
+
+.seed-builder-timeline-control:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
 }
 
 .seed-builder-timeline-card:last-child::after {
@@ -355,16 +460,32 @@
 }
 
 .seed-builder-picker {
+    position: relative;
+    isolation: isolate;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
     border: 0;
     border-top: 1px solid color-mix(in srgb, var(--surface-card-border) 84%, transparent);
     border-radius: 0 0 calc(var(--radius-card) + 0.14rem) calc(var(--radius-card) + 0.14rem);
-    background:
-        linear-gradient(180deg, rgba(230, 180, 87, 0.045), rgba(255, 255, 255, 0.012)),
-        rgba(255, 255, 255, 0.018);
+    background: var(--surface-card-background);
     overflow: hidden;
+}
+
+.seed-builder-picker::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 24% 14%, rgba(230, 180, 87, 0.045), transparent 36%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.014), transparent 62%);
+}
+
+.seed-builder-picker > * {
+    position: relative;
+    z-index: 1;
 }
 
 .seed-builder-picker.is-remove-target {

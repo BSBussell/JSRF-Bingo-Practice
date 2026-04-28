@@ -1,4 +1,4 @@
-import { objectiveAreaOrder } from "../data/areaMeta.js";
+import { areaOrder, objectiveAreaOrder } from "../data/areaMeta.js";
 import { allObjectives, objectivesById } from "../data/objectives.js";
 import {
   DEFAULT_DRILL_SETTINGS,
@@ -25,6 +25,7 @@ export const SEED_BUILDER_MIN_ROUTE_OBJECTIVES = ROUTE_VISIBLE_COUNT_MIN;
 
 const OBJECTIVE_ID_SET = new Set(allObjectives.map((objective) => objective.id));
 const DEFAULT_SELECTED_AREA = objectiveAreaOrder[0] ?? "Dogen";
+const DEFAULT_STARTING_AREA = "Garage";
 
 function clampRouteVisibleCount(value, objectiveCount = ROUTE_VISIBLE_COUNT_MAX) {
   const numericValue = Number.isFinite(value)
@@ -84,6 +85,7 @@ export function createDefaultSeedBuilderDraft() {
   return {
     sessionType: PRACTICE_SESSION_TYPE,
     objectiveIds: [],
+    startingArea: DEFAULT_STARTING_AREA,
     selectedArea: DEFAULT_SELECTED_AREA,
     routeVisibleCount: DEFAULT_DRILL_SETTINGS.routeVisibleCount,
     routeRevealMode: DEFAULT_ROUTE_REVEAL_MODE,
@@ -108,6 +110,10 @@ export function normalizeSeedBuilderDraft(value) {
   return {
     sessionType,
     objectiveIds,
+    startingArea:
+      typeof value.startingArea === "string" && areaOrder.includes(value.startingArea)
+        ? value.startingArea
+        : defaults.startingArea,
     selectedArea: normalizeSelectedArea(value.selectedArea, objectiveIds),
     routeVisibleCount,
     routeRevealMode: normalizeRouteRevealMode(value.routeRevealMode),
@@ -124,6 +130,7 @@ export function createSeedBuilderDraftFromSessionSpec(sessionSpec, previousDraft
     ...normalizedPrevious,
     sessionType: normalizeSessionType(sessionSpec?.sessionType),
     objectiveIds,
+    startingArea: sessionSpec?.config?.startingArea ?? normalizedPrevious.startingArea,
     selectedArea: firstObjectiveArea ?? normalizedPrevious.selectedArea,
     routeVisibleCount:
       sessionSpec?.config?.routeVisibleCount ?? normalizedPrevious.routeVisibleCount,
@@ -149,7 +156,6 @@ export function buildSeedBuilderLaunchState(draft, options = {}) {
     throw new Error("Route seeds need at least two squares.");
   }
 
-  const firstObjective = objectivesById[normalizedDraft.objectiveIds[0]];
   const baseDrillSettings = normalizeDrillSettings(
     options.drillSettings ?? DEFAULT_DRILL_SETTINGS
   );
@@ -159,7 +165,7 @@ export function buildSeedBuilderLaunchState(draft, options = {}) {
       : normalizedDraft.routeVisibleCount;
   const config = {
     ...baseDrillSettings,
-    startingArea: firstObjective?.area ?? normalizedDraft.selectedArea,
+    startingArea: normalizedDraft.startingArea,
     numberOfObjectives: objectiveCount,
     routeVisibleCount,
     routeRevealMode: normalizedDraft.routeRevealMode

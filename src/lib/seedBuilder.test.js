@@ -19,6 +19,7 @@ test("buildSeedBuilderLaunchState creates an ordered practice replay seed", () =
   const launchState = buildSeedBuilderLaunchState({
     sessionType: "practice",
     objectiveIds: ["dogen_graffiti", "rdh_010"],
+    startingArea: "Garage",
     selectedArea: "Dogen",
     routeVisibleCount: 4,
     routeRevealMode: "rolling",
@@ -28,7 +29,7 @@ test("buildSeedBuilderLaunchState creates an ordered practice replay seed", () =
 
   assert.equal(decoded.sessionType, "practice");
   assert.deepEqual(decoded.objectiveIds, ["dogen_graffiti", "rdh_010"]);
-  assert.equal(decoded.config.startingArea, "Dogen");
+  assert.equal(decoded.config.startingArea, "Garage");
   assert.deepEqual(decoded, launchState.sessionSpec);
 });
 
@@ -36,6 +37,7 @@ test("buildSeedBuilderLaunchState preserves route visible count and reveal mode"
   const launchState = buildSeedBuilderLaunchState({
     sessionType: "route",
     objectiveIds: ["dogen_graffiti", "rdh_010", "dogen_005"],
+    startingArea: "Garage",
     selectedArea: "Dogen",
     routeVisibleCount: 3,
     routeRevealMode: ROUTE_REVEAL_MODE_BURST,
@@ -62,6 +64,15 @@ test("normalizeSeedBuilderDraft drops duplicate and invalid objective ids", () =
   });
 
   assert.deepEqual(draft.objectiveIds, ["dogen_graffiti", "rdh_010"]);
+  assert.equal(draft.startingArea, "Garage");
+});
+
+test("normalizeSeedBuilderDraft defaults starting area to Garage", () => {
+  const draft = normalizeSeedBuilderDraft({
+    objectiveIds: ["dogen_graffiti"]
+  });
+
+  assert.equal(draft.startingArea, "Garage");
 });
 
 test("buildSeedBuilderLaunchState rejects route drafts with fewer than two squares", () => {

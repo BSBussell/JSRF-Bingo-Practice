@@ -178,7 +178,8 @@ test("buildCompletionRecap derives route exact-seed and clear-cadence facts", ()
   assert.equal(recap.sessionType, "route");
   assert.equal(facts.totalTime.durationMs, 9000);
   assert.equal(facts.routeSeedPbStatus.status, "new-pb");
-  assert.equal(facts.routeSeedPbStatus.pbDurationMs, 10000);
+  assert.equal(facts.routeSeedPbStatus.pbDurationMs, 9000);
+  assert.equal(facts.routeSeedPbStatus.previousPbDurationMs, 10000);
   assert.equal(facts.routeSeedPbStatus.deltaMs, -1000);
   assert.equal(recap.attempts.key, "routeSeedAttempts");
   assert.equal(recap.attempts.count, 2);

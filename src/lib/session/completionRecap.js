@@ -194,14 +194,17 @@ function buildPracticeSeedPbStatus(completionSummary, history) {
     };
   }
 
+  const isNewPb = totalDurationMs < previousBestMs;
+
   return {
     key: "practiceSeedPbStatus",
     label: "Seed PB",
     valueType: "seed-pb-status",
-    status: totalDurationMs < previousBestMs ? "new-pb" : "delta",
-    pbDurationMs: previousBestMs,
+    status: isNewPb ? "new-pb" : "delta",
+    pbDurationMs: isNewPb ? totalDurationMs : previousBestMs,
+    previousPbDurationMs: previousBestMs,
     deltaMs: totalDurationMs - previousBestMs,
-    tone: totalDurationMs < previousBestMs ? "win" : "neutral"
+    tone: isNewPb ? "win" : "neutral"
   };
 }
 
@@ -301,14 +304,17 @@ function buildRouteSeedPbStatus(completionSummary, history) {
     };
   }
 
+  const isNewPb = totalDurationMs < previousBestMs;
+
   return {
     key: "routeSeedPbStatus",
     label: "Seed PB",
     valueType: "seed-pb-status",
-    status: totalDurationMs < previousBestMs ? "new-pb" : "delta",
-    pbDurationMs: previousBestMs,
+    status: isNewPb ? "new-pb" : "delta",
+    pbDurationMs: isNewPb ? totalDurationMs : previousBestMs,
+    previousPbDurationMs: previousBestMs,
     deltaMs: totalDurationMs - previousBestMs,
-    tone: totalDurationMs < previousBestMs ? "win" : "neutral"
+    tone: isNewPb ? "win" : "neutral"
   };
 }
 

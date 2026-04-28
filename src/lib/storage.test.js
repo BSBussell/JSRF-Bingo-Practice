@@ -97,6 +97,7 @@ test("createDefaultAppState initializes a seed builder draft", () => {
 
   assert.equal(state.seedBuilderDraft.sessionType, "practice");
   assert.deepEqual(state.seedBuilderDraft.objectiveIds, []);
+  assert.equal(state.seedBuilderDraft.startingArea, "Garage");
   assert.equal(typeof state.seedBuilderDraft.rngSeed, "string");
 });
 
@@ -105,6 +106,7 @@ test("normalizeAppState backfills a missing seed builder draft", () => {
 
   assert.equal(state.seedBuilderDraft.sessionType, "practice");
   assert.deepEqual(state.seedBuilderDraft.objectiveIds, []);
+  assert.equal(state.seedBuilderDraft.startingArea, "Garage");
   assert.equal(typeof state.seedBuilderDraft.rngSeed, "string");
 });
 
@@ -123,6 +125,7 @@ test("normalizeAppState normalizes malformed seed builder drafts", () => {
 
   assert.equal(state.seedBuilderDraft.sessionType, "route");
   assert.deepEqual(state.seedBuilderDraft.objectiveIds, ["dogen_graffiti", "rdh_010"]);
+  assert.equal(state.seedBuilderDraft.startingArea, "Garage");
   assert.equal(state.seedBuilderDraft.selectedArea, "Dogen");
   assert.equal(state.seedBuilderDraft.routeVisibleCount, 2);
   assert.equal(state.seedBuilderDraft.routeRevealMode, "burst");

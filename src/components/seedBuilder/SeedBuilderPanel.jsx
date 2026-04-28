@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import { areaLabels, objectiveAreaOrder } from "../../data/areaMeta.js";
+import { areaLabels, areaOrder, objectiveAreaOrder } from "../../data/areaMeta.js";
 import { objectivesByArea, objectivesById } from "../../data/objectives.js";
 import { areaDistrictToneClassName, districtToneClassName } from "../../lib/districtDisplay.js";
 import { formatObjectiveTypeLabel } from "../../lib/objectiveTypes.js";
@@ -164,7 +164,11 @@ function SeedBuilderTilePreview({ dragData }) {
 
 function TimelineTile({
   objective,
-  index
+  index,
+  objectiveCount,
+  onMoveLeft,
+  onMoveRight,
+  onRemove
 }) {
   const {
     attributes,
@@ -190,10 +194,53 @@ function TimelineTile({
       {...attributes}
       {...listeners}
     >
+      <button
+        className="seed-builder-timeline-control seed-builder-timeline-control-close is-danger"
+        type="button"
+        aria-label="Remove square"
+        title="Remove"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation();
+          onRemove(index);
+        }}
+      >
+        ×
+      </button>
       <span className="seed-builder-timeline-index">{index + 1}</span>
       <div className="seed-builder-card-copy">
         <strong>{compactObjectiveLabel(objective)}</strong>
         <SeedBuilderCardMeta objective={objective} />
+      </div>
+      <div className="seed-builder-timeline-controls seed-builder-timeline-controls-bottom">
+        <button
+          className="seed-builder-timeline-control seed-builder-timeline-control-arrow"
+          type="button"
+          aria-label="Move square left"
+          title="Move left"
+          disabled={index === 0}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMoveLeft(index);
+          }}
+        >
+          ‹
+        </button>
+        <button
+          className="seed-builder-timeline-control seed-builder-timeline-control-arrow"
+          type="button"
+          aria-label="Move square right"
+          title="Move right"
+          disabled={index >= objectiveCount - 1}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMoveRight(index);
+          }}
+        >
+          ›
+        </button>
       </div>
     </article>
   );
@@ -245,7 +292,10 @@ function PickerTile({
 function SeedBuilderTimeline({
   activeDragKind,
   insertPreviewIndex,
-  objectives
+  objectives,
+  onMoveLeft,
+  onMoveRight,
+  onRemove
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: TIMELINE_CONTAINER_ID,
@@ -285,7 +335,14 @@ function SeedBuilderTimeline({
               {showInsertPreview && insertPreviewIndex === index ? (
                 <div className="seed-builder-timeline-insert-preview" aria-hidden="true" />
               ) : null}
-              <TimelineTile objective={objective} index={index} />
+              <TimelineTile
+                objective={objective}
+                index={index}
+                objectiveCount={objectives.length}
+                onMoveLeft={onMoveLeft}
+                onMoveRight={onMoveRight}
+                onRemove={onRemove}
+              />
             </Fragment>
           ))}
           {showEndInsertPreview ? (
@@ -355,6 +412,7 @@ function SeedBuilderSeedBar({
   routeVisibleMax,
   routeVisibleCount,
   routeRevealMode,
+  startingArea,
   seedFieldValue,
   sessionType,
   onCopySeed,
@@ -362,6 +420,7 @@ function SeedBuilderSeedBar({
   onPlaySeed,
   onRouteRevealModeChange,
   onRouteVisibleCountChange,
+  onStartingAreaChange,
   onSeedFieldChange,
   onSessionTypeChange
 }) {
@@ -389,6 +448,19 @@ function SeedBuilderSeedBar({
           ]}
           onChange={onSessionTypeChange}
         />
+        <label className="field seed-builder-start-area-field">
+          <span>Start</span>
+          <select
+            value={startingArea}
+            onChange={(event) => onStartingAreaChange(event.target.value)}
+          >
+            {areaOrder.map((area) => (
+              <option key={area} value={area}>
+                {areaLabels[area] ?? area}
+              </option>
+            ))}
+          </select>
+        </label>
         <button className="secondary-button" type="button" onClick={onCopySeed}>
           Copy Seed
         </button>
@@ -586,6 +658,13 @@ export function SeedBuilderPanel({
     });
   }
 
+  function updateStartingArea(value) {
+    commitDraft({
+      ...normalizedDraft,
+      startingArea: value
+    });
+  }
+
   function selectArea(area) {
     onUpdateDraft({
       ...normalizedDraft,
@@ -747,6 +826,7 @@ export function SeedBuilderPanel({
           routeVisibleMax={routeVisibleMax}
           routeVisibleCount={normalizedDraft.routeVisibleCount}
           routeRevealMode={normalizedDraft.routeRevealMode}
+          startingArea={normalizedDraft.startingArea}
           seedFieldValue={seedFieldValue}
           sessionType={normalizedDraft.sessionType}
           onCopySeed={copySeed}
@@ -759,6 +839,7 @@ export function SeedBuilderPanel({
           onPlaySeed={playSeed}
           onRouteRevealModeChange={updateRouteRevealMode}
           onRouteVisibleCountChange={updateRouteVisibleCount}
+          onStartingAreaChange={updateStartingArea}
           onSessionTypeChange={updateSessionType}
         />
 
@@ -795,6 +876,11 @@ export function SeedBuilderPanel({
             activeDragKind={activeDragData?.kind ?? ""}
             insertPreviewIndex={timelineInsertIndex}
             objectives={timelineObjectives}
+            onMoveLeft={(index) => moveObjective(index, Math.max(0, index - 1))}
+            onMoveRight={(index) =>
+              moveObjective(index, Math.min(normalizedDraft.objectiveIds.length - 1, index + 1))
+            }
+            onRemove={removeObjective}
           />
           <SeedBuilderPicker
             activeDragKind={activeDragData?.kind ?? ""}
