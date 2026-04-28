@@ -413,6 +413,7 @@ function SeedBuilderSeedBar({
   routeVisibleMax,
   routeVisibleCount,
   routeRevealMode,
+  routeVisionTrainingEnabled,
   startingArea,
   seedFieldValue,
   sessionType,
@@ -421,6 +422,7 @@ function SeedBuilderSeedBar({
   onPlaySeed,
   onRouteRevealModeChange,
   onRouteVisibleCountChange,
+  onRouteVisionTrainingEnabledChange,
   onStartingAreaChange,
   onSeedFieldChange,
   onSessionTypeChange
@@ -498,6 +500,22 @@ function SeedBuilderSeedBar({
             ]}
             onChange={onRouteRevealModeChange}
           />
+          <label className="setup-toggle-card setup-toggle-card-compact">
+            <div className="settings-row-copy">
+              <strong>Vision training</strong>
+              <p>Use a fixed 5x5 board and scatter the live route squares for this seed.</p>
+            </div>
+            <span className="toggle-shell">
+              <input
+                type="checkbox"
+                checked={routeVisionTrainingEnabled}
+                onChange={(event) => onRouteVisionTrainingEnabledChange(event.target.checked)}
+              />
+              <span className="toggle-track" aria-hidden="true">
+                <span className="toggle-thumb" />
+              </span>
+            </span>
+          </label>
         </div>
       ) : null}
     </div>
@@ -657,6 +675,13 @@ export function SeedBuilderPanel({
     commitDraft({
       ...normalizedDraft,
       routeRevealMode: value
+    });
+  }
+
+  function updateRouteVisionTrainingEnabled(value) {
+    commitDraft({
+      ...normalizedDraft,
+      routeVisionTrainingEnabled: value
     });
   }
 
@@ -828,6 +853,7 @@ export function SeedBuilderPanel({
           routeVisibleMax={routeVisibleMax}
           routeVisibleCount={normalizedDraft.routeVisibleCount}
           routeRevealMode={normalizedDraft.routeRevealMode}
+          routeVisionTrainingEnabled={normalizedDraft.routeVisionTrainingEnabled}
           startingArea={normalizedDraft.startingArea}
           seedFieldValue={seedFieldValue}
           sessionType={normalizedDraft.sessionType}
@@ -841,6 +867,7 @@ export function SeedBuilderPanel({
           onPlaySeed={playSeed}
           onRouteRevealModeChange={updateRouteRevealMode}
           onRouteVisibleCountChange={updateRouteVisibleCount}
+          onRouteVisionTrainingEnabledChange={updateRouteVisionTrainingEnabled}
           onStartingAreaChange={updateStartingArea}
           onSessionTypeChange={updateSessionType}
         />

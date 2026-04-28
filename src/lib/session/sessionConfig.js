@@ -11,7 +11,8 @@ import { PRACTICE_SESSION_TYPE, isRouteSessionType } from "./sessionTypes.js";
 
 const ROUTE_ONLY_DRILL_SETTING_KEYS = [
   "routeVisibleCount",
-  "routeRevealMode"
+  "routeRevealMode",
+  "routeVisionTrainingEnabled"
 ];
 
 export function normalizeSessionConfig(value) {
@@ -34,7 +35,8 @@ export function normalizeSessionConfig(value) {
     districtJumpDistribution: normalizedDrillSettings.districtJumpDistribution,
     trueRandom: normalizedDrillSettings.trueRandom,
     routeVisibleCount: normalizedDrillSettings.routeVisibleCount,
-    routeRevealMode: normalizedDrillSettings.routeRevealMode
+    routeRevealMode: normalizedDrillSettings.routeRevealMode,
+    routeVisionTrainingEnabled: normalizedDrillSettings.routeVisionTrainingEnabled
   };
 }
 

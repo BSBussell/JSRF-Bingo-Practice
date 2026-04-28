@@ -31,6 +31,8 @@ export function useSessionHotkeys({
     const isRouteSession = currentSession?.sessionType === "route";
     const isPracticeSession = Boolean(currentSession) && !isRouteSession;
     const hasActiveSession = Boolean(currentSession);
+    const routeVisibleCount = currentSession?.sessionSpec?.config?.routeVisibleCount ?? 0;
+    const routeSlotHotkeysEnabled = isRouteSession && routeVisibleCount <= 10;
     const isCountdownPendingReady =
       Boolean(startCountdown) && !Number.isFinite(startCountdown?.startedAt);
     const actionIsEnabled = {
@@ -64,7 +66,7 @@ export function useSessionHotkeys({
       }
 
       if (
-        isRouteSession &&
+        routeSlotHotkeysEnabled &&
         !event.ctrlKey &&
         !event.altKey &&
         !event.shiftKey &&

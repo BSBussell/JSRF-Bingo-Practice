@@ -89,6 +89,7 @@ export function createDefaultSeedBuilderDraft() {
     selectedArea: DEFAULT_SELECTED_AREA,
     routeVisibleCount: DEFAULT_DRILL_SETTINGS.routeVisibleCount,
     routeRevealMode: DEFAULT_ROUTE_REVEAL_MODE,
+    routeVisionTrainingEnabled: DEFAULT_DRILL_SETTINGS.routeVisionTrainingEnabled,
     rngSeed: createRandomSeed()
   };
 }
@@ -117,6 +118,10 @@ export function normalizeSeedBuilderDraft(value) {
     selectedArea: normalizeSelectedArea(value.selectedArea, objectiveIds),
     routeVisibleCount,
     routeRevealMode: normalizeRouteRevealMode(value.routeRevealMode),
+    routeVisionTrainingEnabled:
+      typeof value.routeVisionTrainingEnabled === "boolean"
+        ? value.routeVisionTrainingEnabled
+        : defaults.routeVisionTrainingEnabled,
     rngSeed: normalizeRngSeed(value.rngSeed)
   };
 }
@@ -136,6 +141,10 @@ export function createSeedBuilderDraftFromSessionSpec(sessionSpec, previousDraft
       sessionSpec?.config?.routeVisibleCount ?? normalizedPrevious.routeVisibleCount,
     routeRevealMode:
       sessionSpec?.config?.routeRevealMode ?? normalizedPrevious.routeRevealMode,
+    routeVisionTrainingEnabled:
+      typeof sessionSpec?.config?.routeVisionTrainingEnabled === "boolean"
+        ? sessionSpec.config.routeVisionTrainingEnabled
+        : normalizedPrevious.routeVisionTrainingEnabled,
     rngSeed: sessionSpec?.rngSeed ?? normalizedPrevious.rngSeed
   });
 }
@@ -168,7 +177,8 @@ export function buildSeedBuilderLaunchState(draft, options = {}) {
     startingArea: normalizedDraft.startingArea,
     numberOfObjectives: objectiveCount,
     routeVisibleCount,
-    routeRevealMode: normalizedDraft.routeRevealMode
+    routeRevealMode: normalizedDraft.routeRevealMode,
+    routeVisionTrainingEnabled: normalizedDraft.routeVisionTrainingEnabled
   };
 
   return buildSessionSpecFromObjectiveIds(

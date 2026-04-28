@@ -4,6 +4,10 @@
     margin-bottom: 1.55rem;
 }
 
+.route-grid.is-vision-training {
+    gap: 0.7rem;
+}
+
 .route-tile {
     position: relative;
     display: grid;
@@ -192,6 +196,50 @@
     color: var(--text-muted);
 }
 
+.route-tile.is-placeholder {
+    min-height: 5.9rem;
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--surface-card-border) 78%, transparent);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 58%),
+        color-mix(in srgb, var(--surface-card-background) 84%, transparent);
+    box-shadow: none;
+    pointer-events: none;
+}
+
+.route-tile.is-vision-training {
+    min-height: 5.9rem;
+    padding: 0.22rem 0.5rem 0.48rem;
+}
+
+.route-tile.is-vision-training .route-tile-body {
+    padding-top: 0.18rem;
+}
+
+.route-tile.is-vision-training strong {
+    font-size: 0.78rem;
+    line-height: 1.18;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+}
+
+.route-tile.is-vision-training .route-tile-footer {
+    min-height: 1rem;
+    font-size: 0.62rem;
+}
+
+.route-tile.is-vision-training .route-tile-area {
+    font-size: 0.66rem;
+}
+
+.route-tile.is-vision-training .route-tile-key {
+    width: 1.2rem;
+    height: 1.2rem;
+    top: -0.36rem;
+    right: -0.26rem;
+    font-size: 0.56rem;
+}
+
 .route-tile-key {
     position: absolute;
     top: -0.42rem;
@@ -224,4 +272,3 @@
     color: var(--timer-pill-text);
     transform: translateY(-0.05rem);
 }
-

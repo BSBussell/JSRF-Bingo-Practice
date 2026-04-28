@@ -174,9 +174,13 @@ function CurrentDrillPanel({
       <RouteCard
         routeSlots={drillSession.routeSlots}
         visibleCount={drillSession.currentSession?.sessionSpec?.config?.routeVisibleCount ?? 0}
+        boardSeed={drillSession.currentSession?.id ?? drillSession.currentSession?.exportSeed ?? ""}
         totalTimer={totalTimer}
         isPaused={Boolean(drillSession.currentSession?.pausedAt)}
         useDistrictLocationColors={settings.routeDistrictColorsEnabled}
+        visionTrainingEnabled={
+          Boolean(drillSession.currentSession?.sessionSpec?.config?.routeVisionTrainingEnabled)
+        }
         preferVerticalLayout={routePreferVerticalLayout}
         sessionFeedback={drillSession.sessionFeedback}
         backdrop={backdrop}

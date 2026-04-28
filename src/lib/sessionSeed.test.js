@@ -13,6 +13,8 @@ import { getAvailableObjectiveCount } from "./drill/drillSettings.js";
 import {
   CORRUPTED_FORMAL_SEED_WARNING,
   LEGACY_COMPACT_SESSION_SEED_PREFIX,
+  LEGACY_SESSION_SEED_V4_PREFIX,
+  LEGACY_SESSION_SEED_V3_PREFIX,
   LEGACY_SESSION_SEED_V2_PREFIX,
   PRACTICE_SEED_IN_ROUTE_WARNING,
   ROUTE_SEED_IN_PRACTICE_WARNING,
@@ -76,6 +78,128 @@ function encodeLegacyCompactSeed(sessionSpec, prefix) {
     .replace(/=+$/g, "")}`;
 }
 
+function encodeLegacyV3CompactSeed(sessionSpec) {
+  const excludedMask = objectiveAreaOrder.reduce(
+    (mask, area, index) =>
+      sessionSpec.config.excludedAreas.includes(area) ? mask | (1 << index) : mask,
+    0
+  );
+  const levelShiftBoundary0 = sessionSpec.config.levelShiftDistribution[0];
+  const districtJumpBoundary0 = sessionSpec.config.districtJumpDistribution[0];
+  const districtJumpBoundary1 =
+    sessionSpec.config.districtJumpDistribution[0] +
+    sessionSpec.config.districtJumpDistribution[1];
+  const fields = [
+    { bits: 4, value: areaOrder.indexOf(sessionSpec.config.startingArea) },
+    { bits: 8, value: sessionSpec.config.numberOfObjectives },
+    { bits: objectiveAreaOrder.length, value: excludedMask },
+    { bits: 3, value: sessionSpec.config.graffitiVariance + 3 },
+    { bits: 3, value: sessionSpec.config.unlockVariance + 3 },
+    { bits: 3, value: sessionSpec.config.defaultVariance + 3 },
+    { bits: 3, value: sessionSpec.config.notebookVariance + 3 },
+    { bits: 3, value: sessionSpec.config.levelShift + 2 },
+    { bits: 3, value: sessionSpec.config.districtShift + 2 },
+    { bits: 1, value: sessionSpec.config.trueRandom ? 1 : 0 },
+    { bits: 1, value: sessionSpec.sessionType === "route" ? 1 : 0 },
+    { bits: 4, value: sessionSpec.config.routeVisibleCount - 1 },
+    {
+      bits: 1,
+      value: sessionSpec.config.routeRevealMode === ROUTE_REVEAL_MODE_BURST ? 1 : 0
+    },
+    { bits: 7, value: levelShiftBoundary0 },
+    { bits: 7, value: districtJumpBoundary0 },
+    { bits: 7, value: districtJumpBoundary1 }
+  ];
+  const totalBits = fields.reduce((sum, field) => sum + field.bits, 0);
+  const paddingBits = 72 - totalBits;
+  let packedValue = 0n;
+
+  for (const field of fields) {
+    packedValue = (packedValue << BigInt(field.bits)) | BigInt(field.value);
+  }
+
+  const configBytes = Buffer.alloc(9);
+  let remaining = packedValue << BigInt(paddingBits);
+  for (let index = 8; index >= 0; index -= 1) {
+    configBytes[index] = Number(remaining & 0xffn);
+    remaining >>= 8n;
+  }
+
+  const rngBytes = Buffer.from(sessionSpec.rngSeed, "hex");
+  const objectiveIndexBytes = Buffer.from(
+    sessionSpec.objectiveIds.map((objectiveId) =>
+      allObjectives.findIndex((objective) => objective.id === objectiveId)
+    )
+  );
+
+  return `${LEGACY_SESSION_SEED_V3_PREFIX}${Buffer.concat([rngBytes, configBytes, objectiveIndexBytes])
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "")}`;
+}
+
+function encodeLegacyV4CompactSeed(sessionSpec) {
+  const excludedMask = objectiveAreaOrder.reduce(
+    (mask, area, index) =>
+      sessionSpec.config.excludedAreas.includes(area) ? mask | (1 << index) : mask,
+    0
+  );
+  const levelShiftBoundary0 = sessionSpec.config.levelShiftDistribution[0];
+  const districtJumpBoundary0 = sessionSpec.config.districtJumpDistribution[0];
+  const districtJumpBoundary1 =
+    sessionSpec.config.districtJumpDistribution[0] +
+    sessionSpec.config.districtJumpDistribution[1];
+  const fields = [
+    { bits: 4, value: areaOrder.indexOf(sessionSpec.config.startingArea) },
+    { bits: 8, value: sessionSpec.config.numberOfObjectives },
+    { bits: objectiveAreaOrder.length, value: excludedMask },
+    { bits: 3, value: sessionSpec.config.graffitiVariance + 3 },
+    { bits: 3, value: sessionSpec.config.unlockVariance + 3 },
+    { bits: 3, value: sessionSpec.config.defaultVariance + 3 },
+    { bits: 3, value: sessionSpec.config.notebookVariance + 3 },
+    { bits: 3, value: sessionSpec.config.levelShift + 2 },
+    { bits: 3, value: sessionSpec.config.districtShift + 2 },
+    { bits: 1, value: sessionSpec.config.trueRandom ? 1 : 0 },
+    { bits: 1, value: sessionSpec.sessionType === "route" ? 1 : 0 },
+    { bits: 5, value: sessionSpec.config.routeVisibleCount - 1 },
+    {
+      bits: 1,
+      value: sessionSpec.config.routeRevealMode === ROUTE_REVEAL_MODE_BURST ? 1 : 0
+    },
+    { bits: 7, value: levelShiftBoundary0 },
+    { bits: 7, value: districtJumpBoundary0 },
+    { bits: 7, value: districtJumpBoundary1 }
+  ];
+  const totalBits = fields.reduce((sum, field) => sum + field.bits, 0);
+  const paddingBits = 72 - totalBits;
+  let packedValue = 0n;
+
+  for (const field of fields) {
+    packedValue = (packedValue << BigInt(field.bits)) | BigInt(field.value);
+  }
+
+  const configBytes = Buffer.alloc(9);
+  let remaining = packedValue << BigInt(paddingBits);
+  for (let index = 8; index >= 0; index -= 1) {
+    configBytes[index] = Number(remaining & 0xffn);
+    remaining >>= 8n;
+  }
+
+  const rngBytes = Buffer.from(sessionSpec.rngSeed, "hex");
+  const objectiveIndexBytes = Buffer.from(
+    sessionSpec.objectiveIds.map((objectiveId) =>
+      allObjectives.findIndex((objective) => objective.id === objectiveId)
+    )
+  );
+
+  return `${LEGACY_SESSION_SEED_V4_PREFIX}${Buffer.concat([rngBytes, configBytes, objectiveIndexBytes])
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "")}`;
+}
+
 test("normalizeSeedPhrase applies stable trimming, line-ending normalization, NFKC, and lowercase", () => {
   assert.equal(normalizeSeedPhrase("  ＪＥＴ\r\nSET Radio  "), "jet\nset radio");
 });
@@ -106,6 +230,10 @@ test("route phrase seeds are deterministic and preserve route session type", () 
   assert.equal(decodedExport.sessionType, "route");
   assert.equal(decodedExport.config.routeVisibleCount, phraseSession.sessionSpec.config.routeVisibleCount);
   assert.equal(decodedExport.config.routeRevealMode, phraseSession.sessionSpec.config.routeRevealMode);
+  assert.equal(
+    decodedExport.config.routeVisionTrainingEnabled,
+    phraseSession.sessionSpec.config.routeVisionTrainingEnabled
+  );
 });
 
 test("phrase seeds derive route visible count from the phrase", () => {
@@ -135,6 +263,20 @@ test("route session specs keep objective count at least visible square count", (
 
   assert.equal(sessionSpec.config.routeVisibleCount, 10);
   assert.equal(sessionSpec.config.numberOfObjectives, 10);
+});
+
+test("route session specs support twenty-five visible squares", () => {
+  const { sessionSpec } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 25,
+      routeVisibleCount: 25
+    }),
+    "00112233445566778899aabbccddeeff",
+    "route"
+  );
+
+  assert.equal(sessionSpec.config.routeVisibleCount, 25);
+  assert.equal(sessionSpec.config.numberOfObjectives, 25);
 });
 
 test("explicit objective seeds round-trip a one-square practice session", () => {
@@ -218,6 +360,47 @@ test("decodeSessionSeed accepts legacy compact BNGSD2 seeds", () => {
   const legacyCompactSeed = encodeLegacyCompactSeed(sessionSpec, LEGACY_COMPACT_SESSION_SEED_PREFIX);
 
   assert.equal(decodeSessionSeed(legacyCompactSeed).sessionType, "practice");
+});
+
+test("decodeSessionSeed accepts legacy compact BNGSD3 seeds", () => {
+  const { sessionSpec } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 4,
+      routeVisibleCount: 6,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST
+    }),
+    "00112233445566778899aabbccddeeff",
+    "route"
+  );
+  const legacyV3Seed = encodeLegacyV3CompactSeed(sessionSpec);
+
+  const decoded = decodeSessionSeed(legacyV3Seed);
+
+  assert.equal(decoded.sessionType, "route");
+  assert.equal(decoded.config.routeVisibleCount, 6);
+  assert.equal(decoded.config.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.deepEqual(decoded.objectiveIds, sessionSpec.objectiveIds);
+});
+
+test("decodeSessionSeed accepts legacy compact BNGSD4 seeds", () => {
+  const { sessionSpec } = buildSessionSpecFromConfig(
+    buildSessionConfig("Garage", {
+      numberOfObjectives: 4,
+      routeVisibleCount: 6,
+      routeRevealMode: ROUTE_REVEAL_MODE_BURST
+    }),
+    "00112233445566778899aabbccddeeff",
+    "route"
+  );
+  const legacyV4Seed = encodeLegacyV4CompactSeed(sessionSpec);
+
+  const decoded = decodeSessionSeed(legacyV4Seed);
+
+  assert.equal(decoded.sessionType, "route");
+  assert.equal(decoded.config.routeVisibleCount, 6);
+  assert.equal(decoded.config.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.equal(decoded.config.routeVisionTrainingEnabled, false);
+  assert.deepEqual(decoded.objectiveIds, sessionSpec.objectiveIds);
 });
 
 test("decodeSessionSeed rejects legacy JSON v1 seeds", () => {
@@ -314,9 +497,10 @@ test("resolveSeedInput does not warn when a route seed is entered on the route s
 
 test("route exported seeds round-trip canonically", () => {
   const config = buildSessionConfig("Garage", {
-    numberOfObjectives: 4,
-    routeVisibleCount: 6,
+    numberOfObjectives: 25,
+    routeVisibleCount: 25,
     routeRevealMode: ROUTE_REVEAL_MODE_BURST,
+    routeVisionTrainingEnabled: true,
     levelShiftDistribution: [25, 75],
     districtJumpDistribution: [50, 30, 20],
     excludedAreas: ["Kibo"],
@@ -331,6 +515,7 @@ test("route exported seeds round-trip canonically", () => {
   assert.equal(sessionSpec.sessionType, "route");
   assert.ok(sessionSpec.config.numberOfObjectives >= sessionSpec.config.routeVisibleCount);
   assert.equal(sessionSpec.config.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.equal(sessionSpec.config.routeVisionTrainingEnabled, true);
   assert.equal(encodeSessionSeed(decodeSessionSeed(exportSeed)), exportSeed);
   assert.deepEqual(decodeSessionSeed(exportSeed), sessionSpec);
 });

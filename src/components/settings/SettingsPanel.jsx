@@ -575,6 +575,21 @@ export function SettingsPanel({
 
         <div className="settings-section">
           <div className="settings-section-copy">
+            <h2>Route board</h2>
+            <p>Controls how live route squares are arranged and colored.</p>
+          </div>
+          <div className="settings-list">
+            <ToggleField
+              label="District-colored area labels"
+              description="Tint route area labels by district instead of leaving them neutral."
+              checked={settings.routeDistrictColorsEnabled}
+              onChange={(value) => onUpdateSetting("routeDistrictColorsEnabled", value)}
+            />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <div className="settings-section-copy">
             <h2>Route guide playback</h2>
             <p>These defaults apply to the embedded route videos in practice sessions.</p>
           </div>

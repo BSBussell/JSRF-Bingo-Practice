@@ -145,12 +145,22 @@ function normalizeSettings(value, legacySelectedMode = null) {
     );
   };
 
+  const drillSettings = normalizeDrillSettings({
+    ...value.drillSettings,
+    routeVisionTrainingEnabled:
+      typeof value.drillSettings?.routeVisionTrainingEnabled === "boolean"
+        ? value.drillSettings.routeVisionTrainingEnabled
+        : typeof value.routeVisionTrainingEnabled === "boolean"
+          ? value.routeVisionTrainingEnabled
+          : undefined
+  });
+
   return {
     startingArea:
       typeof value.startingArea === "string" && areaOrder.includes(value.startingArea)
         ? value.startingArea
         : DEFAULT_SETTINGS.startingArea,
-    drillSettings: normalizeDrillSettings(value.drillSettings),
+    drillSettings,
     hotkeys: normalizeHotkeys(value.hotkeys),
     multinodeLink:
       typeof value.multinodeLink === "string"

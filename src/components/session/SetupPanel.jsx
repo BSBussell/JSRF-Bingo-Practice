@@ -521,6 +521,10 @@ export function SetupPanel({
       `${effectiveDrillSettings.routeVisibleCount} visible`,
       ROUTE_REVEAL_MODE_LABELS[effectiveDrillSettings.routeRevealMode]
     );
+
+    if (effectiveDrillSettings.routeVisionTrainingEnabled) {
+      sessionSummary.push("Vision training");
+    }
   }
 
   if (effectiveDrillSettings.trueRandom) {
@@ -633,6 +637,29 @@ export function SetupPanel({
                   hint={`${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_ROLLING]} refills cleared slots. ${ROUTE_REVEAL_MODE_LABELS[ROUTE_REVEAL_MODE_BURST]} reveals after the visible wave is cleared.`}
                   onChange={(value) => updateDrillSetting("routeRevealMode", value)}
                 />
+              ) : null}
+
+              {isRouteMode ? (
+                <label className="setup-toggle-card setup-toggle-card-compact">
+                  <div className="settings-row-copy">
+                    <strong>Vision training</strong>
+                    <p>Scatter live route squares across a fixed 5x5 board for this seed.</p>
+                  </div>
+
+                  <span className="toggle-shell">
+                    <input
+                      type="checkbox"
+                      checked={effectiveDrillSettings.routeVisionTrainingEnabled}
+                      disabled={controlsLocked}
+                      onChange={(event) =>
+                        updateDrillSetting("routeVisionTrainingEnabled", event.target.checked)
+                      }
+                    />
+                    <span className="toggle-track" aria-hidden="true">
+                      <span className="toggle-thumb" />
+                    </span>
+                  </span>
+                </label>
               ) : null}
 
               <label className="setup-toggle-card setup-toggle-card-compact">

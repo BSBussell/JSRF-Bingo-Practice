@@ -203,6 +203,16 @@ test("normalizeAppState preserves route district color setting", () => {
   assert.equal(state.settings.routeDistrictColorsEnabled, false);
 });
 
+test("normalizeAppState migrates legacy route vision training setting into drill settings", () => {
+  const state = normalizeAppState({
+    settings: {
+      routeVisionTrainingEnabled: true
+    }
+  });
+
+  assert.equal(state.settings.drillSettings.routeVisionTrainingEnabled, true);
+});
+
 test("normalizeAppState preserves average window setting", () => {
   const state = normalizeAppState({
     settings: {

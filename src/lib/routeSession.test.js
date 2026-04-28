@@ -29,6 +29,10 @@ function buildRouteSpec(
   };
 }
 
+function buildObjectiveIds(count) {
+  return Array.from({ length: count }, (_, index) => `objective_${index + 1}`);
+}
+
 test("buildRouteSessionState fills the initial visible grid", () => {
   const session = buildRouteSessionState({
     sessionId: "route_1",
@@ -208,4 +212,18 @@ test("buildRouteSessionState handles drills equal to the visible count", () => {
 
   assert.deepEqual(session.visibleObjectiveIds, ["a", "b"]);
   assert.equal(session.nextRevealIndex, 2);
+});
+
+test("buildRouteSessionState supports twenty-five visible squares", () => {
+  const objectiveIds = buildObjectiveIds(25);
+  const session = buildRouteSessionState({
+    sessionId: "route_25",
+    now: 1000,
+    sessionSpec: buildRouteSpec(objectiveIds, 25),
+    exportSeed: "BNGSD4.test"
+  });
+
+  assert.equal(session.visibleObjectiveIds.length, 25);
+  assert.deepEqual(session.visibleObjectiveIds, objectiveIds);
+  assert.equal(session.nextRevealIndex, 25);
 });

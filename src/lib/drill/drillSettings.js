@@ -18,7 +18,7 @@ export const VARIANCE_STEP = 1;
 export const NUMBER_OF_OBJECTIVES_MIN = 1;
 export const NUMBER_OF_OBJECTIVES_MAX = 123;
 export const ROUTE_VISIBLE_COUNT_MIN = 2;
-export const ROUTE_VISIBLE_COUNT_MAX = 10;
+export const ROUTE_VISIBLE_COUNT_MAX = 25;
 export const DISTRICT_JUMP_DEPTHS = [0, 1, 2];
 export const LEVEL_SHIFT_LENGTHS = [1, 2];
 export const DISTRICT_JUMP_DISTRIBUTION_TOTAL = 100;
@@ -86,6 +86,7 @@ export const DEFAULT_DRILL_SETTINGS = {
     numberOfObjectives: 25,
     routeVisibleCount: 4,
     routeRevealMode: DEFAULT_ROUTE_REVEAL_MODE,
+    routeVisionTrainingEnabled: false,
     excludedAreas: [],
     graffitiVariance: -2,
     unlockVariance: -1,
@@ -380,6 +381,10 @@ export function normalizeDrillSettings(value) {
             ),
         ),
         routeRevealMode: normalizeRouteRevealMode(value.routeRevealMode),
+        routeVisionTrainingEnabled:
+            typeof value.routeVisionTrainingEnabled === "boolean"
+                ? value.routeVisionTrainingEnabled
+                : DEFAULT_DRILL_SETTINGS.routeVisionTrainingEnabled,
         excludedAreas,
         graffitiVariance: clampCategoryVariance(
             fallbackNumber(

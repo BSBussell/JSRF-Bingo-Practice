@@ -1,4 +1,10 @@
+import { useRef } from "react";
 import { getAreaLabel } from "../../data/areaMeta.js";
+import {
+  VISION_TRAINING_GRID_COLUMNS,
+  VISION_TRAINING_GRID_SLOT_COUNT,
+  buildVisionTrainingBoard
+} from "../../lib/session/routeBoard.js";
 import { formatDuration, formatDurationDelta } from "../../lib/timeFormat.js";
 import { FireworkBurst } from "./FireworkBurst.jsx";
 import { TimerDisplay } from "./TimerDisplay.jsx";
@@ -14,7 +20,11 @@ function formatRouteObjectiveLabel(objective) {
     : objective.label;
 }
 
-function resolveGridColumns(slotCount, { preferVertical = false } = {}) {
+function resolveGridColumns(slotCount, { preferVertical = false, visionTraining = false } = {}) {
+  if (visionTraining) {
+    return VISION_TRAINING_GRID_COLUMNS;
+  }
+
   if (slotCount <= 1) {
     return 1;
   }
@@ -39,13 +49,18 @@ function resolveGridColumns(slotCount, { preferVertical = false } = {}) {
     return 3;
   }
 
-  return 4;
+  if (slotCount <= 16) {
+    return 4;
+  }
+
+  return 5;
 }
 
-function routeTileClassName(slot, useDistrictLocationColors) {
+function routeTileClassName(slot, useDistrictLocationColors, visionTrainingEnabled, boardCellKind) {
   return [
     "route-tile",
-    slot.objective ? "is-active" : "is-empty",
+    boardCellKind === "placeholder" ? "is-placeholder" : slot.objective ? "is-active" : "is-empty",
+    visionTrainingEnabled ? "is-vision-training" : null,
     useDistrictLocationColors ? "uses-district-location-color" : null
   ]
     .filter(Boolean)
@@ -91,9 +106,11 @@ function seedPbToneClass(feedback) {
 export function RouteCard({
   routeSlots,
   visibleCount,
+  boardSeed = "",
   totalTimer,
   isPaused,
   useDistrictLocationColors = true,
+  visionTrainingEnabled = false,
   preferVerticalLayout = false,
   sessionFeedback,
   backdrop,
@@ -102,10 +119,29 @@ export function RouteCard({
   onTogglePause,
   onEndSession
 }) {
+  const previousVisionBoardRef = useRef(null);
+  const previousBoardSeedRef = useRef(boardSeed);
   const slotCount = Math.max(visibleCount ?? 0, routeSlots.length);
+  const showRouteKeyMarkers = slotCount <= 10;
+
+  if (previousBoardSeedRef.current !== boardSeed) {
+    previousVisionBoardRef.current = null;
+    previousBoardSeedRef.current = boardSeed;
+  }
+
   const gridColumns = resolveGridColumns(slotCount, {
-    preferVertical: preferVerticalLayout
+    preferVertical: preferVerticalLayout,
+    visionTraining: visionTrainingEnabled
   });
+  const boardCells = visionTrainingEnabled && slotCount < VISION_TRAINING_GRID_SLOT_COUNT
+    ? buildVisionTrainingBoard(routeSlots, boardSeed, slotCount, previousVisionBoardRef.current)
+    : routeSlots.map((slot, boardIndex) => ({
+        boardIndex,
+        kind: "slot",
+        slot
+      }));
+  previousVisionBoardRef.current =
+    visionTrainingEnabled && slotCount < VISION_TRAINING_GRID_SLOT_COUNT ? boardCells : null;
   const waveReward =
     sessionFeedback?.type === "route-square-complete" && sessionFeedback.waveComplete
       ? sessionFeedback
@@ -144,10 +180,21 @@ export function RouteCard({
       </div>
 
       <div
-        className="route-grid"
+        className={`route-grid${visionTrainingEnabled ? " is-vision-training" : ""}`}
         style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
       >
-        {routeSlots.map((slot) => {
+        {boardCells.map((cell) => {
+          if (cell.kind === "placeholder") {
+            return (
+              <div
+                key={`placeholder-${cell.boardIndex}`}
+                className={routeTileClassName(null, useDistrictLocationColors, visionTrainingEnabled, cell.kind)}
+                aria-hidden="true"
+              />
+            );
+          }
+
+          const { slot } = cell;
           const tileReward =
             sessionFeedback?.type === "route-square-complete" &&
             sessionFeedback.slotIndex === slot.slotIndex
@@ -157,7 +204,12 @@ export function RouteCard({
           return (
             <button
               key={`${slot.slotIndex}-${slot.objectiveId ?? "empty"}`}
-              className={routeTileClassName(slot, useDistrictLocationColors)}
+              className={routeTileClassName(
+                slot,
+                useDistrictLocationColors,
+                visionTrainingEnabled,
+                cell.kind
+              )}
               data-district={slot.objective?.district ?? undefined}
               style={{ "--route-tile-delay": `${Math.min(slot.slotIndex, 8) * 18}ms` }}
               type="button"
@@ -190,7 +242,7 @@ export function RouteCard({
                   />
                 </>
               ) : null}
-              <span className="route-tile-key">{slot.slotLabel}</span>
+              {showRouteKeyMarkers ? <span className="route-tile-key">{slot.slotLabel}</span> : null}
               {slot.objective ? (
                 <>
                   <div className="route-tile-body">

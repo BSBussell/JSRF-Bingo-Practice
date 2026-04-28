@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { allObjectives } from "../data/objectives.js";
 import { decodeSessionSeed } from "./seed/sessionSeed.js";
 import {
   buildSeedBuilderLaunchState,
@@ -41,6 +42,7 @@ test("buildSeedBuilderLaunchState preserves route visible count and reveal mode"
     selectedArea: "Dogen",
     routeVisibleCount: 3,
     routeRevealMode: ROUTE_REVEAL_MODE_BURST,
+    routeVisionTrainingEnabled: true,
     rngSeed: TEST_RNG_SEED
   });
   const decoded = decodeSessionSeed(launchState.exportSeed);
@@ -49,6 +51,7 @@ test("buildSeedBuilderLaunchState preserves route visible count and reveal mode"
   assert.deepEqual(decoded.objectiveIds, ["dogen_graffiti", "rdh_010", "dogen_005"]);
   assert.equal(decoded.config.routeVisibleCount, 3);
   assert.equal(decoded.config.routeRevealMode, ROUTE_REVEAL_MODE_BURST);
+  assert.equal(decoded.config.routeVisionTrainingEnabled, true);
 });
 
 test("normalizeSeedBuilderDraft drops duplicate and invalid objective ids", () => {
@@ -101,6 +104,22 @@ test("buildSeedBuilderLaunchState clamps route visible count to the objective co
   });
 
   assert.equal(launchState.sessionSpec.config.routeVisibleCount, 3);
+});
+
+test("buildSeedBuilderLaunchState preserves a twenty-five square route board", () => {
+  const validObjectiveIds = allObjectives.slice(0, 25).map((objective) => objective.id);
+  const launchState = buildSeedBuilderLaunchState({
+    sessionType: "route",
+    objectiveIds: validObjectiveIds,
+    selectedArea: "Dogen",
+    routeVisibleCount: 25,
+    routeRevealMode: "rolling",
+    routeVisionTrainingEnabled: true,
+    rngSeed: TEST_RNG_SEED
+  });
+
+  assert.equal(launchState.sessionSpec.config.routeVisibleCount, 25);
+  assert.equal(launchState.sessionSpec.config.routeVisionTrainingEnabled, true);
 });
 
 test("createSeedBuilderDraftFromSessionSpec normalizes imported seeds into a unique draft", () => {

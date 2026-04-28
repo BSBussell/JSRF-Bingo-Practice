@@ -37,10 +37,12 @@ import {
 
 export { buildSessionConfig, normalizeSessionConfig } from "../session/sessionConfig.js";
 
-export const SESSION_SEED_PREFIX = "BNGSD3.";
+export const SESSION_SEED_PREFIX = "BNGSD5.";
+export const LEGACY_SESSION_SEED_V4_PREFIX = "BNGSD4.";
+export const LEGACY_SESSION_SEED_V3_PREFIX = "BNGSD3.";
 export const LEGACY_SESSION_SEED_V2_PREFIX = "JSRFD2.";
 export const LEGACY_COMPACT_SESSION_SEED_PREFIX = "BNGSD2.";
-export const SESSION_SEED_VERSION = 3;
+export const SESSION_SEED_VERSION = 5;
 export const PHRASE_OBJECTIVE_MIN = 1;
 export const CORRUPTED_FORMAL_SEED_WARNING =
   "This looks like a formal seed, but parts of it appear corrupted. It'll read it as-is, but double-check the source if this wasn't expected.";
@@ -54,8 +56,10 @@ const OBJECTIVE_INDEX_BY_ID = Object.fromEntries(
 );
 const SEED_RNG_BYTES = 16;
 const MAX_SEQUENCE_GENERATION_ATTEMPTS = 64;
-const PACKED_CONFIG_BYTES = 9;
-const PACKED_CONFIG_BITS = 71;
+const PACKED_CONFIG_BYTES = 10;
+const PACKED_CONFIG_BITS = 73;
+const LEGACY_V4_PACKED_CONFIG_BYTES = 9;
+const LEGACY_V4_PACKED_CONFIG_BITS = 72;
 const LEGACY_PACKED_CONFIG_BYTES = 6;
 const LEGACY_PACKED_CONFIG_BITS = 44;
 const MAX_SERIALIZED_OBJECTIVE_COUNT = 255;
@@ -254,8 +258,9 @@ function packConfig(configInput, sessionType) {
     { bits: 3, value: config.districtShift - MOVEMENT_VARIANCE_MIN },
     { bits: 1, value: config.trueRandom ? 1 : 0 },
     { bits: 1, value: normalizeSessionType(sessionType) === ROUTE_SESSION_TYPE ? 1 : 0 },
-    { bits: 4, value: config.routeVisibleCount - 1 },
+    { bits: 5, value: config.routeVisibleCount - 1 },
     { bits: 1, value: normalizeRouteRevealMode(config.routeRevealMode) === ROUTE_REVEAL_MODE_BURST ? 1 : 0 },
+    { bits: 1, value: config.routeVisionTrainingEnabled ? 1 : 0 },
     { bits: 7, value: levelShiftBoundaries[0] },
     { bits: 7, value: districtJumpBoundaries[0] },
     { bits: 7, value: districtJumpBoundaries[1] }
@@ -290,8 +295,9 @@ function unpackConfig(bytes) {
     { key: "districtShift", bits: 3 },
     { key: "trueRandom", bits: 1 },
     { key: "sessionType", bits: 1 },
-    { key: "routeVisibleCount", bits: 4 },
+    { key: "routeVisibleCount", bits: 5 },
     { key: "routeRevealMode", bits: 1 },
+    { key: "routeVisionTrainingEnabled", bits: 1 },
     { key: "levelShiftBoundary0", bits: 7 },
     { key: "districtJumpBoundary0", bits: 7 },
     { key: "districtJumpBoundary1", bits: 7 }
@@ -332,6 +338,7 @@ function unpackConfig(bytes) {
         decodedFields.routeRevealMode === 1
           ? ROUTE_REVEAL_MODE_BURST
           : DEFAULT_ROUTE_REVEAL_MODE,
+      routeVisionTrainingEnabled: Boolean(decodedFields.routeVisionTrainingEnabled),
       levelShiftDistribution: buildLevelShiftDistributionFromBoundaries([
         decodedFields.levelShiftBoundary0
       ]),
@@ -395,8 +402,154 @@ function unpackLegacyConfig(bytes) {
       trueRandom: Boolean(decodedFields.trueRandom),
       routeVisibleCount: DEFAULT_DRILL_SETTINGS.routeVisibleCount,
       routeRevealMode: DEFAULT_ROUTE_REVEAL_MODE,
+      routeVisionTrainingEnabled: DEFAULT_DRILL_SETTINGS.routeVisionTrainingEnabled,
       levelShiftDistribution: DEFAULT_LEVEL_SHIFT_DISTRIBUTION,
       districtJumpDistribution: DEFAULT_DISTRICT_JUMP_DISTRIBUTION
+    })
+  };
+}
+
+function unpackLegacyV4Config(bytes) {
+  if (bytes.length !== LEGACY_V4_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload config block is malformed.");
+  }
+
+  const paddingBits = LEGACY_V4_PACKED_CONFIG_BYTES * 8 - LEGACY_V4_PACKED_CONFIG_BITS;
+  const packedValue = bytesToBigInt(bytes) >> BigInt(paddingBits);
+  const fields = [
+    { key: "startingAreaIndex", bits: 4 },
+    { key: "numberOfObjectives", bits: 8 },
+    { key: "excludedMask", bits: objectiveAreaOrder.length },
+    { key: "graffitiVariance", bits: 3 },
+    { key: "unlockVariance", bits: 3 },
+    { key: "defaultVariance", bits: 3 },
+    { key: "notebookVariance", bits: 3 },
+    { key: "levelShift", bits: 3 },
+    { key: "districtShift", bits: 3 },
+    { key: "trueRandom", bits: 1 },
+    { key: "sessionType", bits: 1 },
+    { key: "routeVisibleCount", bits: 5 },
+    { key: "routeRevealMode", bits: 1 },
+    { key: "levelShiftBoundary0", bits: 7 },
+    { key: "districtJumpBoundary0", bits: 7 },
+    { key: "districtJumpBoundary1", bits: 7 }
+  ];
+  const decodedFields = {};
+  let remainingBits = LEGACY_V4_PACKED_CONFIG_BITS;
+
+  for (const field of fields) {
+    remainingBits -= field.bits;
+    decodedFields[field.key] = Number(
+      (packedValue >> BigInt(remainingBits)) & ((1n << BigInt(field.bits)) - 1n)
+    );
+  }
+
+  if (!areaOrder[decodedFields.startingAreaIndex]) {
+    throw new Error("Seed payload starting area is invalid.");
+  }
+
+  const excludedAreas = objectiveAreaOrder.filter(
+    (_, index) => (decodedFields.excludedMask & (1 << index)) !== 0
+  );
+
+  return {
+    sessionType: decodedFields.sessionType === 1 ? ROUTE_SESSION_TYPE : PRACTICE_SESSION_TYPE,
+    config: normalizeSessionConfig({
+      startingArea: areaOrder[decodedFields.startingAreaIndex],
+      numberOfObjectives: decodedFields.numberOfObjectives,
+      excludedAreas,
+      graffitiVariance: decodedFields.graffitiVariance + CATEGORY_VARIANCE_MIN,
+      unlockVariance: decodedFields.unlockVariance + CATEGORY_VARIANCE_MIN,
+      defaultVariance: decodedFields.defaultVariance + CATEGORY_VARIANCE_MIN,
+      notebookVariance: decodedFields.notebookVariance + CATEGORY_VARIANCE_MIN,
+      levelShift: decodedFields.levelShift + MOVEMENT_VARIANCE_MIN,
+      districtShift: decodedFields.districtShift + MOVEMENT_VARIANCE_MIN,
+      trueRandom: Boolean(decodedFields.trueRandom),
+      routeVisibleCount: decodedFields.routeVisibleCount + 1,
+      routeRevealMode:
+        decodedFields.routeRevealMode === 1
+          ? ROUTE_REVEAL_MODE_BURST
+          : DEFAULT_ROUTE_REVEAL_MODE,
+      routeVisionTrainingEnabled: DEFAULT_DRILL_SETTINGS.routeVisionTrainingEnabled,
+      levelShiftDistribution: buildLevelShiftDistributionFromBoundaries([
+        decodedFields.levelShiftBoundary0
+      ]),
+      districtJumpDistribution: buildDistrictJumpDistributionFromBoundaries([
+        decodedFields.districtJumpBoundary0,
+        decodedFields.districtJumpBoundary1
+      ])
+    })
+  };
+}
+
+function unpackLegacyV3Config(bytes) {
+  if (bytes.length !== LEGACY_V4_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload config block is malformed.");
+  }
+
+  const paddingBits = LEGACY_V4_PACKED_CONFIG_BYTES * 8 - 71;
+  const packedValue = bytesToBigInt(bytes) >> BigInt(paddingBits);
+  const fields = [
+    { key: "startingAreaIndex", bits: 4 },
+    { key: "numberOfObjectives", bits: 8 },
+    { key: "excludedMask", bits: objectiveAreaOrder.length },
+    { key: "graffitiVariance", bits: 3 },
+    { key: "unlockVariance", bits: 3 },
+    { key: "defaultVariance", bits: 3 },
+    { key: "notebookVariance", bits: 3 },
+    { key: "levelShift", bits: 3 },
+    { key: "districtShift", bits: 3 },
+    { key: "trueRandom", bits: 1 },
+    { key: "sessionType", bits: 1 },
+    { key: "routeVisibleCount", bits: 4 },
+    { key: "routeRevealMode", bits: 1 },
+    { key: "levelShiftBoundary0", bits: 7 },
+    { key: "districtJumpBoundary0", bits: 7 },
+    { key: "districtJumpBoundary1", bits: 7 }
+  ];
+  const decodedFields = {};
+  let remainingBits = 71;
+
+  for (const field of fields) {
+    remainingBits -= field.bits;
+    decodedFields[field.key] = Number(
+      (packedValue >> BigInt(remainingBits)) & ((1n << BigInt(field.bits)) - 1n)
+    );
+  }
+
+  if (!areaOrder[decodedFields.startingAreaIndex]) {
+    throw new Error("Seed payload starting area is invalid.");
+  }
+
+  const excludedAreas = objectiveAreaOrder.filter(
+    (_, index) => (decodedFields.excludedMask & (1 << index)) !== 0
+  );
+
+  return {
+    sessionType: decodedFields.sessionType === 1 ? ROUTE_SESSION_TYPE : PRACTICE_SESSION_TYPE,
+    config: normalizeSessionConfig({
+      startingArea: areaOrder[decodedFields.startingAreaIndex],
+      numberOfObjectives: decodedFields.numberOfObjectives,
+      excludedAreas,
+      graffitiVariance: decodedFields.graffitiVariance + CATEGORY_VARIANCE_MIN,
+      unlockVariance: decodedFields.unlockVariance + CATEGORY_VARIANCE_MIN,
+      defaultVariance: decodedFields.defaultVariance + CATEGORY_VARIANCE_MIN,
+      notebookVariance: decodedFields.notebookVariance + CATEGORY_VARIANCE_MIN,
+      levelShift: decodedFields.levelShift + MOVEMENT_VARIANCE_MIN,
+      districtShift: decodedFields.districtShift + MOVEMENT_VARIANCE_MIN,
+      trueRandom: Boolean(decodedFields.trueRandom),
+      routeVisibleCount: decodedFields.routeVisibleCount + 1,
+      routeRevealMode:
+        decodedFields.routeRevealMode === 1
+          ? ROUTE_REVEAL_MODE_BURST
+          : DEFAULT_ROUTE_REVEAL_MODE,
+      levelShiftDistribution: buildLevelShiftDistributionFromBoundaries([
+        decodedFields.levelShiftBoundary0
+      ]),
+      districtJumpDistribution: buildDistrictJumpDistributionFromBoundaries([
+        decodedFields.districtJumpBoundary0,
+        decodedFields.districtJumpBoundary1
+      ])
     })
   };
 }
@@ -482,6 +635,96 @@ function decodeCompactSessionSeed(value) {
   });
 }
 
+function decodeLegacyV4CompactSessionSeed(value) {
+  const payloadBytes = base64UrlDecode(value.slice(LEGACY_SESSION_SEED_V4_PREFIX.length));
+  if (payloadBytes.length < SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload is too short.");
+  }
+
+  const rngSeed = bytesToHex(payloadBytes.slice(0, SEED_RNG_BYTES));
+  const configBytes = payloadBytes.slice(
+    SEED_RNG_BYTES,
+    SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES
+  );
+  const { sessionType, config } = unpackLegacyV4Config(configBytes);
+  const expectedLength =
+    SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES + config.numberOfObjectives;
+
+  if (payloadBytes.length !== expectedLength) {
+    throw new Error("Seed payload objective list length does not match config.");
+  }
+
+  const objectiveIds = Array.from(
+    payloadBytes.slice(SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES),
+    (objectiveIndex) => {
+      if (objectiveIndex > MAX_SERIALIZED_OBJECTIVE_INDEX) {
+        throw new Error(
+          `Seed payload objective index exceeds ${MAX_SERIALIZED_OBJECTIVE_INDEX}: ${objectiveIndex}`
+        );
+      }
+
+      const objective = allObjectives[objectiveIndex];
+      if (!objective) {
+        throw new Error(`Seed payload objective index is invalid: ${objectiveIndex}`);
+      }
+
+      return objective.id;
+    }
+  );
+
+  return createSessionSeedPayload({
+    rngSeed,
+    config,
+    objectiveIds,
+    sessionType
+  });
+}
+
+function decodeLegacyV3CompactSessionSeed(value) {
+  const payloadBytes = base64UrlDecode(value.slice(LEGACY_SESSION_SEED_V3_PREFIX.length));
+  if (payloadBytes.length < SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES) {
+    throw new Error("Seed payload is too short.");
+  }
+
+  const rngSeed = bytesToHex(payloadBytes.slice(0, SEED_RNG_BYTES));
+  const configBytes = payloadBytes.slice(
+    SEED_RNG_BYTES,
+    SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES
+  );
+  const { sessionType, config } = unpackLegacyV3Config(configBytes);
+  const expectedLength =
+    SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES + config.numberOfObjectives;
+
+  if (payloadBytes.length !== expectedLength) {
+    throw new Error("Seed payload objective list length does not match config.");
+  }
+
+  const objectiveIds = Array.from(
+    payloadBytes.slice(SEED_RNG_BYTES + LEGACY_V4_PACKED_CONFIG_BYTES),
+    (objectiveIndex) => {
+      if (objectiveIndex > MAX_SERIALIZED_OBJECTIVE_INDEX) {
+        throw new Error(
+          `Seed payload objective index exceeds ${MAX_SERIALIZED_OBJECTIVE_INDEX}: ${objectiveIndex}`
+        );
+      }
+
+      const objective = allObjectives[objectiveIndex];
+      if (!objective) {
+        throw new Error(`Seed payload objective index is invalid: ${objectiveIndex}`);
+      }
+
+      return objective.id;
+    }
+  );
+
+  return createSessionSeedPayload({
+    rngSeed,
+    config,
+    objectiveIds,
+    sessionType
+  });
+}
+
 function decodeLegacyCompactSessionSeed(value, prefixLength) {
   const payloadBytes = base64UrlDecode(value.slice(prefixLength));
   if (payloadBytes.length < SEED_RNG_BYTES + LEGACY_PACKED_CONFIG_BYTES) {
@@ -560,7 +803,8 @@ function derivePhraseConfig(seed, sessionType = PRACTICE_SESSION_TYPE) {
     levelShiftDistribution: buildLevelShiftDistributionFromBoundaries(levelShiftBoundaries),
     districtJumpDistribution: buildDistrictJumpDistributionFromBoundaries(districtJumpBoundaries),
     routeVisibleCount: randomInteger(rng, ROUTE_VISIBLE_COUNT_MIN, ROUTE_VISIBLE_COUNT_MAX),
-    routeRevealMode: rng() < 0.5 ? DEFAULT_ROUTE_REVEAL_MODE : ROUTE_REVEAL_MODE_BURST
+    routeRevealMode: rng() < 0.5 ? DEFAULT_ROUTE_REVEAL_MODE : ROUTE_REVEAL_MODE_BURST,
+    routeVisionTrainingEnabled: rng() < 0.5
   }, sessionType);
 }
 
@@ -781,6 +1025,14 @@ export function decodeSessionSeed(value) {
     return decodeCompactSessionSeed(value);
   }
 
+  if (value.startsWith(LEGACY_SESSION_SEED_V4_PREFIX)) {
+    return decodeLegacyV4CompactSessionSeed(value);
+  }
+
+  if (value.startsWith(LEGACY_SESSION_SEED_V3_PREFIX)) {
+    return decodeLegacyV3CompactSessionSeed(value);
+  }
+
   if (value.startsWith(LEGACY_COMPACT_SESSION_SEED_PREFIX)) {
     return decodeLegacyCompactSessionSeed(value, LEGACY_COMPACT_SESSION_SEED_PREFIX.length);
   }
@@ -802,6 +1054,8 @@ function looksLikeFormalSeed(value) {
 
   return (
     value.startsWith(SESSION_SEED_PREFIX) ||
+    value.startsWith(LEGACY_SESSION_SEED_V4_PREFIX) ||
+    value.startsWith(LEGACY_SESSION_SEED_V3_PREFIX) ||
     value.startsWith(LEGACY_COMPACT_SESSION_SEED_PREFIX) ||
     value.startsWith(LEGACY_SESSION_SEED_V2_PREFIX) ||
     /^BNGS/i.test(value) ||
