@@ -48,6 +48,7 @@ import {
   ROUTE_REVEAL_MODE_ROLLING
 } from "../../lib/session/routeRevealMode.js";
 import { districtToneClassName } from "../../lib/districtDisplay.js";
+import { BoundedNumberInput } from "../shared/BoundedNumberInput.jsx";
 
 function VarianceSlider({
   label,
@@ -582,15 +583,14 @@ export function SetupPanel({
 
               <label className="field">
                 <span>Number of squares</span>
-                <input
-                  type="number"
+                <BoundedNumberInput
                   min={effectiveObjectiveMin}
                   max={effectiveObjectiveMax}
                   value={effectiveDrillSettings.numberOfObjectives}
                   disabled={controlsLocked}
-                  onChange={(event) =>
-                    updateDrillSetting("numberOfObjectives", Number(event.target.value))
-                  }
+                  step={1}
+                  normalizeValue={Math.round}
+                  onCommit={(value) => updateDrillSetting("numberOfObjectives", value)}
                 />
                 <span className="field-hint">
                   Max available: {effectiveObjectiveMax}.
@@ -600,15 +600,14 @@ export function SetupPanel({
               {isRouteMode ? (
                 <label className="field">
                   <span>Visible squares</span>
-                  <input
-                    type="number"
+                  <BoundedNumberInput
                     min={ROUTE_VISIBLE_COUNT_MIN}
                     max={effectiveRouteVisibleMax}
                     value={effectiveDrillSettings.routeVisibleCount}
                     disabled={controlsLocked}
-                    onChange={(event) =>
-                      updateDrillSetting("routeVisibleCount", Number(event.target.value))
-                    }
+                    step={1}
+                    normalizeValue={Math.round}
+                    onCommit={(value) => updateDrillSetting("routeVisibleCount", value)}
                   />
                   <span className="field-hint">
                     Live route squares at once. Max: {effectiveRouteVisibleMax}.

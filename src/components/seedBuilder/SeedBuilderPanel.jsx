@@ -48,6 +48,7 @@ import {
   ROUTE_VISIBLE_COUNT_MIN
 } from "../../lib/drill/drillSettings.js";
 import { SegmentedChoice } from "../session/SegmentedChoice.jsx";
+import { BoundedNumberInput } from "../shared/BoundedNumberInput.jsx";
 
 const TIMELINE_CONTAINER_ID = "seed-builder-timeline";
 const TIMELINE_END_ID = "seed-builder-timeline-end";
@@ -473,12 +474,13 @@ function SeedBuilderSeedBar({
         <div className="seed-builder-route-row">
           <label className="field seed-builder-visible-field">
             <span>Visible</span>
-            <input
-              type="number"
+            <BoundedNumberInput
               min={ROUTE_VISIBLE_COUNT_MIN}
               max={routeVisibleMax}
               value={routeVisibleCount}
-              onChange={(event) => onRouteVisibleCountChange(event.target.value)}
+              step={1}
+              normalizeValue={Math.round}
+              onCommit={onRouteVisibleCountChange}
             />
           </label>
           <SegmentedChoice
@@ -647,7 +649,7 @@ export function SeedBuilderPanel({
   function updateRouteVisibleCount(value) {
     commitDraft({
       ...normalizedDraft,
-      routeVisibleCount: Number(value)
+      routeVisibleCount: value
     });
   }
 
