@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import {
+  AVERAGE_WINDOW_ALL_TIME,
+  AVERAGE_WINDOW_MAX,
+  AVERAGE_WINDOW_MIN
+} from "../../lib/storage.js";
+import {
   createHotkeyBinding,
   formatHotkeyBinding,
   hasHotkeyModifier,
@@ -85,6 +90,39 @@ function ToggleField({ label, description, checked, onChange }) {
         </span>
       </span>
     </label>
+  );
+}
+
+function AverageWindowSetting({ value, onChange }) {
+  const sliderMax = AVERAGE_WINDOW_MAX + 1;
+  const sliderValue = value === AVERAGE_WINDOW_ALL_TIME ? sliderMax : value;
+  const isAllTime = sliderValue === sliderMax;
+  const displayValue = isAllTime ? "All Time" : `Last ${sliderValue}`;
+
+  return (
+    <div className="settings-row">
+      <div className="settings-row-copy">
+        <strong>Average Window</strong>
+        <p>Controls how many recent attempts are used for average seed times.</p>
+      </div>
+      <div className="settings-row-actions settings-average-window-actions">
+        <label className="settings-average-window-control">
+          <input
+            type="range"
+            min={AVERAGE_WINDOW_MIN}
+            max={sliderMax}
+            step={1}
+            value={sliderValue}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              onChange(nextValue === sliderMax ? AVERAGE_WINDOW_ALL_TIME : nextValue);
+            }}
+            aria-label="Average Window"
+          />
+          <span className="settings-average-window-value">{displayValue}</span>
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -558,6 +596,19 @@ export function SettingsPanel({
               description="Keeps learn videos muted by default. This will also makes autoplay more reliable."
               checked={settings.learnAudioMuted}
               onChange={(value) => onUpdateSetting("learnAudioMuted", value)}
+            />
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <div className="settings-section-copy">
+            <h2>Stats</h2>
+            <p>Tune how seeded average timing is summarized.</p>
+          </div>
+          <div className="settings-list">
+            <AverageWindowSetting
+              value={settings.averageWindow}
+              onChange={(value) => onUpdateSetting("averageWindow", value)}
             />
           </div>
         </div>

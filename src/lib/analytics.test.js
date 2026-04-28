@@ -103,6 +103,8 @@ test("buildAnalyticsViewModel derives seed rows and grouped runs from history", 
   assert.equal(analytics.practiceSeeds[0].objectiveCount, 2);
   assert.equal(analytics.practiceSeeds[0].attempts, 2);
   assert.equal(analytics.practiceSeeds[0].pbDurationMs, 13000);
+  assert.equal(analytics.practiceSeeds[0].averageDurationMs, 14000);
+  assert.equal(analytics.practiceSeeds[0].averageDeltaMs, 1000);
   assert.equal(analytics.practiceSeeds[0].latestDeltaMs, 0);
   assert.equal(analytics.practiceSeeds[0].firstToBestDeltaMs, 2000);
   assert.equal(analytics.routeSeeds.length, 1);
@@ -164,4 +166,45 @@ test("buildAnalyticsViewModel excludes skipped practice sessions from seed PB tr
   assert.equal(analytics.practiceSeeds.length, 1);
   assert.equal(analytics.practiceSeeds[0].attempts, 1);
   assert.equal(analytics.practiceSeeds[0].pbDurationMs, 15000);
+});
+
+test("buildAnalyticsViewModel applies average window to seed averages", () => {
+  const history = [
+    {
+      sessionType: "practice",
+      sessionId: "s1",
+      result: "complete",
+      exportSeed: "BNGSD3.window",
+      sessionCompleted: true,
+      sessionObjectiveCount: 1,
+      sessionTotalDurationMs: 10000,
+      endedAt: 1000
+    },
+    {
+      sessionType: "practice",
+      sessionId: "s2",
+      result: "complete",
+      exportSeed: "BNGSD3.window",
+      sessionCompleted: true,
+      sessionObjectiveCount: 1,
+      sessionTotalDurationMs: 20000,
+      endedAt: 2000
+    },
+    {
+      sessionType: "practice",
+      sessionId: "s3",
+      result: "complete",
+      exportSeed: "BNGSD3.window",
+      sessionCompleted: true,
+      sessionObjectiveCount: 1,
+      sessionTotalDurationMs: 30000,
+      endedAt: 3000
+    }
+  ];
+
+  const allTimeAnalytics = buildAnalyticsViewModel(history);
+  const windowedAnalytics = buildAnalyticsViewModel(history, { averageWindow: 2 });
+
+  assert.equal(allTimeAnalytics.practiceSeeds[0].averageDurationMs, 20000);
+  assert.equal(windowedAnalytics.practiceSeeds[0].averageDurationMs, 25000);
 });

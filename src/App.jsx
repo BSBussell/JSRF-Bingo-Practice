@@ -414,6 +414,7 @@ function StatsModeView({
       stats={drillSession.stats}
       history={drillSession.history}
       seedNamesByExportSeed={drillSession.seedNamesByExportSeed}
+      averageWindow={drillSession.settings.averageWindow}
       focusedHistoryRunId={focusedHistoryRunId}
       onDeleteEntry={drillSession.deleteHistoryEntry}
       onDeleteRun={drillSession.deleteHistoryRun}

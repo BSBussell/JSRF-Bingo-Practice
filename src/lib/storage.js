@@ -27,6 +27,9 @@ import {
 } from "./theme/index.js";
 
 export const APP_STORAGE_KEY = "jsrf-bingo-trainer";
+export const AVERAGE_WINDOW_MIN = 5;
+export const AVERAGE_WINDOW_MAX = 100;
+export const AVERAGE_WINDOW_ALL_TIME = "all";
 const LEGACY_DEFAULT_HOTKEYS = {
   split: createHotkeyBinding("Enter"),
   skip: createHotkeyBinding("KeyS"),
@@ -51,6 +54,7 @@ export const DEFAULT_SETTINGS = {
   learnPanelDefaultVisible: false,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
+  averageWindow: AVERAGE_WINDOW_ALL_TIME,
   routeDistrictColorsEnabled: true,
   autoOpenPopout: false,
   popoutAlwaysOnTop: false,
@@ -126,6 +130,21 @@ function normalizeSettings(value, legacySelectedMode = null) {
     };
   }
 
+  const normalizeAverageWindow = (input) => {
+    if (input === AVERAGE_WINDOW_ALL_TIME) {
+      return AVERAGE_WINDOW_ALL_TIME;
+    }
+
+    if (!Number.isFinite(input)) {
+      return DEFAULT_SETTINGS.averageWindow;
+    }
+
+    return Math.max(
+      AVERAGE_WINDOW_MIN,
+      Math.min(AVERAGE_WINDOW_MAX, Math.round(input))
+    );
+  };
+
   return {
     startingArea:
       typeof value.startingArea === "string" && areaOrder.includes(value.startingArea)
@@ -151,6 +170,7 @@ function normalizeSettings(value, legacySelectedMode = null) {
       typeof value.learnAudioMuted === "boolean"
         ? value.learnAudioMuted
         : DEFAULT_SETTINGS.learnAudioMuted,
+    averageWindow: normalizeAverageWindow(value.averageWindow),
     routeDistrictColorsEnabled:
       typeof value.routeDistrictColorsEnabled === "boolean"
         ? value.routeDistrictColorsEnabled

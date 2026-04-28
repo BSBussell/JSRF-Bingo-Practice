@@ -41,7 +41,7 @@ function sortedByEndedAt(entries) {
   });
 }
 
-function buildSeedRows(entries, sessionType, seedNamesByExportSeed) {
+function buildSeedRows(entries, sessionType, seedNamesByExportSeed, averageWindow = null) {
   const rowsBySeed = new Map();
 
   for (const entry of entries) {
@@ -73,9 +73,13 @@ function buildSeedRows(entries, sessionType, seedNamesByExportSeed) {
       firstDurationMs: null,
       latestDurationMs: null,
       latestEndedAt: null,
+      totalDurationMs: 0,
+      durations: [],
+      averageDurationMs: null,
       pbDurationMs: null,
       pbEndedAt: null,
       latestDeltaMs: null,
+      averageDeltaMs: null,
       firstToBestDeltaMs: null,
       visibleCount: null,
       routeRevealMode: null
@@ -87,6 +91,8 @@ function buildSeedRows(entries, sessionType, seedNamesByExportSeed) {
     }
     current.latestDurationMs = durationMs;
     current.latestEndedAt = isFiniteNumber(entry.endedAt) ? entry.endedAt : null;
+    current.totalDurationMs += durationMs;
+    current.durations.push(durationMs);
     if (current.pbDurationMs === null || durationMs < current.pbDurationMs) {
       current.pbDurationMs = durationMs;
       current.pbEndedAt = isFiniteNumber(entry.endedAt) ? entry.endedAt : null;
@@ -107,17 +113,34 @@ function buildSeedRows(entries, sessionType, seedNamesByExportSeed) {
   }
 
   return Array.from(rowsBySeed.values())
-    .map((row) => ({
-      ...row,
-      latestDeltaMs:
-        isFiniteNumber(row.latestDurationMs) && isFiniteNumber(row.pbDurationMs)
-          ? row.latestDurationMs - row.pbDurationMs
-          : null,
-      firstToBestDeltaMs:
-        isFiniteNumber(row.firstDurationMs) && isFiniteNumber(row.pbDurationMs)
-          ? row.firstDurationMs - row.pbDurationMs
-          : null
-    }))
+    .map((row) => {
+      const averageDurations =
+        Number.isInteger(averageWindow) && averageWindow > 0
+          ? row.durations.slice(-averageWindow)
+          : row.durations;
+      const averageTotal = averageDurations.reduce((sum, durationMs) => sum + durationMs, 0);
+      const averageDurationMs =
+        averageDurations.length > 0
+          ? Math.round(averageTotal / averageDurations.length)
+          : null;
+
+      return {
+        ...row,
+        latestDeltaMs:
+          isFiniteNumber(row.latestDurationMs) && isFiniteNumber(row.pbDurationMs)
+            ? row.latestDurationMs - row.pbDurationMs
+            : null,
+        averageDurationMs,
+        averageDeltaMs:
+          isFiniteNumber(averageDurationMs) && isFiniteNumber(row.pbDurationMs)
+            ? averageDurationMs - row.pbDurationMs
+            : null,
+        firstToBestDeltaMs:
+          isFiniteNumber(row.firstDurationMs) && isFiniteNumber(row.pbDurationMs)
+            ? row.firstDurationMs - row.pbDurationMs
+            : null
+      };
+    })
     .sort((left, right) => {
       if (left.latestEndedAt === null) return 1;
       if (right.latestEndedAt === null) return -1;
@@ -293,15 +316,21 @@ export function buildAnalyticsViewModel(history = [], options = {}) {
     options.seedNamesByExportSeed && typeof options.seedNamesByExportSeed === "object"
       ? options.seedNamesByExportSeed
       : {};
+  const averageWindow =
+    Number.isInteger(options.averageWindow) && options.averageWindow > 0
+      ? options.averageWindow
+      : null;
   const practiceSeedRows = buildSeedRows(
     practiceSeedCompletionEntries(historyByEndedAt),
     PRACTICE_SESSION_TYPE,
-    seedNamesByExportSeed
+    seedNamesByExportSeed,
+    averageWindow
   );
   const routeSeedRows = buildSeedRows(
     routeSeedCompletionEntries(historyByEndedAt),
     ROUTE_SESSION_TYPE,
-    seedNamesByExportSeed
+    seedNamesByExportSeed,
+    averageWindow
   );
   const runRows = buildRunRows(safeHistory, seedNamesByExportSeed);
   const drillRuns = runRows.filter((run) => run.sessionType === PRACTICE_SESSION_TYPE);

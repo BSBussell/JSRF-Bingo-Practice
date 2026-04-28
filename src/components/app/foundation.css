@@ -561,14 +561,12 @@ body {
 @keyframes stats-panel-sleek-in {
     0% {
         opacity: 0;
-        transform: translateY(0.42rem) scale(0.994);
-        filter: blur(1.25px) brightness(0.96);
+        transform: translateY(0.35rem);
     }
 
     100% {
         opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0) brightness(1);
+        transform: translateY(0);
     }
 }
 

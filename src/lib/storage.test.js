@@ -10,6 +10,7 @@ test("createDefaultAppState initializes pendingCompletion as null", () => {
   assert.equal(state.settings.multinodeLink, "");
   assert.equal(state.settings.autoOpenPopout, false);
   assert.equal(state.settings.routeDistrictColorsEnabled, true);
+  assert.equal(state.settings.averageWindow, "all");
   assert.deepEqual(state.settings.hotkeys.split, {
     code: "Space",
     modifiers: {
@@ -200,6 +201,38 @@ test("normalizeAppState preserves route district color setting", () => {
   });
 
   assert.equal(state.settings.routeDistrictColorsEnabled, false);
+});
+
+test("normalizeAppState preserves average window setting", () => {
+  const state = normalizeAppState({
+    settings: {
+      averageWindow: 12
+    }
+  });
+
+  assert.equal(state.settings.averageWindow, 12);
+});
+
+test("normalizeAppState clamps average window and supports all time", () => {
+  const clampedLow = normalizeAppState({
+    settings: {
+      averageWindow: 1
+    }
+  });
+  const clampedHigh = normalizeAppState({
+    settings: {
+      averageWindow: 999
+    }
+  });
+  const allTime = normalizeAppState({
+    settings: {
+      averageWindow: "all"
+    }
+  });
+
+  assert.equal(clampedLow.settings.averageWindow, 5);
+  assert.equal(clampedHigh.settings.averageWindow, 100);
+  assert.equal(allTime.settings.averageWindow, "all");
 });
 
 test("normalizeAppState migrates legacy district jump tendency settings to explicit distributions", () => {

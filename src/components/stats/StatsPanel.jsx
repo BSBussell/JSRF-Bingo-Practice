@@ -289,7 +289,7 @@ function SeedRows({
   return (
     <div className="analytics-seed-list">
       {rows.map((row) => {
-        const latestIsPb = row.attempts > 1 && row.latestDeltaMs === 0;
+        const averageIsPb = row.attempts > 1 && row.averageDeltaMs === 0;
 
         return (
           <article className="analytics-seed-row" key={`${row.sessionType}-${row.exportSeed}`}>
@@ -313,9 +313,9 @@ function SeedRows({
                 <strong>{Number.isInteger(row.objectiveCount) ? row.objectiveCount : "n/a"}</strong>
                 objectives
               </span>
-              <span className={latestIsPb ? "analytics-positive" : ""}>
-                <strong>{formatDurationDelta(row.latestDeltaMs)}</strong>
-                latest
+              <span className={averageIsPb ? "analytics-positive" : ""}>
+                <strong>{formatOptionalDuration(row.averageDurationMs)}</strong>
+                avg
               </span>
               <span>
                 <strong>
@@ -717,6 +717,7 @@ export function StatsPanel({
   stats,
   history,
   seedNamesByExportSeed,
+  averageWindow = "all",
   focusedHistoryRunId = "",
   onDeleteEntry,
   onDeleteRun,
@@ -726,8 +727,12 @@ export function StatsPanel({
   onFocusedHistoryRunHandled
 }) {
   const analytics = useMemo(
-    () => buildAnalyticsViewModel(history, { seedNamesByExportSeed }),
-    [history, seedNamesByExportSeed]
+    () =>
+      buildAnalyticsViewModel(history, {
+        seedNamesByExportSeed,
+        averageWindow: Number.isInteger(averageWindow) ? averageWindow : null
+      }),
+    [history, seedNamesByExportSeed, averageWindow]
   );
   const [seedDetailType, setSeedDetailType] = useState(null);
   const [seedPbSortMode, setSeedPbSortMode] = useState("recent");

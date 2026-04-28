@@ -297,6 +297,32 @@
     cursor: pointer;
 }
 
+.settings-average-window-actions {
+    min-width: min(100%, 18rem);
+}
+
+.settings-average-window-control {
+    display: grid;
+    gap: 0.45rem;
+    min-width: min(100%, 18rem);
+}
+
+.settings-average-window-control input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.settings-average-window-value {
+    justify-self: end;
+    min-width: 6.8rem;
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 .toggle-shell {
     position: relative;
     display: inline-flex;
@@ -361,4 +387,3 @@
     border-color: var(--danger-zone-border);
     background: var(--danger-zone-background);
 }
-
