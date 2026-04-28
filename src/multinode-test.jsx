@@ -2,7 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 import { useMultinodeConnection } from "./hooks/useMultinodeConnection.js";
+import { allObjectives, objectivesById } from "./data/objectives.js";
 import { CHARACTER_NAME_BY_ID, TAPE_NAME_BY_ID } from "./lib/multinode/levelIds.js";
+import {
+  doesEventMatchObjectiveAutomark,
+  getObjectiveAutomarkRule,
+  getObjectiveAutomarkStatus
+} from "./lib/multinode/objectiveAutomark.js";
 import {
   applyMultinodeEvent,
   createMultinodeWorldState
@@ -62,16 +68,36 @@ function MultinodeTestApp() {
   const [parsedLogs, setParsedLogs] = useState([]);
   const [derivedLogs, setDerivedLogs] = useState([]);
   const [worldState, setWorldState] = useState(() => createMultinodeWorldState());
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState(allObjectives[0]?.id ?? "");
+  const [typedObjectiveId, setTypedObjectiveId] = useState("");
+  const [latestObjectiveMatch, setLatestObjectiveMatch] = useState(null);
+
+  const selectedObjective = objectivesById[selectedObjectiveId] ?? null;
 
   const handleManualWorldStateReset = useCallback(() => {
     setWorldState(createMultinodeWorldState());
+    setLatestObjectiveMatch(null);
   }, []);
 
   const clearLogsOnly = useCallback(() => {
     setRawLogs([]);
     setParsedLogs([]);
     setDerivedLogs([]);
+    setLatestObjectiveMatch(null);
   }, []);
+
+  const evaluateObjectiveMatch = useCallback((event, nextWorldState) => {
+    const objective = objectivesById[selectedObjectiveId];
+    if (!objective) {
+      return;
+    }
+
+    const matchResult = doesEventMatchObjectiveAutomark(event, objective, nextWorldState);
+    setLatestObjectiveMatch({
+      event,
+      result: matchResult
+    });
+  }, [selectedObjectiveId]);
 
   const { status, error, lastRawPacket, lastGameEvent } = useMultinodeConnection({
     link: activeLink,
@@ -83,9 +109,14 @@ function MultinodeTestApp() {
       appendLog(setParsedLogs, event);
       setWorldState((previousState) => {
         const reduced = applyMultinodeEvent(previousState, event);
+
+        evaluateObjectiveMatch(event, reduced.state);
+
         for (const derivedEvent of reduced.events) {
           appendLog(setDerivedLogs, derivedEvent);
+          evaluateObjectiveMatch(derivedEvent, reduced.state);
         }
+
         return reduced.state;
       });
     }
@@ -100,6 +131,10 @@ function MultinodeTestApp() {
   }, [status, error]);
 
   const levelProgressRows = useMemo(() => getLevelProgressRows(worldState), [worldState]);
+  const objectiveRule = selectedObjective ? getObjectiveAutomarkRule(selectedObjective) : null;
+  const objectiveStatus = selectedObjective
+    ? getObjectiveAutomarkStatus(selectedObjective, worldState)
+    : null;
 
   return (
     <main style={{ fontFamily: "monospace", padding: "1rem", maxWidth: "1400px", margin: "0 auto" }}>
@@ -139,6 +174,66 @@ function MultinodeTestApp() {
         <p style={{ margin: "0.25rem 0" }}>
           <strong>Active Link Input:</strong> {activeLink || "(none)"}
         </p>
+      </section>
+
+      <section style={{ border: "1px solid #999", padding: "0.75rem", marginBottom: "1rem" }}>
+        <h2 style={{ marginTop: 0 }}>Objective Matching Debug</h2>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+          <select
+            value={selectedObjectiveId}
+            onChange={(event) => setSelectedObjectiveId(event.target.value)}
+            style={{ flex: "1 1 360px", padding: "0.35rem" }}
+          >
+            {allObjectives.map((objective) => (
+              <option key={objective.id} value={objective.id}>
+                {objective.id} | {objective.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={typedObjectiveId}
+            onChange={(event) => setTypedObjectiveId(event.target.value)}
+            placeholder="Type objective id"
+            style={{ flex: "1 1 260px", padding: "0.35rem" }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const candidate = typedObjectiveId.trim();
+              if (candidate && objectivesById[candidate]) {
+                setSelectedObjectiveId(candidate);
+              }
+            }}
+          >
+            Use Typed ID
+          </button>
+        </div>
+
+        {selectedObjective ? (
+          <>
+            <p style={{ margin: "0.25rem 0" }}>
+              <strong>Selected:</strong> {selectedObjective.id} | {selectedObjective.label}
+            </p>
+            <p style={{ margin: "0.25rem 0" }}>
+              <strong>Area:</strong> {selectedObjective.areaLabel} | <strong>Type:</strong> {selectedObjective.type}
+            </p>
+            <p style={{ margin: "0.25rem 0" }}>
+              <strong>Supported:</strong> {objectiveRule?.supported ? "yes" : "no"}
+            </p>
+            <pre style={{ margin: "0.35rem 0", border: "1px solid #999", padding: "0.4rem", overflow: "auto" }}>
+              Rule\n{toPrettyJson(objectiveRule)}
+            </pre>
+            <pre style={{ margin: "0.35rem 0", border: "1px solid #999", padding: "0.4rem", overflow: "auto" }}>
+              Status\n{toPrettyJson(objectiveStatus)}
+            </pre>
+            <pre style={{ margin: "0.35rem 0", border: "1px solid #999", padding: "0.4rem", overflow: "auto" }}>
+              Latest Match Result\n{toPrettyJson(latestObjectiveMatch ?? "(no event evaluated yet)")}
+            </pre>
+          </>
+        ) : (
+          <p>No valid objective selected.</p>
+        )}
       </section>
 
       <section style={{ border: "1px solid #999", padding: "0.75rem", marginBottom: "1rem" }}>

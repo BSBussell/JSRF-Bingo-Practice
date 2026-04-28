@@ -1,4 +1,4 @@
-const PEER_PARAM_KEYS = ["id", "peer", "peerId", "multinode"];
+const PEER_PARAM_KEYS = ["id", "peer", "peerId", "multinode", "connect"];
 
 function getPeerIdFromSearchParams(searchParams) {
   for (const key of PEER_PARAM_KEYS) {

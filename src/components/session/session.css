@@ -1133,6 +1133,56 @@
     text-transform: uppercase;
 }
 
+.multinode-ready-panel {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.55rem;
+    padding: 0.7rem;
+    border: 1px solid var(--surface-card-border);
+    border-radius: var(--radius-control);
+    background: var(--surface-card-background);
+}
+
+.multinode-ready-label {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.multinode-ready-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.45rem;
+}
+
+.multinode-ready-input {
+    width: 100%;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--input-border);
+    background: var(--input-background);
+    color: var(--timer-pill-text);
+    font: inherit;
+}
+
+.multinode-ready-status,
+.multinode-ready-detail {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.multinode-ready-status.is-connected {
+    color: var(--route-district-shibuya);
+}
+
+.multinode-ready-status.is-error {
+    color: var(--route-district-kogane);
+}
+
 .seed-display-shell {
     padding: 0.85rem 1rem;
     border-radius: var(--radius-control);

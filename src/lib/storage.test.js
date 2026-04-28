@@ -7,6 +7,7 @@ import { ROUTE_REVEAL_MODE_BURST } from "./session/routeRevealMode.js";
 
 test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
+  assert.equal(state.settings.multinodeLink, "");
   assert.equal(state.settings.autoOpenPopout, false);
   assert.equal(state.settings.routeDistrictColorsEnabled, true);
   assert.deepEqual(state.settings.hotkeys.split, {
@@ -150,6 +151,16 @@ test("normalizeAppState preserves autoOpenPopout setting", () => {
   });
 
   assert.equal(state.settings.autoOpenPopout, true);
+});
+
+test("normalizeAppState preserves trimmed multinodeLink setting", () => {
+  const state = normalizeAppState({
+    settings: {
+      multinodeLink: "  https://jsrfmulti.surge.sh/bingo/?connect=abc123  "
+    }
+  });
+
+  assert.equal(state.settings.multinodeLink, "https://jsrfmulti.surge.sh/bingo/?connect=abc123");
 });
 
 test("normalizeAppState backfills missing hotkey actions to current defaults", () => {

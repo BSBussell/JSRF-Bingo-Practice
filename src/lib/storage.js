@@ -47,6 +47,7 @@ export const DEFAULT_SETTINGS = {
   startingArea: "Garage",
   drillSettings: DEFAULT_DRILL_SETTINGS,
   hotkeys: DEFAULT_HOTKEYS,
+  multinodeLink: "",
   learnPanelDefaultVisible: false,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
@@ -132,6 +133,10 @@ function normalizeSettings(value, legacySelectedMode = null) {
         : DEFAULT_SETTINGS.startingArea,
     drillSettings: normalizeDrillSettings(value.drillSettings),
     hotkeys: normalizeHotkeys(value.hotkeys),
+    multinodeLink:
+      typeof value.multinodeLink === "string"
+        ? value.multinodeLink.trim()
+        : DEFAULT_SETTINGS.multinodeLink,
     learnPanelDefaultVisible:
       typeof value.learnPanelDefaultVisible === "boolean"
         ? value.learnPanelDefaultVisible

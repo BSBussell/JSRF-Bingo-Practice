@@ -14,12 +14,14 @@ import {
   StatsPanel
 } from "./components/index.js";
 import { useDrillSession } from "./hooks/useDrillSession.js";
+import { useMultinodeAutomark } from "./hooks/useMultinodeAutomark.js";
 import { useDesktopGlobalShortcuts } from "./hooks/useDesktopGlobalShortcuts.js";
 import { useDesktopUpdate } from "./hooks/useDesktopUpdate.js";
 import { useLocalStorage } from "./hooks/useLocalStorage.js";
 import { useReleaseDownload } from "./hooks/useReleaseDownload.js";
 import { useSessionHotkeys } from "./hooks/useSessionHotkeys.js";
 import { useTimer } from "./hooks/useTimer.js";
+import { resolveMultinodeAutomarkAction } from "./lib/multinode/automarkDispatch.js";
 import {
   isDrillPopoutView,
   openDrillPopoutWindow,
@@ -39,6 +41,7 @@ import {
   normalizeAppState
 } from "./lib/storage.js";
 import { buildLearningVideoSources } from "./data/learnVideos.js";
+import { objectivesById } from "./data/objectives.js";
 import { formatHotkeyBinding } from "./lib/hotkeys.js";
 import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
@@ -113,7 +116,8 @@ function StartCountdownPanel({
   countdownLabel,
   isPendingReady = false,
   onStartCountdown,
-  startCountdownHotkey
+  startCountdownHotkey,
+  multinode = null
 }) {
   const readyHotkeyLabel = startCountdownHotkey
     ? formatHotkeyBinding(startCountdownHotkey)
@@ -145,6 +149,27 @@ function StartCountdownPanel({
           </strong>
         </div>
       )}
+      {multinode ? (
+        <div className="multinode-ready-panel">
+          <label className="multinode-ready-label" htmlFor="multinode-link-input">
+            Multi Link for Automarking
+          </label>
+          <div className="multinode-ready-controls">
+            <input
+              id="multinode-link-input"
+              className="multinode-ready-input"
+              type="text"
+              value={multinode.link}
+              placeholder="https://jsrfmulti.surge.sh/bingo/?connect=..."
+              onChange={(event) => multinode.onChangeLink(event.target.value)}
+            />
+            
+          </div>
+          <p className={`multinode-ready-status is-${multinode.status}`}>
+            {multinode.indicator} {multinode.statusLabel}
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -174,7 +199,8 @@ function ActiveSessionStage({
   totalTimer,
   splitTimer,
   learnPanelVisible = false,
-  onToggleLearnPanel
+  onToggleLearnPanel,
+  multinode = null
 }) {
   return (
     <DrillStage learnPanelVisible={learnPanelVisible}>
@@ -193,6 +219,7 @@ function ActiveSessionStage({
           isPendingReady={drillSession.isStartCountdownPendingReady}
           onStartCountdown={drillSession.beginStartCountdown}
           startCountdownHotkey={settings.hotkeys.startCountdown}
+          multinode={multinode}
         />
       )}
     </DrillStage>
@@ -227,7 +254,8 @@ function PracticeModeView({
   splitTimer,
   popoutControl,
   popoutError,
-  onToggleLearnPanel
+  onToggleLearnPanel,
+  multinode
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
   const isPracticeSession = drillSession.currentSession?.sessionType !== ROUTE_SESSION_TYPE;
@@ -247,6 +275,7 @@ function PracticeModeView({
           splitTimer={splitTimer}
           learnPanelVisible={learnPanelVisible}
           onToggleLearnPanel={onToggleLearnPanel}
+          multinode={multinode}
         />
       </ModeShell>
     );
@@ -291,7 +320,8 @@ function RouteModeView({
   totalTimer,
   splitTimer,
   popoutControl,
-  popoutError
+  popoutError,
+  multinode
 }) {
   if (
     (drillSession.currentSession && drillSession.currentSession.sessionType === ROUTE_SESSION_TYPE) ||
@@ -310,6 +340,7 @@ function RouteModeView({
           backdrop={backdrop}
           totalTimer={totalTimer}
           splitTimer={splitTimer}
+          multinode={multinode}
         />
       </ModeShell>
     );
@@ -448,6 +479,99 @@ export default function App() {
   );
   const activeMode = appState.selectedMode;
   const settings = drillSession.settings;
+  const multinodeLink = settings.multinodeLink ?? "";
+  const startCountdownSessionType = drillSession.startCountdown?.sessionSpec?.sessionType ?? null;
+  const countdownObjectiveId =
+    drillSession.startCountdown?.sessionSpec?.objectiveIds?.[0] ?? null;
+  const countdownObjective = countdownObjectiveId ? objectivesById[countdownObjectiveId] ?? null : null;
+  const currentAutomarkObjective =
+    drillSession.currentSession?.sessionType === PRACTICE_SESSION_TYPE
+      ? drillSession.currentObjective
+      : startCountdownSessionType === PRACTICE_SESSION_TYPE
+        ? countdownObjective
+        : null;
+  const currentPracticePhase =
+    drillSession.currentSession?.sessionType === PRACTICE_SESSION_TYPE
+      ? drillSession.currentSession.phase
+      : null;
+  const routeAutomarkCandidates =
+    drillSession.currentSession?.sessionType === ROUTE_SESSION_TYPE
+      ? drillSession.routeSlots
+          .filter((slot) => slot.objective)
+          .map((slot) => ({
+            objective: slot.objective,
+            routeSlotId: `${slot.slotIndex}:${slot.objective.id}`,
+            routeSlotIndex: slot.slotIndex
+          }))
+      : [];
+  const routeAutomarkSignature = routeAutomarkCandidates
+    .map((candidate) => candidate.routeSlotId)
+    .join("|");
+  const automarkActiveKey = drillSession.currentSession
+    ? drillSession.currentSession.sessionType === ROUTE_SESSION_TYPE
+      ? `${drillSession.currentSession.id}:route:${routeAutomarkSignature}`
+      : `${drillSession.currentSession.id}:practice:${drillSession.currentSession.phase}:${drillSession.currentObjective?.id ?? ""}`
+    : drillSession.startCountdown
+      ? `${drillSession.startCountdown.id}:countdown:${startCountdownSessionType ?? ""}:${countdownObjectiveId ?? ""}`
+      : "idle";
+  const automarkEnabled = Boolean(
+    multinodeLink.trim() &&
+      (drillSession.currentSession ||
+        drillSession.isStartCountdownActive)
+  );
+  const multinodeAutomark = useMultinodeAutomark({
+    link: multinodeLink,
+    enabled: automarkEnabled,
+    currentObjective: currentAutomarkObjective,
+    currentObjectiveMatchOptions: {
+      phase: currentPracticePhase,
+      allowAreaChange: currentPracticePhase === "travel"
+    },
+    candidateObjectives: routeAutomarkCandidates,
+    activeKey: automarkActiveKey,
+    onObjectiveMatched(payload) {
+      const session = drillSession.currentSession;
+      const action = resolveMultinodeAutomarkAction({
+        event: payload.event,
+        sessionType: session?.sessionType,
+        phase: session?.phase,
+        routeSlotIndex: payload.routeSlotIndex
+      });
+
+      if (import.meta.env.DEV) {
+        console.debug("[multinode automark]", {
+          event: payload.event,
+          objectiveId: payload.objective?.id ?? null,
+          routeSlotIndex: payload.routeSlotIndex,
+          sessionType: session?.sessionType ?? null,
+          phase: session?.phase ?? null,
+          action: action.type,
+          reason: action.reason
+        });
+      }
+
+      // Automark deliberately delegates to the same manual actions, keeping split
+      // progression, feedback, timing, history, PBs, and stats centralized.
+      if (action.type === "practice-travel") {
+        drillSession.markEnteredLevel();
+        return;
+      }
+
+      if (action.type === "practice-tape") {
+        drillSession.unlockTape();
+        return;
+      }
+
+      if (action.type === "practice-objective") {
+        drillSession.completeObjective();
+        return;
+      }
+
+      if (action.type === "route-slot") {
+        drillSession.completeRouteSlot(action.routeSlotIndex);
+      }
+    }
+  });
   const activeTheme = resolveTheme(settings.themeId, settings.customTheme);
   const desktopRuntime = isTauriRuntime();
   const useDesktopGlobalHotkeys = desktopRuntime;
@@ -656,6 +780,38 @@ export default function App() {
       Pop Out
     </button>
     ) : null;
+  const multinodeStatusLabel =
+    multinodeAutomark.status === "connected"
+      ? "Connected"
+      : multinodeAutomark.status === "connecting"
+        ? "Connecting..."
+        : multinodeAutomark.status === "error"
+          ? `Failed${multinodeAutomark.error ? `: ${multinodeAutomark.error}` : ""}`
+          : multinodeAutomark.status === "closed"
+            ? "Disconnected"
+            : "Idle";
+  const multinodeStatusIndicator =
+    multinodeAutomark.status === "connected"
+      ? "✓"
+      : multinodeAutomark.status === "error"
+        ? "✕"
+        : "•";
+  const multinodePanelProps = {
+    link: multinodeLink,
+    status: multinodeAutomark.status,
+    indicator: multinodeStatusIndicator,
+    statusLabel: multinodeStatusLabel,
+    objectiveStatus: multinodeAutomark.currentObjectiveStatus,
+    lastMatchReason: multinodeAutomark.lastMatchResult?.result?.reason ?? null,
+    onChangeLink(nextValue) {
+      drillSession.updateSettings((previousSettings) => ({
+        ...previousSettings,
+        multinodeLink: nextValue
+      }));
+    },
+    onConnect: multinodeAutomark.connect,
+    onDisconnect: multinodeAutomark.disconnect
+  };
 
   if (popoutView) {
     return (
@@ -738,6 +894,7 @@ export default function App() {
             popoutControl={popoutButton}
             popoutError={popoutError}
             onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
+            multinode={multinodePanelProps}
           />
         ) : activeMode === ROUTE_SESSION_TYPE ? (
           <RouteModeView
@@ -748,6 +905,7 @@ export default function App() {
             splitTimer={splitTimer}
             popoutControl={popoutButton}
             popoutError={popoutError}
+            multinode={multinodePanelProps}
           />
         ) : activeMode === "settings" ? (
           <SettingsModeView
