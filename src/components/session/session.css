@@ -1168,6 +1168,11 @@
     font: inherit;
 }
 
+.multinode-ready-site-link {
+    text-decoration: none;
+    white-space: nowrap;
+}
+
 .multinode-ready-status,
 .multinode-ready-detail {
     margin: 0;

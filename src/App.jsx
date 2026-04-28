@@ -47,6 +47,8 @@ import { parseReleaseNotesMarkdown } from "./lib/releaseNotes.js";
 import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
 
+const MULTINODE_SITE_URL = "https://jsrfmulti.surge.sh/bingo/";
+
 function UpdatePreviewModal({ offer, onClose }) {
   useEffect(() => {
     function handleKeyDown(event) {
@@ -268,7 +270,14 @@ function StartCountdownPanel({
               placeholder="https://jsrfmulti.surge.sh/bingo/?connect=..."
               onChange={(event) => multinode.onChangeLink(event.target.value)}
             />
-            
+            <a
+              className="secondary-button multinode-ready-site-link"
+              href={MULTINODE_SITE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open Site
+            </a>
           </div>
           <p className={`multinode-ready-status is-${multinode.status}`}>
             {multinode.indicator} {multinode.statusLabel}
