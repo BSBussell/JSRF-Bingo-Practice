@@ -83,7 +83,7 @@ export function useDesktopUpdate({ enabled = true } = {}) {
 
   return {
     isChecking: state.isChecking,
-    action: state.asset
+    offer: state.asset
       ? {
           label: "Update!",
           tone: "highlight",
@@ -91,7 +91,10 @@ export function useDesktopUpdate({ enabled = true } = {}) {
             state.release?.tagName && state.installedVersion
               ? `Update from ${state.installedVersion} to ${state.release.tagName}`
               : "Download the latest desktop build",
-          onClick() {
+          asset: state.asset,
+          release: state.release,
+          installedVersion: state.installedVersion,
+          onDownload() {
             void openExternalUrl(state.asset.browserDownloadUrl);
           }
         }

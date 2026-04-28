@@ -134,6 +134,7 @@ function parseLatestRelease(payload) {
     name: normalizeStringValue(payload.name) || null,
     tagName: normalizeStringValue(payload.tag_name) || null,
     version: normalizeVersion(payload.tag_name),
+    notes: normalizeStringValue(payload.body) || "",
     htmlUrl: normalizeStringValue(payload.html_url) || null,
     assets: Array.isArray(payload.assets) ? payload.assets.map(parseReleaseAsset).filter(Boolean) : []
   };

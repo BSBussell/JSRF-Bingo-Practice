@@ -43,8 +43,113 @@ import {
 import { buildLearningVideoSources } from "./data/learnVideos.js";
 import { objectivesById } from "./data/objectives.js";
 import { formatHotkeyBinding } from "./lib/hotkeys.js";
+import { parseReleaseNotesMarkdown } from "./lib/releaseNotes.js";
 import { resolveTheme } from "./lib/theme/index.js";
 import { useEffect, useRef, useState } from "react";
+
+function UpdatePreviewModal({ offer, onClose }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (!offer) {
+    return null;
+  }
+
+  const releaseTitle = offer.release?.name || offer.release?.tagName || "Latest release";
+  const versionLine =
+    offer.installedVersion && offer.release?.tagName
+      ? `${offer.installedVersion} -> ${offer.release.tagName}`
+      : offer.release?.tagName ?? null;
+  const notes = offer.release?.notes?.trim() || "No release notes were included with this update.";
+  const noteBlocks = parseReleaseNotesMarkdown(notes);
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="panel modal-card update-preview-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="update-preview-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <p className="eyebrow">Update Available</p>
+        <h2 id="update-preview-title">{releaseTitle}</h2>
+        <p className="modal-copy">
+          Here&rsquo;s what you&rsquo;ll get from updating.
+          {versionLine ? ` ${versionLine}` : ""}
+        </p>
+        <section className="update-preview-notes" aria-label="Release notes">
+          {noteBlocks.length ? (
+            noteBlocks.map((block, index) => {
+              if (block.type === "heading") {
+                if (block.level === 1) {
+                  return <h1 key={index}>{block.text}</h1>;
+                }
+
+                if (block.level === 2) {
+                  return <h2 key={index}>{block.text}</h2>;
+                }
+
+                if (block.level === 3) {
+                  return <h3 key={index}>{block.text}</h3>;
+                }
+
+                if (block.level === 4) {
+                  return <h4 key={index}>{block.text}</h4>;
+                }
+
+                if (block.level === 5) {
+                  return <h5 key={index}>{block.text}</h5>;
+                }
+
+                return <h6 key={index}>{block.text}</h6>;
+              }
+
+              if (block.type === "list") {
+                return (
+                  <ul key={index}>
+                    {block.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                );
+              }
+
+              return <p key={index}>{block.text}</p>;
+            })
+          ) : (
+            <p>{notes}</p>
+          )}
+        </section>
+        <div className="modal-actions">
+          <button className="secondary-button" type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="primary-button reward-button"
+            type="button"
+            onClick={() => {
+              offer.onDownload();
+              onClose();
+            }}
+          >
+            Download Update
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CurrentDrillPanel({
   drillSession,
@@ -582,6 +687,7 @@ export default function App() {
   const [capturingAction, setCapturingAction] = useState(null);
   const [popoutError, setPopoutError] = useState(null);
   const [focusedStatsHistoryRunId, setFocusedStatsHistoryRunId] = useState("");
+  const [updatePreviewOpen, setUpdatePreviewOpen] = useState(false);
   const [hasWindowFocus, setHasWindowFocus] = useState(
     typeof document === "undefined" ? true : document.hasFocus()
   );
@@ -596,12 +702,28 @@ export default function App() {
   const desktopUpdate = useDesktopUpdate({
     enabled: desktopRuntime && !popoutView
   });
+  const desktopUpdateOffer = desktopUpdate.offer;
   const headerReleaseAction = desktopRuntime
-    ? desktopUpdate.action
+    ? desktopUpdateOffer
+      ? {
+          label: desktopUpdateOffer.label,
+          tone: desktopUpdateOffer.tone,
+          title: desktopUpdateOffer.title,
+          onClick() {
+            setUpdatePreviewOpen(true);
+          }
+        }
+      : null
     : webReleaseDownload.action;
   const headerReleaseActionLoading = desktopRuntime
     ? desktopUpdate.isChecking
     : webReleaseDownload.isChecking;
+
+  useEffect(() => {
+    if (!desktopUpdateOffer && updatePreviewOpen) {
+      setUpdatePreviewOpen(false);
+    }
+  }, [desktopUpdateOffer, updatePreviewOpen]);
 
   function openStatsHistoryRun(sessionId) {
     if (typeof sessionId !== "string" || !sessionId) {
@@ -942,6 +1064,12 @@ export default function App() {
           />
         )}
       </main>
+      {desktopUpdateOffer && updatePreviewOpen ? (
+        <UpdatePreviewModal
+          offer={desktopUpdateOffer}
+          onClose={() => setUpdatePreviewOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -34,3 +34,77 @@
     flex-wrap: wrap;
 }
 
+.update-preview-modal {
+    width: min(100%, 44rem);
+}
+
+.update-preview-notes {
+    max-height: min(52vh, 28rem);
+    overflow: auto;
+    padding: 0.95rem 1rem;
+    border-radius: var(--radius-card);
+    background: var(--surface-card-background);
+    border: 1px solid var(--surface-card-border);
+}
+
+.update-preview-notes pre {
+    margin: 0;
+}
+
+.update-preview-notes h1,
+.update-preview-notes h2,
+.update-preview-notes h3,
+.update-preview-notes h4,
+.update-preview-notes h5,
+.update-preview-notes h6,
+.update-preview-notes ul,
+.update-preview-notes p {
+    margin: 0;
+}
+
+.update-preview-notes h1,
+.update-preview-notes h2,
+.update-preview-notes h3,
+.update-preview-notes h4,
+.update-preview-notes h5,
+.update-preview-notes h6 {
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    line-height: 1.1;
+}
+
+.update-preview-notes h1 {
+    font-size: clamp(1.55rem, 4vw, 2.05rem);
+}
+
+.update-preview-notes h2 {
+    font-size: clamp(1.4rem, 3.4vw, 1.85rem);
+}
+
+.update-preview-notes h3 {
+    font-size: clamp(1.22rem, 3vw, 1.5rem);
+}
+
+.update-preview-notes h4,
+.update-preview-notes h5,
+.update-preview-notes h6 {
+    font-size: 1.05rem;
+}
+
+.update-preview-notes p {
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.update-preview-notes ul {
+    padding-left: 1.35rem;
+    color: var(--text-secondary);
+}
+
+.update-preview-notes li + li {
+    margin-top: 0.45rem;
+}
+
+.update-preview-notes > * + * {
+    margin-top: 0.8rem;
+}

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   compareVersions,
+  getReleaseDownloadInfo,
   normalizePlatform,
   selectBestReleaseAsset
 } from "./releases.js";
@@ -26,6 +27,36 @@ test("compareVersions follows numeric semver ordering", () => {
 
 test("compareVersions treats stable releases as newer than prereleases", () => {
   assert.ok(compareVersions("1.2.3", "1.2.3-beta.1") > 0);
+});
+
+test("getReleaseDownloadInfo flags an update when the latest release is newer", async () => {
+  const releaseDownload = await getReleaseDownloadInfo({
+    platform: normalizePlatform({ os: "macos", arch: "arm64" }),
+    currentVersion: "v0.3.0",
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return {
+          tag_name: "0.4.0",
+          body: "New tricks\n- Better timing\n- Shinier buttons",
+          assets: [
+            {
+              name: "trainer-aarch64.dmg",
+              browser_download_url: "https://example.com/trainer-aarch64.dmg",
+              size: 100
+            }
+          ]
+        };
+      }
+    })
+  });
+
+  assert.equal(releaseDownload?.isUpdateAvailable, true);
+  assert.equal(releaseDownload?.release?.tagName, "0.4.0");
+  assert.equal(
+    releaseDownload?.release?.notes,
+    "New tricks\n- Better timing\n- Shinier buttons"
+  );
 });
 
 test("selectBestReleaseAsset prefers exe over msi on Windows", () => {
