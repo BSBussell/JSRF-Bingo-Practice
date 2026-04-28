@@ -25,9 +25,8 @@ function clampNumber(value, min, max) {
   return nextValue;
 }
 
-export function resolveBoundedNumberCommit({
+export function resolveBoundedNumberDraftValue({
   draftValue,
-  committedValue,
   min,
   max,
   parseValue = defaultParseValue,
@@ -36,8 +35,31 @@ export function resolveBoundedNumberCommit({
   const parsedValue = parseValue(draftValue);
 
   if (!Number.isFinite(parsedValue)) {
-    return committedValue;
+    return null;
   }
 
   return normalizeValue(clampNumber(parsedValue, min, max));
+}
+
+export function resolveBoundedNumberCommit({
+  draftValue,
+  committedValue,
+  min,
+  max,
+  parseValue = defaultParseValue,
+  normalizeValue = (value) => value
+}) {
+  const nextValue = resolveBoundedNumberDraftValue({
+    draftValue,
+    min,
+    max,
+    parseValue,
+    normalizeValue
+  });
+
+  if (nextValue === null) {
+    return committedValue;
+  }
+
+  return nextValue;
 }

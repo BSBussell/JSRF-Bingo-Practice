@@ -643,7 +643,7 @@ export function SetupPanel({
                 <label className="setup-toggle-card setup-toggle-card-compact">
                   <div className="settings-row-copy">
                     <strong>Vision training</strong>
-                    <p>Scatter live route squares across a fixed 5x5 board for this seed.</p>
+                    <p>Scatter live route squares across a empty 5x5 board.</p>
                   </div>
 
                   <span className="toggle-shell">

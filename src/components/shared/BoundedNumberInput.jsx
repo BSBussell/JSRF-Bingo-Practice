@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { resolveBoundedNumberCommit } from "../../lib/boundedNumberInput.js";
+import {
+  resolveBoundedNumberCommit,
+  resolveBoundedNumberDraftValue
+} from "../../lib/boundedNumberInput.js";
 
 function defaultFormatValue(value) {
   return String(value ?? "");
@@ -21,6 +24,7 @@ export function BoundedNumberInput({
   normalizeValue = (nextValue) => nextValue,
   parseValue,
   formatValue = defaultFormatValue,
+  commitOnChange = false,
   onCommit
 }) {
   const [draftValue, setDraftValue] = useState(() => formatValue(value));
@@ -70,7 +74,25 @@ export function BoundedNumberInput({
         setIsFocused(false);
         commitValue();
       }}
-      onChange={(event) => setDraftValue(event.target.value)}
+      onChange={(event) => {
+        const nextDraftValue = event.target.value;
+        setDraftValue(nextDraftValue);
+
+        if (!commitOnChange) {
+          return;
+        }
+
+        const nextValue = resolveBoundedNumberDraftValue({
+          draftValue: nextDraftValue,
+          min,
+          max,
+          parseValue,
+          normalizeValue
+        });
+        if (nextValue !== null && nextValue !== value) {
+          onCommit(nextValue);
+        }
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
           event.preventDefault();
