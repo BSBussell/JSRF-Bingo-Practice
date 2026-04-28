@@ -87,7 +87,12 @@ export function useMultinodeConnection({
     setStatus(STATUS_CONNECTING);
     setError(null);
 
-    const peer = new Peer();
+    const peer = new Peer(undefined, {
+      host: "0.peerjs.com",
+      port: 443,
+      path: "/",
+      secure: true
+    });
     peerRef.current = peer;
 
     function reportError(errorLike) {
