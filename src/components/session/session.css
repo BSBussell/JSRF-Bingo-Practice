@@ -1187,6 +1187,133 @@
     color: var(--route-district-kogane);
 }
 
+.multinode-ready-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+}
+
+.multinode-competition-shell {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.6rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--surface-card-border);
+    background: color-mix(in srgb, var(--surface-card-background), transparent 8%);
+}
+
+.multinode-competition-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.multinode-competition-identity {
+    margin: 0;
+}
+
+.multinode-competition-identity span {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.multinode-competition-leaderboard,
+.multinode-competition-feed {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.multinode-competition-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.45rem;
+    align-items: center;
+    padding: 0.3rem 0.45rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--surface-card-border), transparent 22%);
+    background: color-mix(in srgb, var(--surface-card-background), transparent 16%);
+}
+
+.multinode-competition-rank {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.multinode-competition-name {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multinode-competition-score {
+    color: var(--accent-strong);
+    font-size: 0.88rem;
+}
+
+.multinode-competition-feed-item {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+}
+
+.multinode-competition-empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+}
+
+.competition-effect-banner {
+    position: absolute;
+    inset: 0;
+    z-index: 38;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 28px rgba(0, 0, 0, 0.4);
+    animation: competition-effect-fade 1700ms ease-out forwards;
+}
+
+.competition-effect-banner.is-yay {
+    color: color-mix(in srgb, var(--route-district-shibuya), white 20%);
+    background: radial-gradient(circle at center, rgba(115, 220, 170, 0.2), transparent 64%);
+}
+
+.competition-effect-banner.is-doom {
+    color: color-mix(in srgb, var(--route-district-kogane), white 8%);
+    background: radial-gradient(circle at center, rgba(220, 105, 95, 0.2), transparent 64%);
+}
+
+@keyframes competition-effect-fade {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+
+    18% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    80% {
+        opacity: 0.86;
+        transform: scale(1.02);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.04);
+    }
+}
+
 .seed-display-shell {
     padding: 0.85rem 1rem;
     border-radius: var(--radius-control);

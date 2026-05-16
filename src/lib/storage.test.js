@@ -4,10 +4,12 @@ import test from "node:test";
 import { buildSessionConfig, buildSessionSpecFromConfig, encodeSessionSeed } from "./seed/sessionSeed.js";
 import { createDefaultAppState, normalizeAppState } from "./storage.js";
 import { ROUTE_REVEAL_MODE_BURST } from "./session/routeRevealMode.js";
+import { COMPETITION_MODE } from "./modes.js";
 
 test("createDefaultAppState initializes pendingCompletion as null", () => {
   const state = createDefaultAppState();
   assert.equal(state.settings.multinodeLink, "");
+  assert.equal(state.settings.multinodeClaimedPlayerIndex, null);
   assert.equal(state.settings.autoOpenPopout, false);
   assert.equal(state.settings.routeDistrictColorsEnabled, true);
   assert.equal(state.settings.averageWindow, "all");
@@ -54,6 +56,26 @@ test("createDefaultAppState initializes pendingCompletion as null", () => {
   assert.equal(state.pendingCompletion, null);
 });
 
+test("normalizeAppState preserves claimed multinode player index", () => {
+  const state = normalizeAppState({
+    settings: {
+      multinodeClaimedPlayerIndex: 2
+    }
+  });
+
+  assert.equal(state.settings.multinodeClaimedPlayerIndex, 2);
+});
+
+test("normalizeAppState drops invalid claimed multinode player index", () => {
+  const state = normalizeAppState({
+    settings: {
+      multinodeClaimedPlayerIndex: -1
+    }
+  });
+
+  assert.equal(state.settings.multinodeClaimedPlayerIndex, null);
+});
+
 test("normalizeAppState preserves explicitly unbound hotkeys", () => {
   const state = normalizeAppState({
     settings: {
@@ -91,6 +113,14 @@ test("normalizeAppState preserves seed builder mode selection", () => {
   });
 
   assert.equal(state.selectedMode, "seed-builder");
+});
+
+test("normalizeAppState preserves competition mode selection", () => {
+  const state = normalizeAppState({
+    selectedMode: COMPETITION_MODE
+  });
+
+  assert.equal(state.selectedMode, COMPETITION_MODE);
 });
 
 test("createDefaultAppState initializes a seed builder draft", () => {

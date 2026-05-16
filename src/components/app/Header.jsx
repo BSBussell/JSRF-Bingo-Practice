@@ -3,6 +3,7 @@ import {
   PRACTICE_SESSION_TYPE,
   ROUTE_SESSION_TYPE
 } from "../../lib/session/sessionTypes.js";
+import { COMPETITION_MODE } from "../../lib/modes.js";
 import { SEED_BUILDER_MODE } from "../../lib/seedBuilder.js";
 
 function SettingsGearIcon() {
@@ -40,6 +41,7 @@ export function Header({
   onOpenHome,
   onSelectPractice,
   onSelectRoute,
+  onSelectCompetition,
   onSelectSeedBuilder,
   onSelectBingopedia,
   onSelectStats,
@@ -48,7 +50,9 @@ export function Header({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const showReleaseSlot = Boolean(releaseAction) || releaseActionLoading;
   const isPlayActive =
-    activeMode === PRACTICE_SESSION_TYPE || activeMode === ROUTE_SESSION_TYPE;
+    activeMode === PRACTICE_SESSION_TYPE ||
+    activeMode === ROUTE_SESSION_TYPE ||
+    activeMode === COMPETITION_MODE;
   const isDataActive =
     activeMode === "bingopedia" || activeMode === "stats" || activeMode === SEED_BUILDER_MODE;
 
@@ -148,6 +152,15 @@ export function Header({
             >
               Routing
               {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? <span className="nav-badge">Live</span> : null}
+            </button>
+            <button
+              className={`nav-group-item ${activeMode === COMPETITION_MODE ? "is-active" : ""}`}
+              type="button"
+              role="menuitem"
+              onClick={onSelectCompetition}
+            >
+              Competition
+              {hasActiveSession && activeMode === COMPETITION_MODE ? <span className="nav-badge">Live</span> : null}
             </button>
           </div>
         </div>
@@ -260,6 +273,15 @@ export function Header({
               <span className="mobile-nav-item-prefix" aria-hidden="true">|</span>
               <span>Route</span>
               {hasActiveSession && currentSessionType === ROUTE_SESSION_TYPE ? <span className="nav-badge">Live</span> : null}
+            </button>
+            <button
+              className={`mobile-nav-item ${activeMode === COMPETITION_MODE ? "is-active" : ""}`}
+              type="button"
+              onClick={() => handleMobileNavigate(onSelectCompetition)}
+            >
+              <span className="mobile-nav-item-prefix" aria-hidden="true">|</span>
+              <span>Competition</span>
+              {hasActiveSession && activeMode === COMPETITION_MODE ? <span className="nav-badge">Live</span> : null}
             </button>
           </section>
 

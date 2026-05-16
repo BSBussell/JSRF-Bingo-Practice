@@ -18,6 +18,7 @@ import {
   ROUTE_SESSION_TYPE,
   normalizeSessionType
 } from "./session/sessionTypes.js";
+import { COMPETITION_MODE } from "./modes.js";
 import { normalizeRouteRevealMode } from "./session/routeRevealMode.js";
 import {
   DEFAULT_THEME_ID,
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS = {
   drillSettings: DEFAULT_DRILL_SETTINGS,
   hotkeys: DEFAULT_HOTKEYS,
   multinodeLink: "",
+  multinodeClaimedPlayerIndex: null,
   learnPanelDefaultVisible: false,
   learnVideoAutoplay: false,
   learnAudioMuted: true,
@@ -166,6 +168,11 @@ function normalizeSettings(value, legacySelectedMode = null) {
       typeof value.multinodeLink === "string"
         ? value.multinodeLink.trim()
         : DEFAULT_SETTINGS.multinodeLink,
+    multinodeClaimedPlayerIndex:
+      Number.isInteger(value.multinodeClaimedPlayerIndex) &&
+      value.multinodeClaimedPlayerIndex >= 0
+        ? value.multinodeClaimedPlayerIndex
+        : null,
     learnPanelDefaultVisible:
       typeof value.learnPanelDefaultVisible === "boolean"
         ? value.learnPanelDefaultVisible
@@ -533,6 +540,10 @@ function normalizeStartCountdown(startCountdown) {
           : Date.now(),
     exportSeed:
       typeof startCountdown.exportSeed === "string" ? startCountdown.exportSeed : "",
+    selectedModeOverride:
+      startCountdown.selectedModeOverride === COMPETITION_MODE
+        ? COMPETITION_MODE
+        : null,
     sessionSpec: {
       version: sessionSpecInput.version ?? 1,
       sessionType: normalizeSessionType(sessionSpecInput.sessionType),
@@ -586,6 +597,8 @@ export function normalizeAppState(value) {
         ? "bingopedia"
       : rawSelectedMode === SEED_BUILDER_MODE
         ? SEED_BUILDER_MODE
+      : rawSelectedMode === COMPETITION_MODE
+        ? COMPETITION_MODE
       : rawSelectedMode === ROUTE_SESSION_TYPE
         ? ROUTE_SESSION_TYPE
       : rawSelectedMode === PRACTICE_SESSION_TYPE ||

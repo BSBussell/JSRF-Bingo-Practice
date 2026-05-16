@@ -41,6 +41,7 @@ function ModeTile({
 export function ModeSelect({
   onSelectPractice,
   onSelectRoute,
+  onSelectCompetition,
   onSelectSeedBuilder,
   onSelectBingopedia,
   onSelectStats,
@@ -85,6 +86,15 @@ export function ModeSelect({
           }
           onAction={onSelectRoute}
           variant="route"
+          featured
+        />
+        <ModeTile
+          label="gaming"
+          title="Competition"
+          description="Run a shared seed with Multi automark and race squares in real time (WIP!)"
+          actionLabel="Start Competition"
+          onAction={onSelectCompetition}
+          variant="play"
           featured
         />
       </div>

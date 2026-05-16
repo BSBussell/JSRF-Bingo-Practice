@@ -38,6 +38,7 @@ import {
   ROUTE_SESSION_TYPE
 } from "./lib/session/sessionTypes.js";
 import { SEED_BUILDER_MODE } from "./lib/seedBuilder.js";
+import { resolveSeedInput } from "./lib/seed/sessionSeed.js";
 import { isTauriRuntime } from "./lib/runtime.js";
 import {
   APP_STORAGE_KEY,
@@ -45,12 +46,163 @@ import {
   normalizeAppState
 } from "./lib/storage.js";
 import { buildLearningVideoSources } from "./data/learnVideos.js";
+import { objectivesById } from "./data/objectives.js";
 import { formatHotkeyBinding } from "./lib/hotkeys.js";
+import {
+  applyCompetitionClaim,
+  createCompetitionRaceState,
+  getCompetitionPlayerName,
+  registerCompetitionPlayers,
+  setCompetitionLocalPlayer
+} from "./lib/multinode/competition.js";
 import { parseReleaseNotesMarkdown } from "./lib/releaseNotes.js";
 import { resolveTheme } from "./lib/theme/index.js";
-import { useEffect, useRef, useState } from "react";
+import { COMPETITION_MODE } from "./lib/modes.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const MULTINODE_SITE_URL = "https://jsrfmulti.surge.sh/bingo/";
+const COMPETITION_EFFECT_VISIBLE_MS = 1700;
+
+function buildCompetitionObjectives(sessionSpec) {
+  const objectiveIds = Array.isArray(sessionSpec?.objectiveIds)
+    ? sessionSpec.objectiveIds
+    : [];
+
+  return objectiveIds
+    .map((objectiveId) => {
+      const objective = objectivesById[objectiveId];
+      if (!objective) {
+        return null;
+      }
+
+      return {
+        id: objective.id,
+        label: objective.label
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeSeenPlayers(players = []) {
+  const seenByIndex = new Map();
+
+  for (const player of players) {
+    if (!Number.isInteger(player?.index) || player.index < 0) {
+      continue;
+    }
+
+    const previous = seenByIndex.get(player.index) ?? {
+      index: player.index,
+      name: null
+    };
+    const nextName =
+      typeof player?.name === "string" && player.name.trim()
+        ? player.name.trim()
+        : previous.name;
+
+    seenByIndex.set(player.index, {
+      index: player.index,
+      name: nextName
+    });
+  }
+
+  return Array.from(seenByIndex.values()).sort((left, right) => left.index - right.index);
+}
+
+function MultinodeCompetitionPanel({ multinode }) {
+  if (!multinode) {
+    return null;
+  }
+
+  const leaderboardRows = multinode.competition?.leaderboard ?? [];
+  const recentClaims = multinode.competition?.recentClaims ?? [];
+  const playerOptions = multinode.competition?.playerOptions ?? [];
+
+  return (
+    <div className="multinode-ready-panel">
+      <label className="multinode-ready-label" htmlFor="multinode-link-input">
+        Multi Link for Automarking
+      </label>
+      <div className="multinode-ready-controls">
+        <input
+          id="multinode-link-input"
+          className="multinode-ready-input"
+          type="text"
+          value={multinode.link}
+          placeholder="https://jsrfmulti.surge.sh/bingo/?connect=..."
+          onChange={(event) => multinode.onChangeLink(event.target.value)}
+        />
+        <a
+          className="secondary-button multinode-ready-site-link"
+          href={MULTINODE_SITE_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open Site
+        </a>
+      </div>
+      <p className={`multinode-ready-status is-${multinode.status}`}>
+        {multinode.indicator} {multinode.statusLabel}
+      </p>
+      <p className="multinode-ready-note">
+        Competition is trust-based. Everyone should run the same seed.
+      </p>
+
+      <div className="multinode-competition-shell">
+        <div className="multinode-competition-header">
+          <strong>Competition</strong>
+          <span>
+            {multinode.competition?.claimedCount ?? 0}/{multinode.competition?.totalObjectives ?? 0}
+          </span>
+        </div>
+        <label className="field multinode-competition-identity">
+          <span>You are</span>
+          <select
+            value={
+              Number.isInteger(multinode.claimedPlayerIndex)
+                ? String(multinode.claimedPlayerIndex)
+                : ""
+            }
+            onChange={(event) => multinode.onChangeClaimedPlayerIndex(event.target.value)}
+          >
+            <option value="">Not selected</option>
+            {playerOptions.map((player) => (
+              <option key={player.value} value={player.value}>
+                {player.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="multinode-competition-leaderboard" aria-label="Competition leaderboard">
+          {leaderboardRows.length ? (
+            leaderboardRows.map((row, rowIndex) => (
+              <div className="multinode-competition-row" key={row.playerIndex}>
+                <span className="multinode-competition-rank">#{rowIndex + 1}</span>
+                <span className="multinode-competition-name">{row.playerName}</span>
+                <strong className="multinode-competition-score">{row.score}</strong>
+              </div>
+            ))
+          ) : (
+            <p className="multinode-competition-empty">No claims yet.</p>
+          )}
+        </div>
+
+        <div className="multinode-competition-feed" aria-label="Recent objective claims">
+          {recentClaims.length ? (
+            recentClaims.map((claim) => (
+              <p key={claim.id} className="multinode-competition-feed-item">
+                <strong>{claim.playerName}</strong> claimed {claim.objectiveLabel}
+              </p>
+            ))
+          ) : (
+            <p className="multinode-competition-empty">No objectives claimed yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function UpdatePreviewModal({ offer, onClose }) {
   useEffect(() => {
@@ -263,34 +415,7 @@ function StartCountdownPanel({
           </strong>
         </div>
       )}
-      {multinode ? (
-        <div className="multinode-ready-panel">
-          <label className="multinode-ready-label" htmlFor="multinode-link-input">
-            Multi Link for Automarking
-          </label>
-          <div className="multinode-ready-controls">
-            <input
-              id="multinode-link-input"
-              className="multinode-ready-input"
-              type="text"
-              value={multinode.link}
-              placeholder="https://jsrfmulti.surge.sh/bingo/?connect=..."
-              onChange={(event) => multinode.onChangeLink(event.target.value)}
-            />
-            <a
-              className="secondary-button multinode-ready-site-link"
-              href={MULTINODE_SITE_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open Site
-            </a>
-          </div>
-          <p className={`multinode-ready-status is-${multinode.status}`}>
-            {multinode.indicator} {multinode.statusLabel}
-          </p>
-        </div>
-      ) : null}
+      <MultinodeCompetitionPanel multinode={multinode} />
     </section>
   );
 }
@@ -305,9 +430,14 @@ function ModeShell({ drillSession, popoutControl, popoutError, children }) {
   );
 }
 
-function DrillStage({ learnPanelVisible = false, children }) {
+function DrillStage({ learnPanelVisible = false, competitionEffect = null, children }) {
   return (
     <div className={`practice-drill-slot ${learnPanelVisible ? "learn-session-layout" : ""}`}>
+      {competitionEffect ? (
+        <div className={`competition-effect-banner is-${competitionEffect.tone}`}>
+          {competitionEffect.label}
+        </div>
+      ) : null}
       {children}
     </div>
   );
@@ -321,19 +451,23 @@ function ActiveSessionStage({
   splitTimer,
   learnPanelVisible = false,
   onToggleLearnPanel,
-  multinode = null
+  multinode = null,
+  competitionEffect = null
 }) {
   return (
-    <DrillStage learnPanelVisible={learnPanelVisible}>
+    <DrillStage learnPanelVisible={learnPanelVisible} competitionEffect={competitionEffect}>
       {drillSession.currentSession ? (
-        <CurrentDrillPanel
-          drillSession={drillSession}
-          settings={settings}
-          backdrop={backdrop}
-          totalTimer={totalTimer}
-          splitTimer={splitTimer}
-          onToggleLearnPanel={onToggleLearnPanel}
-        />
+        <>
+          <CurrentDrillPanel
+            drillSession={drillSession}
+            settings={settings}
+            backdrop={backdrop}
+            totalTimer={totalTimer}
+            splitTimer={splitTimer}
+            onToggleLearnPanel={onToggleLearnPanel}
+          />
+          <MultinodeCompetitionPanel multinode={multinode} />
+        </>
       ) : (
         <StartCountdownPanel
           countdownLabel={drillSession.startCountdownLabel}
@@ -376,7 +510,8 @@ function PracticeModeView({
   popoutControl,
   popoutError,
   onToggleLearnPanel,
-  multinode
+  multinode,
+  competitionEffect
 }) {
   const learnPanelVisible = Boolean(drillSession.currentSession?.ui?.learnPanelVisible);
   const isPracticeSession = drillSession.currentSession?.sessionType !== ROUTE_SESSION_TYPE;
@@ -397,6 +532,7 @@ function PracticeModeView({
           learnPanelVisible={learnPanelVisible}
           onToggleLearnPanel={onToggleLearnPanel}
           multinode={multinode}
+          competitionEffect={competitionEffect}
         />
       </ModeShell>
     );
@@ -442,7 +578,8 @@ function RouteModeView({
   splitTimer,
   popoutControl,
   popoutError,
-  multinode
+  multinode,
+  competitionEffect
 }) {
   if (
     (drillSession.currentSession && drillSession.currentSession.sessionType === ROUTE_SESSION_TYPE) ||
@@ -462,6 +599,7 @@ function RouteModeView({
           totalTimer={totalTimer}
           splitTimer={splitTimer}
           multinode={multinode}
+          competitionEffect={competitionEffect}
         />
       </ModeShell>
     );
@@ -491,6 +629,123 @@ function RouteModeView({
         onStartSession={drillSession.startSession}
         sessionType={ROUTE_SESSION_TYPE}
       />
+    </ModeShell>
+  );
+}
+
+function CompetitionModeView({
+  drillSession,
+  settings,
+  backdrop,
+  totalTimer,
+  splitTimer,
+  popoutControl,
+  popoutError,
+  multinode,
+  competitionEffect,
+  onToggleLearnPanel
+}) {
+  const [seedInput, setSeedInput] = useState("");
+  const [seedSessionType, setSeedSessionType] = useState(PRACTICE_SESSION_TYPE);
+  const resolvedSeed = useMemo(
+    () => resolveSeedInput(seedInput, seedSessionType),
+    [seedInput, seedSessionType]
+  );
+  const missingSeed = !seedInput.trim();
+  const missingLink = !multinode?.link?.trim();
+  const missingIdentity = !Number.isInteger(multinode?.claimedPlayerIndex);
+  const notConnected = multinode?.status !== "connected";
+  const missingSessionSpec = !resolvedSeed.sessionSpec?.objectiveIds?.length;
+  const disabledStart =
+    missingSeed || missingLink || missingIdentity || notConnected || missingSessionSpec;
+
+  function handleStartCompetition() {
+    if (disabledStart) {
+      return;
+    }
+
+    drillSession.startSession({
+      sessionSpec: resolvedSeed.sessionSpec,
+      exportSeed: resolvedSeed.exportSeed,
+      selectedModeOverride: COMPETITION_MODE
+    });
+  }
+
+  if (drillSession.currentSession || drillSession.isStartCountdownActive) {
+    return (
+      <ModeShell drillSession={drillSession} popoutControl={popoutControl} popoutError={popoutError}>
+        <ActiveSessionStage
+          drillSession={drillSession}
+          settings={settings}
+          backdrop={backdrop}
+          totalTimer={totalTimer}
+          splitTimer={splitTimer}
+          onToggleLearnPanel={onToggleLearnPanel}
+          multinode={multinode}
+          competitionEffect={competitionEffect}
+        />
+      </ModeShell>
+    );
+  }
+
+  if (drillSession.pendingCompletion) {
+    return (
+      <ModeShell drillSession={drillSession} popoutControl={popoutControl} popoutError={popoutError}>
+        <CompletionStage drillSession={drillSession} backdrop={backdrop} />
+      </ModeShell>
+    );
+  }
+
+  return (
+    <ModeShell drillSession={drillSession} popoutControl={popoutControl} popoutError={popoutError}>
+      <section className="panel setup-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Competition Mode</p>
+            <h1>Start a competition run</h1>
+          </div>
+          <p className="panel-note">Seed + Multi link + claimed player are required.</p>
+        </div>
+        <div className="setup-form setup-form-extended">
+          <label className="field">
+            <span>Session type</span>
+            <select
+              value={seedSessionType}
+              onChange={(event) => setSeedSessionType(event.target.value)}
+            >
+              <option value={PRACTICE_SESSION_TYPE}>Square</option>
+              <option value={ROUTE_SESSION_TYPE}>Route</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Seed</span>
+            <textarea
+              className="seed-textarea"
+              rows={1}
+              value={seedInput}
+              placeholder="Paste exported seed or enter phrase"
+              onChange={(event) => setSeedInput(event.target.value)}
+            />
+            {resolvedSeed.warning ? <p className="setup-warning">{resolvedSeed.warning}</p> : null}
+          </label>
+          <MultinodeCompetitionPanel multinode={multinode} />
+          <div className="setup-action-controls">
+            <button
+              className="primary-button reward-button"
+              type="button"
+              disabled={disabledStart}
+              onClick={handleStartCompetition}
+            >
+              Start Competition
+            </button>
+          </div>
+          {missingSeed ? <p className="setup-warning">Enter a seed to start.</p> : null}
+          {!missingSeed && missingSessionSpec ? <p className="setup-warning">Seed did not resolve to a runnable session.</p> : null}
+          {missingLink ? <p className="setup-warning">Enter a Multi link.</p> : null}
+          {!missingLink && notConnected ? <p className="setup-warning">Multi connection must be connected before starting.</p> : null}
+          {!missingIdentity ? null : <p className="setup-warning">Select which room player is you.</p>}
+        </div>
+      </section>
     </ModeShell>
   );
 }
@@ -602,15 +857,93 @@ export default function App() {
   const activeMode = appState.selectedMode;
   const settings = drillSession.settings;
   const multinodeLink = settings.multinodeLink ?? "";
+  const claimedPlayerIndex = settings.multinodeClaimedPlayerIndex;
+  const competitionRaceKey =
+    drillSession.currentSession?.id ?? drillSession.startCountdown?.sessionId ?? "";
+  const competitionObjectives = useMemo(
+    () =>
+      buildCompetitionObjectives(
+        drillSession.currentSession?.sessionSpec ?? drillSession.startCountdown?.sessionSpec
+      ),
+    [drillSession.currentSession?.sessionSpec, drillSession.startCountdown?.sessionSpec]
+  );
+  const competitionObjectivesSignature = useMemo(
+    () => competitionObjectives.map((objective) => objective.id).join("|"),
+    [competitionObjectives]
+  );
+  const [competitionRace, setCompetitionRace] = useState(() =>
+    createCompetitionRaceState({
+      raceKey: competitionRaceKey,
+      objectives: competitionObjectives,
+      localClaimedPlayerIndex: claimedPlayerIndex
+    })
+  );
+  const competitionRaceRef = useRef(competitionRace);
+  const [seenMultinodePlayers, setSeenMultinodePlayers] = useState([]);
+  const seenMultinodeLinkRef = useRef("");
+  const winnerEffectRaceKeyRef = useRef("");
+  const lastHandledKillComboSeqRef = useRef(-1);
+  const [competitionEffect, setCompetitionEffect] = useState(null);
   const automarkContext = buildMultinodeAutomarkContext({
     currentSession: drillSession.currentSession,
     startCountdown: drillSession.startCountdown,
     currentObjective: drillSession.currentObjective,
     routeSlots: drillSession.routeSlots
   });
+
+  useEffect(() => {
+    competitionRaceRef.current = competitionRace;
+  }, [competitionRace]);
+
+  useEffect(() => {
+    const normalizedLink = multinodeLink.trim();
+    if (seenMultinodeLinkRef.current === normalizedLink) {
+      return;
+    }
+
+    seenMultinodeLinkRef.current = normalizedLink;
+    setSeenMultinodePlayers([]);
+  }, [multinodeLink]);
+
+  useEffect(() => {
+    setCompetitionRace(
+      createCompetitionRaceState({
+        raceKey: competitionRaceKey,
+        objectives: competitionObjectives,
+        localClaimedPlayerIndex: claimedPlayerIndex
+      })
+    );
+    winnerEffectRaceKeyRef.current = "";
+    setCompetitionEffect(null);
+  }, [competitionRaceKey, claimedPlayerIndex, competitionObjectivesSignature]);
+
+  useEffect(() => {
+    setCompetitionRace((previousRace) =>
+      setCompetitionLocalPlayer(previousRace, claimedPlayerIndex)
+    );
+  }, [claimedPlayerIndex]);
+
+  useEffect(() => {
+    if (!competitionEffect) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCompetitionEffect((activeEffect) =>
+        activeEffect?.id === competitionEffect.id ? null : activeEffect
+      );
+    }, COMPETITION_EFFECT_VISIBLE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [competitionEffect]);
+
   const multinodeAutomark = useMultinodeAutomark({
     link: multinodeLink,
-    enabled: Boolean(multinodeLink.trim()) && automarkContext.enabled,
+    enabled:
+      Boolean(multinodeLink.trim()) &&
+      (automarkContext.enabled || activeMode === COMPETITION_MODE),
     currentObjective: automarkContext.currentObjective,
     currentObjectiveMatchOptions: automarkContext.currentObjectiveMatchOptions,
     candidateObjectives: automarkContext.candidateObjectives,
@@ -628,30 +961,119 @@ export default function App() {
       // progression, feedback, timing, history, PBs, and stats centralized.
       if (action.type === "practice-travel") {
         drillSession.markEnteredLevel();
-        return;
-      }
-
-      if (action.type === "practice-tape") {
+      } else if (action.type === "practice-tape") {
         drillSession.unlockTape();
-        return;
-      }
-
-      if (action.type === "practice-objective") {
+      } else if (action.type === "practice-objective") {
         drillSession.completeObjective();
-        return;
+      } else if (action.type === "route-slot") {
+        drillSession.completeRouteSlot(action.routeSlotIndex);
       }
 
-      if (action.type === "route-slot") {
-        drillSession.completeRouteSlot(action.routeSlotIndex);
+      const shouldAwardCompetitionPoint =
+        activeMode === COMPETITION_MODE &&
+        (action.type === "practice-objective" || action.type === "route-slot");
+      const claimRace = competitionRaceRef.current;
+      const claimUpdate = shouldAwardCompetitionPoint
+        ? applyCompetitionClaim(claimRace, {
+            objectiveId: payload.objective?.id,
+            objectiveLabel: payload.objective?.label,
+            playerIndex: payload.playerIndex,
+            playerName: payload.playerName,
+            eventType: payload.event?.type,
+            occurredAt: Date.now()
+          })
+        : {
+            state: claimRace,
+            claimResult: {
+              claimed: false
+            }
+          };
+
+      if (claimUpdate.state !== claimRace) {
+        setCompetitionRace(claimUpdate.state);
+      }
+
+      if (claimUpdate.claimResult?.claimed) {
+        const claimPlayerName = getCompetitionPlayerName(
+          claimUpdate.state,
+          claimUpdate.claimResult.claim.playerIndex
+        );
+        if (claimUpdate.claimResult.tone === "yay") {
+          setCompetitionEffect({
+            id: `claim-${claimUpdate.claimResult.claim.objectiveId}-${claimUpdate.claimResult.claim.occurredAt}`,
+            tone: "yay",
+            label: "You got it!"
+          });
+        } else if (claimUpdate.claimResult.tone === "doom") {
+          setCompetitionEffect({
+            id: `claim-${claimUpdate.claimResult.claim.objectiveId}-${claimUpdate.claimResult.claim.occurredAt}`,
+            tone: "doom",
+            label: `${claimPlayerName} sniped it`
+          });
+        }
+      }
+
+      if (
+        claimUpdate.state?.isComplete &&
+        claimUpdate.state.raceKey &&
+        winnerEffectRaceKeyRef.current !== claimUpdate.state.raceKey
+      ) {
+        winnerEffectRaceKeyRef.current = claimUpdate.state.raceKey;
+        const winnerName = Number.isInteger(claimUpdate.state.winnerPlayerIndex)
+          ? getCompetitionPlayerName(claimUpdate.state, claimUpdate.state.winnerPlayerIndex)
+          : "Tie";
+        if (claimUpdate.claimResult?.winnerTone === "yay") {
+          setCompetitionEffect({
+            id: `winner-${claimUpdate.state.raceKey}`,
+            tone: "yay",
+            label: "You got it!"
+          });
+        } else if (claimUpdate.claimResult?.winnerTone === "doom") {
+          setCompetitionEffect({
+            id: `winner-${claimUpdate.state.raceKey}`,
+            tone: "doom",
+            label: `${winnerName} won the race`
+          });
+        }
       }
     }
   });
+
+  useEffect(() => {
+    if (
+      activeMode === COMPETITION_MODE &&
+      multinodeAutomark.lastGameEvent?.type === "kill_combo" &&
+      multinodeAutomark.lastGameEventSeq !== lastHandledKillComboSeqRef.current
+    ) {
+      lastHandledKillComboSeqRef.current = multinodeAutomark.lastGameEventSeq;
+      drillSession.exitToCompetitionSetup();
+    }
+  }, [
+    activeMode,
+    drillSession,
+    multinodeAutomark.lastGameEvent,
+    multinodeAutomark.lastGameEventSeq
+  ]);
+
+  useEffect(() => {
+    setCompetitionRace((previousRace) =>
+      registerCompetitionPlayers(previousRace, multinodeAutomark.worldState?.players ?? [])
+    );
+    setSeenMultinodePlayers((previousPlayers) =>
+      normalizeSeenPlayers([
+        ...previousPlayers,
+        ...(multinodeAutomark.worldState?.players ?? [])
+      ])
+    );
+  }, [multinodeAutomark.worldState]);
   const activeTheme = resolveTheme(settings.themeId, settings.customTheme);
   const desktopRuntime = isTauriRuntime();
   const useDesktopGlobalHotkeys = desktopRuntime;
   const hasActiveSession = Boolean(drillSession.currentSession);
   const isSessionMode =
-    activeMode === PRACTICE_SESSION_TYPE || activeMode === ROUTE_SESSION_TYPE;
+    activeMode === PRACTICE_SESSION_TYPE ||
+    activeMode === ROUTE_SESSION_TYPE ||
+    activeMode === COMPETITION_MODE;
   const [capturingAction, setCapturingAction] = useState(null);
   const [popoutError, setPopoutError] = useState(null);
   const [focusedStatsHistoryRunId, setFocusedStatsHistoryRunId] = useState("");
@@ -880,10 +1302,41 @@ export default function App() {
     status: multinodeAutomark.status,
     indicator: multinodeStatus.indicator,
     statusLabel: multinodeStatus.label,
+    claimedPlayerIndex,
+    competition: {
+      claimedCount: competitionRace.claimedCount,
+      totalObjectives: competitionRace.totalObjectives,
+      leaderboard: competitionRace.playerIndexes.map((playerIndex) => ({
+        playerIndex,
+        playerName: getCompetitionPlayerName(competitionRace, playerIndex),
+        score: competitionRace.scoresByPlayerIndex[playerIndex] ?? 0
+      })),
+      recentClaims: competitionRace.recentClaims.slice(0, 8).map((claim) => ({
+        id: `${claim.objectiveId}:${claim.playerIndex}:${claim.occurredAt}`,
+        playerName: getCompetitionPlayerName(competitionRace, claim.playerIndex),
+        objectiveLabel: claim.objectiveLabel
+      })),
+      playerOptions: seenMultinodePlayers.map((player) => ({
+        value: String(player.index),
+        label:
+          typeof player.name === "string" && player.name
+            ? player.name
+            : `Player ${player.index + 1}`
+      }))
+    },
     onChangeLink(nextValue) {
       drillSession.updateSettings((previousSettings) => ({
         ...previousSettings,
         multinodeLink: nextValue
+      }));
+    },
+    onChangeClaimedPlayerIndex(value) {
+      const normalizedValue =
+        value === "" ? null : Number.isInteger(Number(value)) ? Number(value) : null;
+
+      drillSession.updateSettings((previousSettings) => ({
+        ...previousSettings,
+        multinodeClaimedPlayerIndex: normalizedValue
       }));
     }
   };
@@ -951,6 +1404,7 @@ export default function App() {
         onOpenHome={drillSession.goToModeSelect}
         onSelectPractice={drillSession.goToPractice}
         onSelectRoute={drillSession.goToRoute}
+        onSelectCompetition={drillSession.goToCompetition}
         onSelectSeedBuilder={drillSession.goToSeedBuilder}
         onSelectBingopedia={drillSession.goToBingopedia}
         onSelectStats={drillSession.goToStats}
@@ -969,7 +1423,8 @@ export default function App() {
             popoutControl={popoutButton}
             popoutError={popoutError}
             onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
-            multinode={multinodePanelProps}
+            multinode={null}
+            competitionEffect={competitionEffect}
           />
         ) : activeMode === ROUTE_SESSION_TYPE ? (
           <RouteModeView
@@ -980,7 +1435,21 @@ export default function App() {
             splitTimer={splitTimer}
             popoutControl={popoutButton}
             popoutError={popoutError}
+            multinode={null}
+            competitionEffect={competitionEffect}
+          />
+        ) : activeMode === COMPETITION_MODE ? (
+          <CompetitionModeView
+            drillSession={drillSession}
+            settings={settings}
+            backdrop={activeTheme.backdrop}
+            totalTimer={totalTimer}
+            splitTimer={splitTimer}
+            popoutControl={popoutButton}
+            popoutError={popoutError}
             multinode={multinodePanelProps}
+            competitionEffect={competitionEffect}
+            onToggleLearnPanel={drillSession.toggleLearnPanelVisibility}
           />
         ) : activeMode === "settings" ? (
           <SettingsModeView
@@ -1008,6 +1477,7 @@ export default function App() {
             hasActiveSession={Boolean(drillSession.currentSession)}
             onSelectPractice={drillSession.goToPractice}
             onSelectRoute={drillSession.goToRoute}
+            onSelectCompetition={drillSession.goToCompetition}
             onSelectSeedBuilder={drillSession.goToSeedBuilder}
             onSelectBingopedia={drillSession.goToBingopedia}
             onSelectStats={drillSession.goToStats}

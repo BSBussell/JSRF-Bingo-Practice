@@ -24,6 +24,7 @@ import {
 } from "../lib/session/drillSession.js";
 import { mergeSessionConfigIntoDrillSettings } from "../lib/session/sessionConfig.js";
 import { resolveSeedInput } from "../lib/seed/sessionSeed.js";
+import { COMPETITION_MODE } from "../lib/modes.js";
 import {
   SEED_BUILDER_MODE,
   normalizeSeedBuilderDraft
@@ -565,7 +566,7 @@ export function useDrillSession(appState, setAppState) {
 
           return {
             ...previousValue,
-            selectedMode: sessionType,
+            selectedMode: pendingStartCountdown.selectedModeOverride ?? sessionType,
             settings: nextSettings,
             pendingCompletion: null,
             startCountdown: null,
@@ -639,6 +640,10 @@ export function useDrillSession(appState, setAppState) {
 
     const sessionSpec = sessionLaunch?.sessionSpec;
     const exportSeed = sessionLaunch?.exportSeed ?? "";
+    const selectedModeOverride =
+      sessionLaunch?.selectedModeOverride === COMPETITION_MODE
+        ? COMPETITION_MODE
+        : null;
     if (!sessionSpec?.objectiveIds?.length || !objectivesById[sessionSpec.objectiveIds[0]]) {
       updateState((previousValue) => ({
         ...previousValue,
@@ -653,13 +658,14 @@ export function useDrillSession(appState, setAppState) {
 
     updateState((previousValue) => ({
       ...previousValue,
-      selectedMode: sessionType,
+      selectedMode: selectedModeOverride ?? sessionType,
       currentSession: null,
       pendingCompletion: null,
       startCountdown: {
         id: countdownId,
         sessionId: buildSessionId(),
         startedAt: null,
+        selectedModeOverride,
         sessionSpec: cloneSessionSpecForLaunch(sessionSpec, sessionType),
         exportSeed
       }
@@ -703,17 +709,20 @@ export function useDrillSession(appState, setAppState) {
     const exportSeed = session.exportSeed ?? "";
     const countdownId = buildCountdownId();
     const restartedSessionId = buildSessionId();
+    const selectedModeOverride =
+      appState.selectedMode === COMPETITION_MODE ? COMPETITION_MODE : null;
 
     updateState((previousValue) => {
       return {
         ...previousValue,
-        selectedMode: sessionType,
+        selectedMode: selectedModeOverride ?? sessionType,
         pendingCompletion: null,
         currentSession: null,
         startCountdown: {
           id: countdownId,
           sessionId: restartedSessionId,
           startedAt: null,
+          selectedModeOverride,
           sessionSpec: nextSessionSpec,
           exportSeed
         }
@@ -1167,6 +1176,29 @@ export function useDrillSession(appState, setAppState) {
     }));
   }
 
+  function goToCompetition() {
+    pendingRouteFeedbackRef.current = null;
+    setSessionFeedback(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: resolveSelectedMode(previousValue, COMPETITION_MODE),
+      startCountdown: previousValue.startCountdown
+    }));
+  }
+
+  function exitToCompetitionSetup() {
+    pendingRouteFeedbackRef.current = null;
+    clearPendingPracticeResolution();
+    setSessionFeedback(null);
+    updateState((previousValue) => ({
+      ...previousValue,
+      selectedMode: COMPETITION_MODE,
+      currentSession: null,
+      pendingCompletion: null,
+      startCountdown: null
+    }));
+  }
+
   function goToStats() {
     pendingRouteFeedbackRef.current = null;
     setSessionFeedback(null);
@@ -1356,7 +1388,8 @@ export function useDrillSession(appState, setAppState) {
   function clearPendingCompletion() {
     updateState((previousValue) => ({
       ...previousValue,
-      selectedMode: normalizeSessionType(previousValue.pendingCompletion?.sessionType),
+      selectedMode:
+        previousValue.selectedMode ?? normalizeSessionType(previousValue.pendingCompletion?.sessionType),
       pendingCompletion: null
     }));
   }
@@ -1532,6 +1565,8 @@ export function useDrillSession(appState, setAppState) {
     goToModeSelect,
     goToPractice,
     goToRoute,
+    goToCompetition,
+    exitToCompetitionSetup,
     goToStats,
     goToBingopedia,
     goToSeedBuilder,
