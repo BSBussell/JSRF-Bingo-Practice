@@ -1271,7 +1271,6 @@
 .competition-effect-banner {
     position: absolute;
     inset: 0;
-    z-index: 38;
     display: grid;
     place-items: center;
     pointer-events: none;
