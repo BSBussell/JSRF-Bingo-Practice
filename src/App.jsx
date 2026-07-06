@@ -145,7 +145,7 @@ function MultinodeCompetitionPanel({ multinode }) {
         {multinode.indicator} {multinode.statusLabel}
       </p>
       <p className="multinode-ready-note">
-        This only works when everyone is using the same seed!
+        Competition is trust-based. Everyone should run the same seed.
       </p>
 
       <div className="multinode-competition-shell">
@@ -915,7 +915,7 @@ export default function App() {
     );
     winnerEffectRaceKeyRef.current = "";
     setCompetitionEffect(null);
-  }, [competitionRaceKey, competitionObjectivesSignature]);
+  }, [competitionRaceKey, claimedPlayerIndex, competitionObjectivesSignature]);
 
   useEffect(() => {
     setCompetitionRace((previousRace) =>
