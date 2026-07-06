@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
+import Peer from "peerjs";
 
 import { useMultinodeConnection } from "./hooks/useMultinodeConnection.js";
 import { allObjectives, objectivesById } from "./data/objectives.js";
@@ -15,6 +16,12 @@ import {
 } from "./lib/multinode/worldState.js";
 
 const MAX_LOG_ENTRIES = 300;
+const PEER_OPTIONS = {
+  host: "0.peerjs.com",
+  port: 443,
+  path: "/",
+  secure: true
+};
 
 function toPrettyJson(value) {
   if (typeof value === "string") {
@@ -43,6 +50,123 @@ function appendLog(setter, payload) {
   });
 }
 
+function useDummyPeerReceiver() {
+  const [enabled, setEnabled] = useState(false);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const [peerId, setPeerId] = useState("");
+  const [connectionCount, setConnectionCount] = useState(0);
+  const [receivedLogs, setReceivedLogs] = useState([]);
+  const peerRef = useRef(null);
+  const connectionsRef = useRef(new Set());
+
+  useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
+    let disposed = false;
+    const peer = new Peer(undefined, PEER_OPTIONS);
+    peerRef.current = peer;
+    setStatus("opening");
+    setError("");
+    setPeerId("");
+    connectionsRef.current = new Set();
+    setConnectionCount(0);
+
+    function syncConnectionCount() {
+      setConnectionCount(connectionsRef.current.size);
+    }
+
+    function closeConnection(connection) {
+      connectionsRef.current.delete(connection);
+      syncConnectionCount();
+    }
+
+    peer.on("open", (nextPeerId) => {
+      if (disposed) {
+        return;
+      }
+
+      setPeerId(nextPeerId);
+      setStatus("listening");
+    });
+
+    peer.on("connection", (connection) => {
+      if (disposed) {
+        connection.close();
+        return;
+      }
+
+      connectionsRef.current.add(connection);
+      syncConnectionCount();
+
+      connection.on("data", (packet) => {
+        if (disposed) {
+          return;
+        }
+
+        console.log("Dummy MultiNode receiver got packet:", packet);
+        appendLog(setReceivedLogs, {
+          fromPeer: connection.peer,
+          packet
+        });
+      });
+
+      connection.on("close", () => closeConnection(connection));
+      connection.on("error", (connectionError) => {
+        appendLog(setReceivedLogs, {
+          fromPeer: connection.peer,
+          error: connectionError instanceof Error
+            ? connectionError.message
+            : String(connectionError)
+        });
+        closeConnection(connection);
+      });
+    });
+
+    peer.on("error", (peerError) => {
+      if (disposed) {
+        return;
+      }
+
+      setStatus("error");
+      setError(peerError instanceof Error ? peerError.message : String(peerError));
+    });
+
+    return () => {
+      disposed = true;
+
+      for (const connection of connectionsRef.current) {
+        connection.close();
+      }
+
+      connectionsRef.current.clear();
+      setConnectionCount(0);
+
+      if (peerRef.current) {
+        peerRef.current.destroy();
+        peerRef.current = null;
+      }
+
+      setPeerId("");
+      setStatus("idle");
+    };
+  }, [enabled]);
+
+  return {
+    enabled,
+    status,
+    error,
+    peerId,
+    connectionCount,
+    receivedLogs,
+    start: () => setEnabled(true),
+    stop: () => setEnabled(false),
+    clearReceivedLogs: () => setReceivedLogs([])
+  };
+}
+
 function formatTapeIds(tapeIds) {
   return tapeIds.map((tapeId) => `${tapeId}: ${TAPE_NAME_BY_ID[tapeId] ?? `Tape ${tapeId}`}`);
 }
@@ -63,6 +187,7 @@ function MultinodeTestApp() {
   const [inputValue, setInputValue] = useState("");
   const [activeLink, setActiveLink] = useState("");
   const [enabled, setEnabled] = useState(false);
+  const dummyReceiver = useDummyPeerReceiver();
 
   const [rawLogs, setRawLogs] = useState([]);
   const [parsedLogs, setParsedLogs] = useState([]);
@@ -174,6 +299,65 @@ function MultinodeTestApp() {
         <p style={{ margin: "0.25rem 0" }}>
           <strong>Active Link Input:</strong> {activeLink || "(none)"}
         </p>
+      </section>
+
+      <section style={{ border: "1px solid #999", padding: "0.75rem", marginBottom: "1rem" }}>
+        <h2 style={{ marginTop: 0 }}>Dummy PeerJS Receiver</h2>
+        <p style={{ margin: "0.25rem 0 0.75rem" }}>
+          Start this listener, paste its peer ID into the app&apos;s MultiNode field, then trigger
+          app behavior that sends packets. Every received packet is printed here and to the
+          browser console.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+          <button
+            type="button"
+            onClick={dummyReceiver.start}
+            disabled={dummyReceiver.enabled}
+          >
+            Start Dummy Receiver
+          </button>
+          <button
+            type="button"
+            onClick={dummyReceiver.stop}
+            disabled={!dummyReceiver.enabled}
+          >
+            Stop Dummy Receiver
+          </button>
+          <button
+            type="button"
+            onClick={dummyReceiver.clearReceivedLogs}
+            disabled={dummyReceiver.receivedLogs.length === 0}
+          >
+            Clear Received Packets
+          </button>
+        </div>
+        <p style={{ margin: "0.25rem 0" }}>
+          <strong>Status:</strong> {dummyReceiver.status}
+          {dummyReceiver.error ? `: ${dummyReceiver.error}` : ""}
+        </p>
+        <p style={{ margin: "0.25rem 0" }}>
+          <strong>Open Connections:</strong> {dummyReceiver.connectionCount}
+        </p>
+        <p style={{ margin: "0.25rem 0" }}>
+          <strong>Peer ID for app input:</strong> {dummyReceiver.peerId || "(start listener first)"}
+        </p>
+        {dummyReceiver.peerId ? (
+          <p style={{ margin: "0.25rem 0" }}>
+            <strong>URL-style input:</strong>{" "}
+            https://jsrfmulti.surge.sh/bingo/?connect={dummyReceiver.peerId}
+          </p>
+        ) : null}
+
+        <div style={{ border: "1px solid #999", padding: "0.75rem", minHeight: "160px", maxHeight: "320px", overflow: "auto", marginTop: "0.75rem" }}>
+          <h3 style={{ marginTop: 0 }}>Dummy Received Packet Log ({dummyReceiver.receivedLogs.length})</h3>
+          {dummyReceiver.receivedLogs.length === 0
+            ? "(no packets received)"
+            : dummyReceiver.receivedLogs.map((entry) => (
+                <pre key={entry.id} style={{ marginTop: 0 }}>
+                  [{entry.timestamp}]\n{toPrettyJson(entry.payload)}
+                </pre>
+              ))}
+        </div>
       </section>
 
       <section style={{ border: "1px solid #999", padding: "0.75rem", marginBottom: "1rem" }}>
