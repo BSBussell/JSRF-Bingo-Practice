@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import {
   doesEventMatchObjectiveAutomark,
@@ -27,9 +27,6 @@ export function useMultinodeAutomark({
   activeKey = "",
   onObjectiveMatched
 }) {
-  const [worldState, setWorldState] = useState(() => createMultinodeWorldState());
-  const [lastGameEvent, setLastGameEvent] = useState(null);
-  const [lastGameEventSeq, setLastGameEventSeq] = useState(0);
   const currentObjectiveRef = useRef(currentObjective);
   const currentObjectiveMatchOptionsRef = useRef(currentObjectiveMatchOptions);
   const candidateObjectivesRef = useRef(candidateObjectives);
@@ -71,8 +68,6 @@ export function useMultinodeAutomark({
   useEffect(() => {
     if (!enabled) {
       worldStateRef.current = createMultinodeWorldState();
-      setWorldState(worldStateRef.current);
-      setLastGameEvent(null);
       dedupeRef.current.clear();
     }
   }, [enabled]);
@@ -103,18 +98,11 @@ export function useMultinodeAutomark({
     }
 
     dedupeRef.current.add(dedupeKey);
-    const normalizedPlayerIndex = Number.isInteger(event?.playerIndex) ? event.playerIndex : null;
-    const playerName =
-      normalizedPlayerIndex !== null
-        ? nextWorldState?.players?.[normalizedPlayerIndex]?.name ?? null
-        : null;
     onObjectiveMatchedRef.current?.({
       event,
       matchResult,
       objective,
       worldState: nextWorldState,
-      playerIndex: normalizedPlayerIndex,
-      playerName,
       routeSlotId: candidate?.routeSlotId,
       routeSlotIndex: candidate?.routeSlotIndex
     });
@@ -126,11 +114,8 @@ export function useMultinodeAutomark({
     enabled,
     onRawPacket() {},
     onGameEvent(event) {
-      setLastGameEvent(event);
-      setLastGameEventSeq((previousValue) => previousValue + 1);
       const reduced = applyMultinodeEvent(worldStateRef.current, event);
       worldStateRef.current = reduced.state;
-      setWorldState(reduced.state);
 
       const eventsToCheck = [event, ...reduced.events];
       for (const eventToCheck of eventsToCheck) {
@@ -169,9 +154,6 @@ export function useMultinodeAutomark({
 
   return {
     status,
-    error,
-    worldState,
-    lastGameEvent,
-    lastGameEventSeq
+    error
   };
 }

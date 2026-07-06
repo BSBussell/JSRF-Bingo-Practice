@@ -257,8 +257,7 @@ export function applyMultinodeEvent(state, event, options = {}) {
           levelName: nextLevelEntry.levelName,
           graffitiId,
           size: nextGraffitiEntry.size,
-          location: nextGraffitiEntry.location,
-          playerIndex: event.playerIndex
+          location: nextGraffitiEntry.location
         });
 
         if (!nextLevelEntry.isComplete && nextLevelEntry.completedCount >= nextLevelEntry.totalCount) {
@@ -266,8 +265,7 @@ export function applyMultinodeEvent(state, event, options = {}) {
           derivedEvents.push({
             type: "graffiti_area_completed",
             levelId,
-            levelName: nextLevelEntry.levelName,
-            playerIndex: event.playerIndex
+            levelName: nextLevelEntry.levelName
           });
         }
       }
